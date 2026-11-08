@@ -1,0 +1,42 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!--
+    The type ramp: font sizes, weights and character spacing.
+
+    Source: the entries outside the theme dictionaries of the Windows Phone 8.1 SDK's themeresources.xaml, the
+    same in both themes. Each entry ends with a comment naming its source key and, where the reference app read
+    the value on the phone, "run:" with the capture's specimen, variant and state (refapp run
+    20261108-1443-dev11, device 11). Every value the run read is the file's.
+
+    Not here: the font family keys (PhoneFontFamilyNormal and the rest, ContentControlThemeFontFamily,
+    PivotHeaderItemFontFamily), which are for Fonts.axaml; and the sizes the SDK's TextBlock styles set as
+    literals rather than keys (HeaderTextBlockStyle's 57.5, for example), which belong with those styles.
+
+    Sizes are in view pixels, as on the phone. A CharacterSpacing is in WinRT's unit, thousandths of an em.
+    Avalonia's LetterSpacing is in DIPs, so a template sets n * FontSize / 1000.
+  -->
+
+  <!-- Font sizes (12), smallest first -->
+  <x:Double x:Key="TextStyleSmallFontSize">10.66</x:Double> <!-- TextStyleSmallFontSize -->
+  <x:Double x:Key="SemanticZoomButtonFontSize">11.73</x:Double> <!-- SemanticZoomButtonFontSize -->
+  <x:Double x:Key="ControlContentThemeFontSize">12</x:Double> <!-- ControlContentThemeFontSize; run: ListViewItem default base -->
+  <x:Double x:Key="TextStyleMediumFontSize">16</x:Double> <!-- TextStyleMediumFontSize; run: TextBlock ControlContextualInfoTextBlockStyle base -->
+  <x:Double x:Key="TextStyleLargeFontSize">18.14</x:Double> <!-- TextStyleLargeFontSize; run: Button default base -->
+  <x:Double x:Key="HubSectionHeaderFontSize">19</x:Double> <!-- HubSectionHeaderFontSize -->
+  <x:Double x:Key="ContentControlFontSize">20.26</x:Double> <!-- ContentControlFontSize; run: ComboBox closed base -->
+  <x:Double x:Key="TextStyleExtraLargeFontSize">25.5</x:Double> <!-- TextStyleExtraLargeFontSize; run: ToggleSwitch no-header base -->
+  <x:Double x:Key="TextStyleExtraLargePlusFontSize">29.86</x:Double> <!-- TextStyleExtraLargePlusFontSize; run: HyperlinkButton default base -->
+  <x:Double x:Key="TextStyleExtraExtraLargeFontSize">34.14</x:Double> <!-- TextStyleExtraExtraLargeFontSize -->
+  <x:Double x:Key="PivotHeaderItemFontSize">57</x:Double> <!-- PivotHeaderItemFontSize -->
+  <x:Double x:Key="HubHeaderFontSize">78</x:Double> <!-- HubHeaderFontSize; run: Hub two-sections base -->
+
+  <!-- Font weights (3) -->
+  <FontWeight x:Key="PhoneButtonFontWeight">SemiBold</FontWeight> <!-- PhoneButtonFontWeight; run: Button default base; the file spells it Semibold -->
+  <FontWeight x:Key="ComboBoxInlinePlaceholderTextThemeFontWeight">Light</FontWeight> <!-- ComboBoxInlinePlaceholderTextThemeFontWeight -->
+  <FontWeight x:Key="ComboBoxPlaceholderTextThemeFontWeight">SemiLight</FontWeight> <!-- ComboBoxPlaceholderTextThemeFontWeight -->
+
+  <!-- Character spacing (3) -->
+  <x:Int32 x:Key="PivotHeaderItemCharacterSpacing">-25</x:Int32> <!-- PivotHeaderItemCharacterSpacing -->
+  <x:Int32 x:Key="HubHeaderCharacterSpacing">-22</x:Int32> <!-- HubHeaderCharacterSpacing; run: Hub two-sections base -->
+  <x:Int32 x:Key="HubSectionHeaderCharacterSpacing">-10</x:Int32> <!-- HubSectionHeaderCharacterSpacing -->
+</ResourceDictionary>

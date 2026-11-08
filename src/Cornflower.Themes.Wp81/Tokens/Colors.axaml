@@ -1,0 +1,708 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!--
+    Windows Phone 8.1 theme colours and brushes, dark and light.
+
+    Source: themeresources.xaml of the Windows Phone 8.1 SDK (Windows Phone Kits\8.1\Include\abi\Xaml\Design),
+    read as a specification. Its Default dictionary is the dark theme and is ThemeVariant Dark here; its Light
+    dictionary is Light. HighContrastBlack and HighContrastWhite are not here yet. The keys are the SDK's own.
+
+    Each entry ends with a comment naming its source key and, where the reference app read the value on the
+    phone, "run:" with the capture's specimen, variant and state (refapp run 20261108-1443-dev11, device 11, the
+    reference profile; index.json is the run's own resource read). A run value is the file's unless the comment
+    says otherwise.
+
+    A brush gives the colour key it takes in its Color. The accent comes from SystemColorControlAccentColor, in
+    Accent.axaml, through a DynamicResource, so an app that redefines that colour moves every accent brush.
+    Every other brush takes its colour from its own theme dictionary through a StaticResource, fixed when the
+    file loads.
+  -->
+  <ResourceDictionary.ThemeDictionaries>
+    <ResourceDictionary x:Key="Dark">
+      <!-- Colours (27) -->
+      <Color x:Key="ContentDialogDimmingColor">#99000000</Color> <!-- ContentDialogDimmingColor -->
+      <Color x:Key="PhoneBackgroundColor">#FF000000</Color> <!-- PhoneBackgroundColor -->
+      <Color x:Key="PhoneBaseBlackColor">#FF000000</Color> <!-- PhoneBaseBlackColor -->
+      <Color x:Key="PhoneBaseHighColor">#FFFFFFFF</Color> <!-- PhoneBaseHighColor -->
+      <Color x:Key="PhoneBaseLowColor">#73FFFFFF</Color> <!-- PhoneBaseLowColor -->
+      <Color x:Key="PhoneBaseLowSolidColor">#FF747474</Color> <!-- PhoneBaseLowSolidColor -->
+      <Color x:Key="PhoneBaseMediumHighColor">#CCFFFFFF</Color> <!-- PhoneBaseMediumHighColor -->
+      <Color x:Key="PhoneBaseMediumMidColor">#80FFFFFF</Color> <!-- PhoneBaseMediumMidColor -->
+      <Color x:Key="PhoneBaseMediumMidSolidColor">#FF666666</Color> <!-- PhoneBaseMediumMidSolidColor -->
+      <Color x:Key="PhoneBaseMidColor">#99FFFFFF</Color> <!-- PhoneBaseMidColor -->
+      <Color x:Key="PhoneBaseWhiteColor">#FFFFFFFF</Color> <!-- PhoneBaseWhiteColor -->
+      <Color x:Key="PhoneChromeColor">#FF1F1F1F</Color> <!-- PhoneChromeColor -->
+      <Color x:Key="PhoneControlBackgroundColor">Transparent</Color> <!-- PhoneControlBackgroundColor -->
+      <Color x:Key="PhoneControlDisabledColor">#66FFFFFF</Color> <!-- PhoneControlDisabledColor -->
+      <Color x:Key="PhoneControlForegroundColor">#FFFFFFFF</Color> <!-- PhoneControlForegroundColor -->
+      <Color x:Key="PhoneDisabledColor">#66FFFFFF</Color> <!-- PhoneDisabledColor -->
+      <Color x:Key="PhoneForegroundColor">#FFFFFFFF</Color> <!-- PhoneForegroundColor -->
+      <Color x:Key="PhoneImagePlaceholderColor">#FF3D3D3D</Color> <!-- PhoneImagePlaceholderColor -->
+      <Color x:Key="PhonePageBackgroundColor">#FF000000</Color> <!-- PhonePageBackgroundColor -->
+      <Color x:Key="PhoneTextHighColor">#FFFFFFFF</Color> <!-- PhoneTextHighColor -->
+      <Color x:Key="PhoneTextLowColor">#73FFFFFF</Color> <!-- PhoneTextLowColor -->
+      <Color x:Key="PhoneTextMidColor">#99FFFFFF</Color> <!-- PhoneTextMidColor -->
+      <Color x:Key="PhoneTextOverAccentColor">#FFFFFFFF</Color> <!-- PhoneTextOverAccentColor -->
+      <Color x:Key="TextBoxBackgroundColor">#FFFFFFFF</Color> <!-- TextBoxBackgroundColor -->
+      <Color x:Key="TextBoxBorderColor">#FFFFFFFF</Color> <!-- TextBoxBorderColor -->
+      <Color x:Key="TextBoxForegroundColor">#FF000000</Color> <!-- TextBoxForegroundColor -->
+      <Color x:Key="TextBoxPlaceholderColor">#FF909090</Color> <!-- TextBoxPlaceholderColor -->
+      <!-- Brushes (291) -->
+      <SolidColorBrush x:Key="AppBarBackgroundThemeBrush" Color="{StaticResource PhonePageBackgroundColor}" /> <!-- AppBarBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="AppBarBorderThemeBrush" Color="{StaticResource PhonePageBackgroundColor}" /> <!-- AppBarBorderThemeBrush -->
+      <SolidColorBrush x:Key="AppBarItemDisabledForegroundThemeBrush" Color="{StaticResource PhoneDisabledColor}" /> <!-- AppBarItemDisabledForegroundThemeBrush; run: AppBarButton default CommonStates.Disabled -->
+      <SolidColorBrush x:Key="AppBarItemForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- AppBarItemForegroundThemeBrush; run: AppBarButton default base -->
+      <SolidColorBrush x:Key="AppBarItemPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- AppBarItemPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="AppBarItemPointerOverForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- AppBarItemPointerOverForegroundThemeBrush -->
+      <SolidColorBrush x:Key="AppBarItemPressedForegroundThemeBrush" Color="{StaticResource PhoneBackgroundColor}" /> <!-- AppBarItemPressedForegroundThemeBrush; run: AppBarButton default CommonStates.Pressed -->
+      <SolidColorBrush x:Key="AppBarSeparatorForegroundThemeBrush" Color="{StaticResource PhoneBaseMediumMidColor}" /> <!-- AppBarSeparatorForegroundThemeBrush -->
+      <SolidColorBrush x:Key="AppBarToggleButtonCheckedBackgroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- AppBarToggleButtonCheckedBackgroundThemeBrush; run: AppBarToggleButton checked base -->
+      <SolidColorBrush x:Key="AppBarToggleButtonCheckedBorderThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- AppBarToggleButtonCheckedBorderThemeBrush; run: AppBarToggleButton checked base -->
+      <SolidColorBrush x:Key="AppBarToggleButtonCheckedDisabledBackgroundThemeBrush" Color="{StaticResource PhoneDisabledColor}" /> <!-- AppBarToggleButtonCheckedDisabledBackgroundThemeBrush; run: AppBarToggleButton checked CommonStates.CheckedDisabled -->
+      <SolidColorBrush x:Key="AppBarToggleButtonCheckedDisabledForegroundThemeBrush" Color="{StaticResource PhoneBackgroundColor}" /> <!-- AppBarToggleButtonCheckedDisabledForegroundThemeBrush; run: AppBarToggleButton checked CommonStates.CheckedDisabled -->
+      <SolidColorBrush x:Key="AppBarToggleButtonCheckedForegroundThemeBrush" Color="{StaticResource PhoneBackgroundColor}" /> <!-- AppBarToggleButtonCheckedForegroundThemeBrush; run: AppBarToggleButton checked base -->
+      <SolidColorBrush x:Key="AppBarToggleButtonCheckedPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneBaseMidColor}" /> <!-- AppBarToggleButtonCheckedPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="AppBarToggleButtonCheckedPointerOverBorderThemeBrush" Color="{StaticResource PhoneBaseMidColor}" /> <!-- AppBarToggleButtonCheckedPointerOverBorderThemeBrush -->
+      <SolidColorBrush x:Key="AppBarToggleButtonCheckedPressedBorderThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- AppBarToggleButtonCheckedPressedBorderThemeBrush; run: AppBarToggleButton checked CommonStates.CheckedPressed -->
+      <SolidColorBrush x:Key="AppBarToggleButtonCheckedPressedForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- AppBarToggleButtonCheckedPressedForegroundThemeBrush; run: AppBarToggleButton checked CommonStates.CheckedPressed -->
+      <SolidColorBrush x:Key="AppBarToggleButtonPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- AppBarToggleButtonPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ApplicationForegroundThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- ApplicationForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ApplicationHeaderForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ApplicationHeaderForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ApplicationPageBackgroundThemeBrush" Color="{StaticResource PhoneBackgroundColor}" /> <!-- ApplicationPageBackgroundThemeBrush; run: index.json -->
+      <SolidColorBrush x:Key="ApplicationPointerOverForegroundThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- ApplicationPointerOverForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ApplicationPressedForegroundThemeBrush" Color="{StaticResource PhoneBaseMediumMidColor}" /> <!-- ApplicationPressedForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ApplicationSecondaryForegroundThemeBrush" Color="{StaticResource PhoneBaseMidColor}" /> <!-- ApplicationSecondaryForegroundThemeBrush -->
+      <SolidColorBrush x:Key="AutoSuggestBackgroundThemeBrush" Color="#FFFFFFFF" /> <!-- AutoSuggestBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="BackButtonDisabledForegroundThemeBrush" Color="{StaticResource PhoneDisabledColor}" /> <!-- BackButtonDisabledForegroundThemeBrush -->
+      <SolidColorBrush x:Key="BackButtonForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- BackButtonForegroundThemeBrush -->
+      <SolidColorBrush x:Key="BackButtonPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- BackButtonPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="BackButtonPointerOverForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- BackButtonPointerOverForegroundThemeBrush -->
+      <SolidColorBrush x:Key="BackButtonPressedForegroundThemeBrush" Color="{StaticResource PhoneBackgroundColor}" /> <!-- BackButtonPressedForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ButtonBorderThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ButtonBorderThemeBrush -->
+      <SolidColorBrush x:Key="ButtonDisabledBorderThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- ButtonDisabledBorderThemeBrush; run: ToggleButton unchecked base -->
+      <SolidColorBrush x:Key="ButtonDisabledForegroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- ButtonDisabledForegroundThemeBrush; run: ToggleButton unchecked base -->
+      <SolidColorBrush x:Key="ButtonForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ButtonForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ButtonPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- ButtonPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ButtonPointerOverForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ButtonPointerOverForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ButtonPressedBackgroundThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- ButtonPressedBackgroundThemeBrush; run: Button default CommonStates.Pressed -->
+      <SolidColorBrush x:Key="ButtonPressedForegroundThemeBrush" Color="{StaticResource PhoneTextOverAccentColor}" /> <!-- ButtonPressedForegroundThemeBrush; run: Button default CommonStates.Pressed -->
+      <SolidColorBrush x:Key="CheckBoxBorderThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- CheckBoxBorderThemeBrush; run: CheckBox checked base -->
+      <SolidColorBrush x:Key="CheckBoxContentDisabledForegroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- CheckBoxContentDisabledForegroundThemeBrush -->
+      <SolidColorBrush x:Key="CheckBoxContentForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- CheckBoxContentForegroundThemeBrush -->
+      <SolidColorBrush x:Key="CheckBoxDisabledBorderThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- CheckBoxDisabledBorderThemeBrush; run: CheckBox checked CommonStates.Disabled -->
+      <SolidColorBrush x:Key="CheckBoxDisabledForegroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- CheckBoxDisabledForegroundThemeBrush; run: CheckBox checked CommonStates.Disabled -->
+      <SolidColorBrush x:Key="CheckBoxForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- CheckBoxForegroundThemeBrush; run: CheckBox checked base -->
+      <SolidColorBrush x:Key="CheckBoxPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- CheckBoxPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="CheckBoxPointerOverBorderThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- CheckBoxPointerOverBorderThemeBrush -->
+      <SolidColorBrush x:Key="CheckBoxPointerOverForegroundThemeBrush" Color="{StaticResource PhoneBaseBlackColor}" /> <!-- CheckBoxPointerOverForegroundThemeBrush -->
+      <SolidColorBrush x:Key="CheckBoxPressedBackgroundThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- CheckBoxPressedBackgroundThemeBrush; run: CheckBox checked CommonStates.Pressed -->
+      <SolidColorBrush x:Key="CheckBoxPressedBorderThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- CheckBoxPressedBorderThemeBrush -->
+      <SolidColorBrush x:Key="CheckBoxPressedForegroundThemeBrush" Color="{StaticResource PhoneTextOverAccentColor}" /> <!-- CheckBoxPressedForegroundThemeBrush; run: CheckBox checked CommonStates.Pressed -->
+      <SolidColorBrush x:Key="ComboBoxBorderThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ComboBoxBorderThemeBrush; run: ComboBox closed base -->
+      <SolidColorBrush x:Key="ComboBoxDisabledBorderThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- ComboBoxDisabledBorderThemeBrush; run: ComboBox closed CommonStates.Disabled -->
+      <SolidColorBrush x:Key="ComboBoxDisabledForegroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- ComboBoxDisabledForegroundThemeBrush; run: ComboBox closed CommonStates.Disabled -->
+      <SolidColorBrush x:Key="ComboBoxForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ComboBoxForegroundThemeBrush; run: ComboBox closed base -->
+      <SolidColorBrush x:Key="ComboBoxHighlightedBackgroundThemeBrush" Color="#FFFFFFFF" /> <!-- ComboBoxHighlightedBackgroundThemeBrush; run: ComboBox closed CommonStates.Highlighted -->
+      <SolidColorBrush x:Key="ComboBoxHighlightedBorderThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- ComboBoxHighlightedBorderThemeBrush; run: ComboBox closed CommonStates.Highlighted -->
+      <SolidColorBrush x:Key="ComboBoxHighlightedForegroundThemeBrush" Color="#FF000000" /> <!-- ComboBoxHighlightedForegroundThemeBrush; run: ComboBox closed CommonStates.Highlighted -->
+      <SolidColorBrush x:Key="ComboBoxInlinePlaceholderTextForegroundThemeBrush" Color="{StaticResource PhoneTextMidColor}" /> <!-- ComboBoxInlinePlaceholderTextForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ComboBoxItemDisabledForegroundThemeBrush" Color="{StaticResource PhoneBaseMidColor}" /> <!-- ComboBoxItemDisabledForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ComboBoxItemSelectedForegroundThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- ComboBoxItemSelectedForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ComboBoxPlaceholderTextForegroundThemeBrush" Color="{StaticResource PhoneTextLowColor}" /> <!-- ComboBoxPlaceholderTextForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ComboBoxPressedBackgroundThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- ComboBoxPressedBackgroundThemeBrush; run: ComboBox closed CommonStates.Pressed -->
+      <SolidColorBrush x:Key="ComboBoxPressedBorderThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ComboBoxPressedBorderThemeBrush; run: ComboBox closed CommonStates.Pressed -->
+      <SolidColorBrush x:Key="ComboBoxPressedForegroundThemeBrush" Color="{StaticResource PhoneTextOverAccentColor}" /> <!-- ComboBoxPressedForegroundThemeBrush; run: ComboBox closed CommonStates.Pressed -->
+      <SolidColorBrush x:Key="CommandBarBackgroundThemeBrush" Color="{StaticResource PhoneChromeColor}" /> <!-- CommandBarBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="CommandBarForegroundThemeBrush" Color="{StaticResource PhoneTextHighColor}" /> <!-- CommandBarForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ContentDialogBackgroundThemeBrush" Color="{StaticResource PhoneChromeColor}" /> <!-- ContentDialogBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ContentDialogDimmingThemeBrush" Color="{StaticResource ContentDialogDimmingColor}" /> <!-- ContentDialogDimmingThemeBrush -->
+      <SolidColorBrush x:Key="DatePickerForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- DatePickerForegroundThemeBrush; run: DatePicker default base -->
+      <SolidColorBrush x:Key="DefaultTextForegroundThemeBrush" Color="#FFFFFFFF" /> <!-- DefaultTextForegroundThemeBrush -->
+      <SolidColorBrush x:Key="FlipViewButtonBackgroundThemeBrush" Color="{StaticResource PhoneBaseMediumMidColor}" /> <!-- FlipViewButtonBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="FlipViewButtonBorderThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- FlipViewButtonBorderThemeBrush -->
+      <SolidColorBrush x:Key="FlipViewButtonForegroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- FlipViewButtonForegroundThemeBrush -->
+      <SolidColorBrush x:Key="FlipViewButtonPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- FlipViewButtonPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="FlipViewButtonPointerOverBorderThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- FlipViewButtonPointerOverBorderThemeBrush -->
+      <SolidColorBrush x:Key="FlipViewButtonPointerOverForegroundThemeBrush" Color="{StaticResource PhoneBaseBlackColor}" /> <!-- FlipViewButtonPointerOverForegroundThemeBrush -->
+      <SolidColorBrush x:Key="FlipViewButtonPressedBackgroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- FlipViewButtonPressedBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="FlipViewButtonPressedBorderThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- FlipViewButtonPressedBorderThemeBrush -->
+      <SolidColorBrush x:Key="FlipViewButtonPressedForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- FlipViewButtonPressedForegroundThemeBrush -->
+      <SolidColorBrush x:Key="FlyoutBackgroundThemeBrush" Color="{StaticResource PhoneChromeColor}" /> <!-- FlyoutBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="FocusVisualBlackStrokeThemeBrush" Color="{StaticResource PhoneBaseBlackColor}" /> <!-- FocusVisualBlackStrokeThemeBrush -->
+      <SolidColorBrush x:Key="FocusVisualWhiteStrokeThemeBrush" Color="{StaticResource PhoneBaseWhiteColor}" /> <!-- FocusVisualWhiteStrokeThemeBrush -->
+      <SolidColorBrush x:Key="GridViewItemPlaceholderBackgroundThemeBrush" Color="{StaticResource PhoneChromeColor}" /> <!-- GridViewItemPlaceholderBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="HyperlinkDisabledThemeBrush" Color="{StaticResource PhoneDisabledColor}" /> <!-- HyperlinkDisabledThemeBrush; run: HyperlinkButton default CommonStates.Disabled -->
+      <SolidColorBrush x:Key="HyperlinkForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- HyperlinkForegroundThemeBrush; run: HyperlinkButton default base -->
+      <SolidColorBrush x:Key="HyperlinkPointerOverForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- HyperlinkPointerOverForegroundThemeBrush -->
+      <SolidColorBrush x:Key="HyperlinkPressedForegroundThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- HyperlinkPressedForegroundThemeBrush -->
+      <SolidColorBrush x:Key="JumpListDefaultDisabledBackground" Color="#FF1F1F1F" /> <!-- JumpListDefaultDisabledBackground -->
+      <SolidColorBrush x:Key="JumpListDefaultDisabledForeground" Color="#FFFFFFFF" /> <!-- JumpListDefaultDisabledForeground -->
+      <SolidColorBrush x:Key="JumpListDefaultEnabledBackground" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- JumpListDefaultEnabledBackground -->
+      <SolidColorBrush x:Key="JumpListDefaultEnabledForeground" Color="{StaticResource PhoneTextOverAccentColor}" /> <!-- JumpListDefaultEnabledForeground -->
+      <SolidColorBrush x:Key="ListBoxBackgroundThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- ListBoxBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ListBoxDisabledForegroundThemeBrush" Color="{StaticResource PhoneDisabledColor}" /> <!-- ListBoxDisabledForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ListBoxFocusBackgroundThemeBrush" Color="{StaticResource PhoneBaseWhiteColor}" /> <!-- ListBoxFocusBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ListBoxForegroundThemeBrush" Color="{StaticResource PhoneBaseBlackColor}" /> <!-- ListBoxForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ListBoxItemDisabledForegroundThemeBrush" Color="{StaticResource PhoneBaseMediumMidColor}" /> <!-- ListBoxItemDisabledForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ListBoxItemPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- ListBoxItemPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ListBoxItemPointerOverForegroundThemeBrush" Color="{StaticResource PhoneBaseBlackColor}" /> <!-- ListBoxItemPointerOverForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ListBoxItemPressedBackgroundThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- ListBoxItemPressedBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ListBoxItemPressedForegroundThemeBrush" Color="{StaticResource PhoneBaseBlackColor}" /> <!-- ListBoxItemPressedForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ListBoxItemSelectedBackgroundThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- ListBoxItemSelectedBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ListBoxItemSelectedDisabledBackgroundThemeBrush" Color="{StaticResource PhoneDisabledColor}" /> <!-- ListBoxItemSelectedDisabledBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ListBoxItemSelectedDisabledForegroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- ListBoxItemSelectedDisabledForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ListBoxItemSelectedForegroundThemeBrush" Color="{StaticResource PhoneBaseWhiteColor}" /> <!-- ListBoxItemSelectedForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ListBoxItemSelectedPointerOverBackgroundThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- ListBoxItemSelectedPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ListPickerFlyoutPresenterSelectedItemBackgroundThemeBrush" Color="#00000000" /> <!-- ListPickerFlyoutPresenterSelectedItemBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ListPickerFlyoutPresenterSelectedItemForegroundThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- ListPickerFlyoutPresenterSelectedItemForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ListViewGroupHeaderForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ListViewGroupHeaderForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ListViewGroupHeaderPointerOverForegroundThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- ListViewGroupHeaderPointerOverForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ListViewGroupHeaderPressedForegroundThemeBrush" Color="{StaticResource PhoneBaseMediumMidColor}" /> <!-- ListViewGroupHeaderPressedForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ListViewItemCheckHintThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- ListViewItemCheckHintThemeBrush -->
+      <SolidColorBrush x:Key="ListViewItemCheckSelectingThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- ListViewItemCheckSelectingThemeBrush -->
+      <SolidColorBrush x:Key="ListViewItemCheckThemeBrush" Color="{StaticResource PhoneTextOverAccentColor}" /> <!-- ListViewItemCheckThemeBrush; run: ListViewItem default base -->
+      <SolidColorBrush x:Key="ListViewItemDragBackgroundThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- ListViewItemDragBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ListViewItemDragForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ListViewItemDragForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ListViewItemFocusBorderThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ListViewItemFocusBorderThemeBrush -->
+      <SolidColorBrush x:Key="ListViewItemOverlayBackgroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- ListViewItemOverlayBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ListViewItemOverlayForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ListViewItemOverlayForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ListViewItemOverlaySecondaryForegroundThemeBrush" Color="{StaticResource PhoneBaseMidColor}" /> <!-- ListViewItemOverlaySecondaryForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ListViewItemPlaceholderBackgroundThemeBrush" Color="{StaticResource PhonePageBackgroundColor}" /> <!-- ListViewItemPlaceholderBackgroundThemeBrush; run: ListViewItem default base -->
+      <SolidColorBrush x:Key="ListViewItemPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- ListViewItemPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ListViewItemSelectedBackgroundThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- ListViewItemSelectedBackgroundThemeBrush; run: ListViewItem default base -->
+      <SolidColorBrush x:Key="ListViewItemSelectedForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ListViewItemSelectedForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ListViewItemSelectedPointerOverBackgroundThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- ListViewItemSelectedPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ListViewItemSelectedPointerOverBorderThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- ListViewItemSelectedPointerOverBorderThemeBrush -->
+      <SolidColorBrush x:Key="LoopingSelectorForegroundThemeBrush" Color="#73FFFFFF" /> <!-- LoopingSelectorForegroundThemeBrush -->
+      <SolidColorBrush x:Key="LoopingSelectorSelectionBackgroundThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- LoopingSelectorSelectionBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="LoopingSelectorSelectionForegroundThemeBrush" Color="{StaticResource PhoneTextOverAccentColor}" /> <!-- LoopingSelectorSelectionForegroundThemeBrush -->
+      <SolidColorBrush x:Key="MediaButtonForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- MediaButtonForegroundThemeBrush -->
+      <SolidColorBrush x:Key="MediaButtonPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- MediaButtonPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="MediaButtonPointerOverForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- MediaButtonPointerOverForegroundThemeBrush -->
+      <SolidColorBrush x:Key="MediaButtonPressedBackgroundThemeBrush" Color="{StaticResource PhoneBaseWhiteColor}" /> <!-- MediaButtonPressedBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="MediaButtonPressedBorderThemeBrush" Color="{StaticResource PhoneBaseWhiteColor}" /> <!-- MediaButtonPressedBorderThemeBrush -->
+      <SolidColorBrush x:Key="MediaButtonPressedForegroundThemeBrush" Color="{StaticResource PhoneBaseBlackColor}" /> <!-- MediaButtonPressedForegroundThemeBrush -->
+      <SolidColorBrush x:Key="MediaControlPanelAudioThemeBrush" Color="{StaticResource PhoneBaseBlackColor}" /> <!-- MediaControlPanelAudioThemeBrush -->
+      <SolidColorBrush x:Key="MediaDownloadProgressIndicatorThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- MediaDownloadProgressIndicatorThemeBrush -->
+      <SolidColorBrush x:Key="MediaErrorBackgroundThemeBrush" Color="{StaticResource PhoneBackgroundColor}" /> <!-- MediaErrorBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="MediaTextThemeBrush" Color="{StaticResource PhoneTextHighColor}" /> <!-- MediaTextThemeBrush -->
+      <SolidColorBrush x:Key="MenuFlyoutBackgroundThemeBrush" Color="{StaticResource PhoneBackgroundColor}" /> <!-- MenuFlyoutBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="MenuFlyoutBorderThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- MenuFlyoutBorderThemeBrush -->
+      <SolidColorBrush x:Key="MenuFlyoutItemDisabledForegroundThemeBrush" Color="{StaticResource PhoneDisabledColor}" /> <!-- MenuFlyoutItemDisabledForegroundThemeBrush -->
+      <SolidColorBrush x:Key="PhoneAccentBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- PhoneAccentBrush; run: index.json -->
+      <SolidColorBrush x:Key="PhoneBackgroundBrush" Color="{StaticResource PhoneBackgroundColor}" /> <!-- PhoneBackgroundBrush; run: index.json -->
+      <SolidColorBrush x:Key="PhoneButtonBasePressedForegroundBrush" Color="{StaticResource PhoneTextOverAccentColor}" /> <!-- PhoneButtonBasePressedForegroundBrush; run: ToggleButton checked base -->
+      <SolidColorBrush x:Key="PhoneChromeBrush" Color="{StaticResource PhoneChromeColor}" /> <!-- PhoneChromeBrush -->
+      <SolidColorBrush x:Key="PhoneDisabledBrush" Color="{StaticResource PhoneDisabledColor}" /> <!-- PhoneDisabledBrush; run: ToggleButton checked base -->
+      <SolidColorBrush x:Key="PhoneForegroundBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- PhoneForegroundBrush; run: index.json -->
+      <SolidColorBrush x:Key="PhoneHighContrastSelectedBackgroundThemeBrush" Color="#00000000" /> <!-- PhoneHighContrastSelectedBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="PhoneHighContrastSelectedForegroundThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- PhoneHighContrastSelectedForegroundThemeBrush -->
+      <SolidColorBrush x:Key="PhoneLowBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- PhoneLowBrush -->
+      <SolidColorBrush x:Key="PhoneMidBrush" Color="{StaticResource PhoneBaseMidColor}" /> <!-- PhoneMidBrush; run: TextBlock ControlContextualInfoTextBlockStyle base -->
+      <SolidColorBrush x:Key="PhoneRadioCheckBoxBorderBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- PhoneRadioCheckBoxBorderBrush; run: RadioButton checked base -->
+      <SolidColorBrush x:Key="PhoneRadioCheckBoxCheckBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- PhoneRadioCheckBoxCheckBrush; run: RadioButton checked base -->
+      <SolidColorBrush x:Key="PhoneRadioCheckBoxPressedBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- PhoneRadioCheckBoxPressedBrush -->
+      <SolidColorBrush x:Key="PivotHeaderBackgroundSelectedBrush" Color="{StaticResource PhoneControlBackgroundColor}" /> <!-- PivotHeaderBackgroundSelectedBrush -->
+      <SolidColorBrush x:Key="PivotHeaderForegroundSelectedBrush" Color="{StaticResource PhoneControlForegroundColor}" /> <!-- PivotHeaderForegroundSelectedBrush -->
+      <SolidColorBrush x:Key="PivotHeaderForegroundUnselectedBrush" Color="{StaticResource PhoneControlDisabledColor}" /> <!-- PivotHeaderForegroundUnselectedBrush -->
+      <SolidColorBrush x:Key="ProgressBarBackgroundThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" Opacity="0.16" /> <!-- ProgressBarBackgroundThemeBrush; run: ProgressBar indeterminate base -->
+      <SolidColorBrush x:Key="ProgressBarForegroundThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- ProgressBarForegroundThemeBrush; run: ProgressBar indeterminate base -->
+      <SolidColorBrush x:Key="ProgressBarHighContrastAccentBarThemeBrush" Color="Transparent" /> <!-- ProgressBarHighContrastAccentBarThemeBrush; run: ProgressBar indeterminate base -->
+      <SolidColorBrush x:Key="ProgressBarIndeterminateForegroundThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- ProgressBarIndeterminateForegroundThemeBrush; run: ProgressBar indeterminate base -->
+      <SolidColorBrush x:Key="ProgressRingTextForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ProgressRingTextForegroundThemeBrush -->
+      <SolidColorBrush x:Key="RadioButtonBackgroundThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- RadioButtonBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="RadioButtonBorderThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- RadioButtonBorderThemeBrush -->
+      <SolidColorBrush x:Key="RadioButtonContentDisabledForegroundThemeBrush" Color="{StaticResource PhoneDisabledColor}" /> <!-- RadioButtonContentDisabledForegroundThemeBrush -->
+      <SolidColorBrush x:Key="RadioButtonContentForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- RadioButtonContentForegroundThemeBrush -->
+      <SolidColorBrush x:Key="RadioButtonDisabledBackgroundThemeBrush" Color="{StaticResource PhoneDisabledColor}" /> <!-- RadioButtonDisabledBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="RadioButtonDisabledBorderThemeBrush" Color="{StaticResource PhoneDisabledColor}" /> <!-- RadioButtonDisabledBorderThemeBrush -->
+      <SolidColorBrush x:Key="RadioButtonDisabledForegroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- RadioButtonDisabledForegroundThemeBrush -->
+      <SolidColorBrush x:Key="RadioButtonForegroundThemeBrush" Color="{StaticResource PhoneBaseBlackColor}" /> <!-- RadioButtonForegroundThemeBrush -->
+      <SolidColorBrush x:Key="RadioButtonPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- RadioButtonPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="RadioButtonPointerOverBorderThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- RadioButtonPointerOverBorderThemeBrush -->
+      <SolidColorBrush x:Key="RadioButtonPointerOverForegroundThemeBrush" Color="{StaticResource PhoneBaseBlackColor}" /> <!-- RadioButtonPointerOverForegroundThemeBrush -->
+      <SolidColorBrush x:Key="RadioButtonPressedBackgroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- RadioButtonPressedBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="RadioButtonPressedBorderThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- RadioButtonPressedBorderThemeBrush -->
+      <SolidColorBrush x:Key="RadioButtonPressedForegroundThemeBrush" Color="{StaticResource PhoneBackgroundColor}" /> <!-- RadioButtonPressedForegroundThemeBrush -->
+      <SolidColorBrush x:Key="RepeatButtonBorderThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- RepeatButtonBorderThemeBrush -->
+      <SolidColorBrush x:Key="RepeatButtonDisabledBorderThemeBrush" Color="{StaticResource PhoneDisabledColor}" /> <!-- RepeatButtonDisabledBorderThemeBrush -->
+      <SolidColorBrush x:Key="RepeatButtonDisabledForegroundThemeBrush" Color="{StaticResource PhoneDisabledColor}" /> <!-- RepeatButtonDisabledForegroundThemeBrush -->
+      <SolidColorBrush x:Key="RepeatButtonForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- RepeatButtonForegroundThemeBrush -->
+      <SolidColorBrush x:Key="RepeatButtonPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- RepeatButtonPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="RepeatButtonPointerOverForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- RepeatButtonPointerOverForegroundThemeBrush -->
+      <SolidColorBrush x:Key="RepeatButtonPressedBackgroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- RepeatButtonPressedBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="RepeatButtonPressedForegroundThemeBrush" Color="{StaticResource PhoneBackgroundColor}" /> <!-- RepeatButtonPressedForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ScrollBarButtonForegroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- ScrollBarButtonForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ScrollBarButtonPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- ScrollBarButtonPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ScrollBarButtonPointerOverBorderThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- ScrollBarButtonPointerOverBorderThemeBrush -->
+      <SolidColorBrush x:Key="ScrollBarButtonPointerOverForegroundThemeBrush" Color="{StaticResource PhoneBaseBlackColor}" /> <!-- ScrollBarButtonPointerOverForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ScrollBarButtonPressedBackgroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- ScrollBarButtonPressedBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ScrollBarButtonPressedBorderThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- ScrollBarButtonPressedBorderThemeBrush -->
+      <SolidColorBrush x:Key="ScrollBarButtonPressedForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ScrollBarButtonPressedForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ScrollBarPanningBackgroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- ScrollBarPanningBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ScrollBarThumbBackgroundThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- ScrollBarThumbBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ScrollBarThumbBorderThemeBrush" Color="{StaticResource PhoneBaseMediumMidColor}" /> <!-- ScrollBarThumbBorderThemeBrush -->
+      <SolidColorBrush x:Key="ScrollBarThumbPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- ScrollBarThumbPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ScrollBarThumbPointerOverBorderThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- ScrollBarThumbPointerOverBorderThemeBrush -->
+      <SolidColorBrush x:Key="ScrollBarThumbPressedBackgroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- ScrollBarThumbPressedBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ScrollBarThumbPressedBorderThemeBrush" Color="{StaticResource PhoneBaseMediumMidColor}" /> <!-- ScrollBarThumbPressedBorderThemeBrush -->
+      <SolidColorBrush x:Key="ScrollBarTrackBackgroundThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- ScrollBarTrackBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ScrollBarTrackBorderThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- ScrollBarTrackBorderThemeBrush -->
+      <SolidColorBrush x:Key="SemanticZoomButtonBackgroundThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- SemanticZoomButtonBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="SemanticZoomButtonBorderThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- SemanticZoomButtonBorderThemeBrush -->
+      <SolidColorBrush x:Key="SemanticZoomButtonForegroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- SemanticZoomButtonForegroundThemeBrush -->
+      <SolidColorBrush x:Key="SemanticZoomButtonPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- SemanticZoomButtonPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="SemanticZoomButtonPointerOverBorderThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- SemanticZoomButtonPointerOverBorderThemeBrush -->
+      <SolidColorBrush x:Key="SemanticZoomButtonPointerOverForegroundThemeBrush" Color="{StaticResource PhoneBaseBlackColor}" /> <!-- SemanticZoomButtonPointerOverForegroundThemeBrush -->
+      <SolidColorBrush x:Key="SemanticZoomButtonPressedBackgroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- SemanticZoomButtonPressedBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="SemanticZoomButtonPressedBorderThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- SemanticZoomButtonPressedBorderThemeBrush -->
+      <SolidColorBrush x:Key="SemanticZoomButtonPressedForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- SemanticZoomButtonPressedForegroundThemeBrush -->
+      <SolidColorBrush x:Key="SliderThumbBackgroundThemeBrush" Color="#FFFFFFFF" /> <!-- SliderThumbBackgroundThemeBrush; run: Slider value-30 base -->
+      <SolidColorBrush x:Key="SliderThumbBorderThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- SliderThumbBorderThemeBrush -->
+      <SolidColorBrush x:Key="SliderThumbDisabledBackgroundThemeBrush" Color="#FF999999" /> <!-- SliderThumbDisabledBackgroundThemeBrush; run: Slider value-30 CommonStates.Disabled -->
+      <SolidColorBrush x:Key="SliderThumbDisabledBorderThemeBrush" Color="#FF999999" /> <!-- SliderThumbDisabledBorderThemeBrush; run: Slider value-30 CommonStates.Disabled -->
+      <SolidColorBrush x:Key="SliderThumbPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- SliderThumbPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="SliderThumbPointerOverBorderThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- SliderThumbPointerOverBorderThemeBrush -->
+      <SolidColorBrush x:Key="SliderThumbPressedBackgroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- SliderThumbPressedBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="SliderThumbPressedBorderThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- SliderThumbPressedBorderThemeBrush -->
+      <SolidColorBrush x:Key="SliderTickMarkInlineBackgroundThemeBrush" Color="{StaticResource PhoneBackgroundColor}" /> <!-- SliderTickMarkInlineBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="SliderTickMarkInlineDisabledForegroundThemeBrush" Color="{StaticResource PhoneBackgroundColor}" /> <!-- SliderTickMarkInlineDisabledForegroundThemeBrush -->
+      <SolidColorBrush x:Key="SliderTickMarkOutsideDisabledForegroundThemeBrush" Color="{StaticResource PhoneBaseMediumMidColor}" /> <!-- SliderTickMarkOutsideDisabledForegroundThemeBrush -->
+      <SolidColorBrush x:Key="SliderTickmarkOutsideBackgroundThemeBrush" Color="{StaticResource PhoneBaseMediumMidColor}" /> <!-- SliderTickmarkOutsideBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="SliderTrackBackgroundThemeBrush" Color="#FF1F1F1F" /> <!-- SliderTrackBackgroundThemeBrush; run: Slider value-30 base -->
+      <SolidColorBrush x:Key="SliderTrackBorderThemeBrush" Color="#FF1F1F1F" /> <!-- SliderTrackBorderThemeBrush; run: Slider value-30 base -->
+      <SolidColorBrush x:Key="SliderTrackDecreaseBackgroundThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- SliderTrackDecreaseBackgroundThemeBrush; run: Slider value-30 base -->
+      <SolidColorBrush x:Key="SliderTrackDecreaseDisabledBackgroundThemeBrush" Color="#FF666666" /> <!-- SliderTrackDecreaseDisabledBackgroundThemeBrush; run: Slider value-30 CommonStates.Disabled -->
+      <SolidColorBrush x:Key="SliderTrackDecreasePointerOverBackgroundThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- SliderTrackDecreasePointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="SliderTrackDecreasePressedBackgroundThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- SliderTrackDecreasePressedBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="SliderTrackDisabledBackgroundThemeBrush" Color="#FF1F1F1F" /> <!-- SliderTrackDisabledBackgroundThemeBrush; run: Slider value-30 CommonStates.Disabled -->
+      <SolidColorBrush x:Key="SliderTrackDisabledBorderThemeBrush" Color="#FF1F1F1F" /> <!-- SliderTrackDisabledBorderThemeBrush; run: Slider value-30 CommonStates.Disabled -->
+      <SolidColorBrush x:Key="SliderTrackPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- SliderTrackPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="SliderTrackPressedBackgroundThemeBrush" Color="{StaticResource PhoneBaseMediumMidColor}" /> <!-- SliderTrackPressedBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="TextBoxBackgroundThemeBrush" Color="{StaticResource TextBoxBackgroundColor}" /> <!-- TextBoxBackgroundThemeBrush; run: PasswordBox password base -->
+      <SolidColorBrush x:Key="TextBoxBorderThemeBrush" Color="{StaticResource TextBoxBorderColor}" /> <!-- TextBoxBorderThemeBrush; run: PasswordBox password base -->
+      <SolidColorBrush x:Key="TextBoxButtonForegroundThemeBrush" Color="{StaticResource PhoneBaseBlackColor}" /> <!-- TextBoxButtonForegroundThemeBrush -->
+      <SolidColorBrush x:Key="TextBoxButtonPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- TextBoxButtonPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="TextBoxButtonPointerOverForegroundThemeBrush" Color="{StaticResource PhoneBaseBlackColor}" /> <!-- TextBoxButtonPointerOverForegroundThemeBrush -->
+      <SolidColorBrush x:Key="TextBoxButtonPressedBackgroundThemeBrush" Color="{StaticResource PhoneBackgroundColor}" /> <!-- TextBoxButtonPressedBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="TextBoxButtonPressedForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- TextBoxButtonPressedForegroundThemeBrush -->
+      <SolidColorBrush x:Key="TextBoxDisabledBorderThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- TextBoxDisabledBorderThemeBrush; run: PasswordBox password CommonStates.Disabled -->
+      <SolidColorBrush x:Key="TextBoxDisabledForegroundThemeBrush" Color="{StaticResource PhoneBaseLowSolidColor}" /> <!-- TextBoxDisabledForegroundThemeBrush; run: PasswordBox password CommonStates.Disabled -->
+      <SolidColorBrush x:Key="TextBoxDisabledHeaderForegroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- TextBoxDisabledHeaderForegroundThemeBrush; run: PasswordBox password CommonStates.Disabled -->
+      <SolidColorBrush x:Key="TextBoxFocusedBackgroundThemeBrush" Color="#FFFFFFFF" /> <!-- TextBoxFocusedBackgroundThemeBrush; run: PasswordBox password CommonStates.Focused -->
+      <SolidColorBrush x:Key="TextBoxForegroundHeaderThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- TextBoxForegroundHeaderThemeBrush; run: PasswordBox password base -->
+      <SolidColorBrush x:Key="TextBoxForegroundThemeBrush" Color="{StaticResource TextBoxForegroundColor}" /> <!-- TextBoxForegroundThemeBrush; run: PasswordBox password base -->
+      <SolidColorBrush x:Key="TextBoxPlaceholderTextThemeBrush" Color="{StaticResource TextBoxPlaceholderColor}" /> <!-- TextBoxPlaceholderTextThemeBrush; run: PasswordBox password base -->
+      <SolidColorBrush x:Key="TextSelectionHighlightColorThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- TextSelectionHighlightColorThemeBrush; run: PasswordBox password CommonStates.Focused -->
+      <SolidColorBrush x:Key="ThumbBackgroundThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- ThumbBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ThumbBorderThemeBrush" Color="{StaticResource PhoneBaseMediumMidColor}" /> <!-- ThumbBorderThemeBrush -->
+      <SolidColorBrush x:Key="ThumbPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- ThumbPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ThumbPointerOverBorderThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- ThumbPointerOverBorderThemeBrush -->
+      <SolidColorBrush x:Key="ThumbPressedBackgroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- ThumbPressedBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ThumbPressedBorderThemeBrush" Color="{StaticResource PhoneBaseMediumMidColor}" /> <!-- ThumbPressedBorderThemeBrush -->
+      <SolidColorBrush x:Key="TimePickerForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- TimePickerForegroundThemeBrush; run: TimePicker default base -->
+      <SolidColorBrush x:Key="ToggleButtonBorderThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ToggleButtonBorderThemeBrush -->
+      <SolidColorBrush x:Key="ToggleButtonCheckedBackgroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ToggleButtonCheckedBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ToggleButtonCheckedBorderThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ToggleButtonCheckedBorderThemeBrush -->
+      <SolidColorBrush x:Key="ToggleButtonCheckedDisabledBackgroundThemeBrush" Color="{StaticResource PhoneDisabledColor}" /> <!-- ToggleButtonCheckedDisabledBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ToggleButtonCheckedDisabledForegroundThemeBrush" Color="{StaticResource PhoneBackgroundColor}" /> <!-- ToggleButtonCheckedDisabledForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ToggleButtonCheckedForegroundThemeBrush" Color="{StaticResource PhoneBackgroundColor}" /> <!-- ToggleButtonCheckedForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ToggleButtonCheckedPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneBaseMidColor}" /> <!-- ToggleButtonCheckedPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ToggleButtonCheckedPointerOverBorderThemeBrush" Color="{StaticResource PhoneBaseMidColor}" /> <!-- ToggleButtonCheckedPointerOverBorderThemeBrush -->
+      <SolidColorBrush x:Key="ToggleButtonCheckedPressedBorderThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ToggleButtonCheckedPressedBorderThemeBrush -->
+      <SolidColorBrush x:Key="ToggleButtonCheckedPressedForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ToggleButtonCheckedPressedForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ToggleButtonDisabledBorderThemeBrush" Color="{StaticResource PhoneDisabledColor}" /> <!-- ToggleButtonDisabledBorderThemeBrush -->
+      <SolidColorBrush x:Key="ToggleButtonDisabledForegroundThemeBrush" Color="{StaticResource PhoneDisabledColor}" /> <!-- ToggleButtonDisabledForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ToggleButtonForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ToggleButtonForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ToggleButtonPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- ToggleButtonPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ToggleButtonPressedBackgroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ToggleButtonPressedBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ToggleButtonPressedForegroundThemeBrush" Color="{StaticResource PhoneBackgroundColor}" /> <!-- ToggleButtonPressedForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ToggleSwitchCurtainBackgroundThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- ToggleSwitchCurtainBackgroundThemeBrush; run: ToggleSwitch no-header base -->
+      <SolidColorBrush x:Key="ToggleSwitchCurtainDisabledBackgroundThemeBrush" Color="{StaticResource PhoneBaseMediumMidSolidColor}" /> <!-- ToggleSwitchCurtainDisabledBackgroundThemeBrush; run: ToggleSwitch no-header CommonStates.Disabled -->
+      <SolidColorBrush x:Key="ToggleSwitchCurtainPointerOverBackgroundThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- ToggleSwitchCurtainPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ToggleSwitchCurtainPressedBackgroundThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- ToggleSwitchCurtainPressedBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ToggleSwitchDisabledForegroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- ToggleSwitchDisabledForegroundThemeBrush; run: ToggleSwitch no-header CommonStates.Disabled -->
+      <SolidColorBrush x:Key="ToggleSwitchForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ToggleSwitchForegroundThemeBrush; run: ToggleSwitch no-header base -->
+      <SolidColorBrush x:Key="ToggleSwitchHeaderDisabledForegroundThemeBrush" Color="{StaticResource PhoneDisabledColor}" /> <!-- ToggleSwitchHeaderDisabledForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ToggleSwitchHeaderForegroundThemeBrush" Color="{StaticResource PhoneBaseMidColor}" /> <!-- ToggleSwitchHeaderForegroundThemeBrush; run: ToggleSwitch no-header base -->
+      <SolidColorBrush x:Key="ToggleSwitchOuterBorderBorderThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ToggleSwitchOuterBorderBorderThemeBrush; run: ToggleSwitch no-header base -->
+      <SolidColorBrush x:Key="ToggleSwitchOuterBorderDisabledBorderThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- ToggleSwitchOuterBorderDisabledBorderThemeBrush; run: ToggleSwitch no-header CommonStates.Disabled -->
+      <SolidColorBrush x:Key="ToggleSwitchThumbBackgroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ToggleSwitchThumbBackgroundThemeBrush; run: ToggleSwitch no-header base -->
+      <SolidColorBrush x:Key="ToggleSwitchThumbBorderThemeBrush" Color="{StaticResource PhoneBackgroundColor}" /> <!-- ToggleSwitchThumbBorderThemeBrush; run: ToggleSwitch no-header base -->
+      <SolidColorBrush x:Key="ToggleSwitchThumbDisabledBackgroundThemeBrush" Color="{StaticResource PhoneBaseMediumMidSolidColor}" /> <!-- ToggleSwitchThumbDisabledBackgroundThemeBrush; run: ToggleSwitch no-header CommonStates.Disabled -->
+      <SolidColorBrush x:Key="ToggleSwitchThumbDisabledBorderThemeBrush" Color="{StaticResource PhoneBackgroundColor}" /> <!-- ToggleSwitchThumbDisabledBorderThemeBrush; run: ToggleSwitch no-header CommonStates.Disabled -->
+      <SolidColorBrush x:Key="ToggleSwitchThumbPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ToggleSwitchThumbPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ToggleSwitchThumbPointerOverBorderThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ToggleSwitchThumbPointerOverBorderThemeBrush -->
+      <SolidColorBrush x:Key="ToggleSwitchThumbPressedBackgroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ToggleSwitchThumbPressedBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ToggleSwitchThumbPressedForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ToggleSwitchThumbPressedForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ToggleSwitchTrackBackgroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- ToggleSwitchTrackBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ToggleSwitchTrackDisabledBackgroundThemeBrush" Color="{StaticResource PhoneBaseMediumMidColor}" /> <!-- ToggleSwitchTrackDisabledBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ToggleSwitchTrackPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- ToggleSwitchTrackPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ToggleSwitchTrackPressedBackgroundThemeBrush" Color="{StaticResource PhoneBaseMediumMidColor}" /> <!-- ToggleSwitchTrackPressedBackgroundThemeBrush -->
+      <!-- Opacity (1) -->
+      <x:Double x:Key="ComboBoxFlyoutListPlaceholderTextOpacity">0.6</x:Double> <!-- ComboBoxFlyoutListPlaceholderTextOpacity; run: TextBlock ComboBoxPlaceholderTextBlockStyle base -->
+    </ResourceDictionary>
+    <ResourceDictionary x:Key="Light">
+      <!-- Colours (27) -->
+      <Color x:Key="ContentDialogDimmingColor">#99FFFFFF</Color> <!-- ContentDialogDimmingColor -->
+      <Color x:Key="PhoneBackgroundColor">#FFFFFFFF</Color> <!-- PhoneBackgroundColor -->
+      <Color x:Key="PhoneBaseBlackColor">#FF000000</Color> <!-- PhoneBaseBlackColor -->
+      <Color x:Key="PhoneBaseHighColor">#FF000000</Color> <!-- PhoneBaseHighColor -->
+      <Color x:Key="PhoneBaseLowColor">#40000000</Color> <!-- PhoneBaseLowColor -->
+      <Color x:Key="PhoneBaseLowSolidColor">#FFBFBFBF</Color> <!-- PhoneBaseLowSolidColor -->
+      <Color x:Key="PhoneBaseMediumHighColor">#BF000000</Color> <!-- PhoneBaseMediumHighColor -->
+      <Color x:Key="PhoneBaseMediumMidColor">#80000000</Color> <!-- PhoneBaseMediumMidColor -->
+      <Color x:Key="PhoneBaseMediumMidSolidColor">#FFCCCCCC</Color> <!-- PhoneBaseMediumMidSolidColor -->
+      <Color x:Key="PhoneBaseMidColor">#73000000</Color> <!-- PhoneBaseMidColor -->
+      <Color x:Key="PhoneBaseWhiteColor">#FFFFFFFF</Color> <!-- PhoneBaseWhiteColor -->
+      <Color x:Key="PhoneChromeColor">#FFDDDDDD</Color> <!-- PhoneChromeColor -->
+      <Color x:Key="PhoneControlBackgroundColor">Transparent</Color> <!-- PhoneControlBackgroundColor -->
+      <Color x:Key="PhoneControlDisabledColor">#66000000</Color> <!-- PhoneControlDisabledColor -->
+      <Color x:Key="PhoneControlForegroundColor">#FF000000</Color> <!-- PhoneControlForegroundColor -->
+      <Color x:Key="PhoneDisabledColor">#66000000</Color> <!-- PhoneDisabledColor -->
+      <Color x:Key="PhoneForegroundColor">#FF000000</Color> <!-- PhoneForegroundColor -->
+      <Color x:Key="PhoneImagePlaceholderColor">#FFCCCCCC</Color> <!-- PhoneImagePlaceholderColor -->
+      <Color x:Key="PhonePageBackgroundColor">#FFFFFFFF</Color> <!-- PhonePageBackgroundColor -->
+      <Color x:Key="PhoneTextHighColor">#DE000000</Color> <!-- PhoneTextHighColor -->
+      <Color x:Key="PhoneTextLowColor">#40000000</Color> <!-- PhoneTextLowColor -->
+      <Color x:Key="PhoneTextMidColor">#73000000</Color> <!-- PhoneTextMidColor -->
+      <Color x:Key="PhoneTextOverAccentColor">#FFFFFFFF</Color> <!-- PhoneTextOverAccentColor -->
+      <Color x:Key="TextBoxBackgroundColor">#FFBFBFBF</Color> <!-- TextBoxBackgroundColor -->
+      <Color x:Key="TextBoxBorderColor">#FFBFBFBF</Color> <!-- TextBoxBorderColor -->
+      <Color x:Key="TextBoxForegroundColor">#FF000000</Color> <!-- TextBoxForegroundColor -->
+      <Color x:Key="TextBoxPlaceholderColor">#40000000</Color> <!-- TextBoxPlaceholderColor -->
+      <!-- Brushes (291) -->
+      <SolidColorBrush x:Key="AppBarBackgroundThemeBrush" Color="{StaticResource PhonePageBackgroundColor}" /> <!-- AppBarBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="AppBarBorderThemeBrush" Color="{StaticResource PhonePageBackgroundColor}" /> <!-- AppBarBorderThemeBrush -->
+      <SolidColorBrush x:Key="AppBarItemDisabledForegroundThemeBrush" Color="{StaticResource PhoneDisabledColor}" /> <!-- AppBarItemDisabledForegroundThemeBrush; run: AppBarButton default CommonStates.Disabled -->
+      <SolidColorBrush x:Key="AppBarItemForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- AppBarItemForegroundThemeBrush; run: AppBarButton default base -->
+      <SolidColorBrush x:Key="AppBarItemPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- AppBarItemPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="AppBarItemPointerOverForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- AppBarItemPointerOverForegroundThemeBrush -->
+      <SolidColorBrush x:Key="AppBarItemPressedForegroundThemeBrush" Color="{StaticResource PhoneBackgroundColor}" /> <!-- AppBarItemPressedForegroundThemeBrush; run: AppBarButton default CommonStates.Pressed -->
+      <SolidColorBrush x:Key="AppBarSeparatorForegroundThemeBrush" Color="{StaticResource PhoneBaseMediumMidColor}" /> <!-- AppBarSeparatorForegroundThemeBrush -->
+      <SolidColorBrush x:Key="AppBarToggleButtonCheckedBackgroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- AppBarToggleButtonCheckedBackgroundThemeBrush; run: AppBarToggleButton checked base -->
+      <SolidColorBrush x:Key="AppBarToggleButtonCheckedBorderThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- AppBarToggleButtonCheckedBorderThemeBrush; run: AppBarToggleButton checked base -->
+      <SolidColorBrush x:Key="AppBarToggleButtonCheckedDisabledBackgroundThemeBrush" Color="{StaticResource PhoneDisabledColor}" /> <!-- AppBarToggleButtonCheckedDisabledBackgroundThemeBrush; run: AppBarToggleButton checked CommonStates.CheckedDisabled -->
+      <SolidColorBrush x:Key="AppBarToggleButtonCheckedDisabledForegroundThemeBrush" Color="{StaticResource PhoneBackgroundColor}" /> <!-- AppBarToggleButtonCheckedDisabledForegroundThemeBrush; run: AppBarToggleButton checked CommonStates.CheckedDisabled -->
+      <SolidColorBrush x:Key="AppBarToggleButtonCheckedForegroundThemeBrush" Color="{StaticResource PhoneBackgroundColor}" /> <!-- AppBarToggleButtonCheckedForegroundThemeBrush; run: AppBarToggleButton checked base -->
+      <SolidColorBrush x:Key="AppBarToggleButtonCheckedPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneBaseMidColor}" /> <!-- AppBarToggleButtonCheckedPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="AppBarToggleButtonCheckedPointerOverBorderThemeBrush" Color="{StaticResource PhoneBaseMidColor}" /> <!-- AppBarToggleButtonCheckedPointerOverBorderThemeBrush -->
+      <SolidColorBrush x:Key="AppBarToggleButtonCheckedPressedBorderThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- AppBarToggleButtonCheckedPressedBorderThemeBrush; run: AppBarToggleButton checked CommonStates.CheckedPressed -->
+      <SolidColorBrush x:Key="AppBarToggleButtonCheckedPressedForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- AppBarToggleButtonCheckedPressedForegroundThemeBrush; run: AppBarToggleButton checked CommonStates.CheckedPressed -->
+      <SolidColorBrush x:Key="AppBarToggleButtonPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- AppBarToggleButtonPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ApplicationForegroundThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- ApplicationForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ApplicationHeaderForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ApplicationHeaderForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ApplicationPageBackgroundThemeBrush" Color="{StaticResource PhoneBackgroundColor}" /> <!-- ApplicationPageBackgroundThemeBrush; run: index.json -->
+      <SolidColorBrush x:Key="ApplicationPointerOverForegroundThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- ApplicationPointerOverForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ApplicationPressedForegroundThemeBrush" Color="{StaticResource PhoneBaseMediumMidColor}" /> <!-- ApplicationPressedForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ApplicationSecondaryForegroundThemeBrush" Color="{StaticResource PhoneBaseMidColor}" /> <!-- ApplicationSecondaryForegroundThemeBrush -->
+      <SolidColorBrush x:Key="AutoSuggestBackgroundThemeBrush" Color="#FFFFFFFF" /> <!-- AutoSuggestBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="BackButtonDisabledForegroundThemeBrush" Color="{StaticResource PhoneDisabledColor}" /> <!-- BackButtonDisabledForegroundThemeBrush -->
+      <SolidColorBrush x:Key="BackButtonForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- BackButtonForegroundThemeBrush -->
+      <SolidColorBrush x:Key="BackButtonPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- BackButtonPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="BackButtonPointerOverForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- BackButtonPointerOverForegroundThemeBrush -->
+      <SolidColorBrush x:Key="BackButtonPressedForegroundThemeBrush" Color="{StaticResource PhoneBackgroundColor}" /> <!-- BackButtonPressedForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ButtonBorderThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ButtonBorderThemeBrush -->
+      <SolidColorBrush x:Key="ButtonDisabledBorderThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- ButtonDisabledBorderThemeBrush; run: ToggleButton unchecked base -->
+      <SolidColorBrush x:Key="ButtonDisabledForegroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- ButtonDisabledForegroundThemeBrush; run: ToggleButton unchecked base -->
+      <SolidColorBrush x:Key="ButtonForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ButtonForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ButtonPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- ButtonPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ButtonPointerOverForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ButtonPointerOverForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ButtonPressedBackgroundThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- ButtonPressedBackgroundThemeBrush; run: Button default CommonStates.Pressed -->
+      <SolidColorBrush x:Key="ButtonPressedForegroundThemeBrush" Color="{StaticResource PhoneTextOverAccentColor}" /> <!-- ButtonPressedForegroundThemeBrush; run: Button default CommonStates.Pressed -->
+      <SolidColorBrush x:Key="CheckBoxBorderThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- CheckBoxBorderThemeBrush; run: CheckBox checked base -->
+      <SolidColorBrush x:Key="CheckBoxContentDisabledForegroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- CheckBoxContentDisabledForegroundThemeBrush -->
+      <SolidColorBrush x:Key="CheckBoxContentForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- CheckBoxContentForegroundThemeBrush -->
+      <SolidColorBrush x:Key="CheckBoxDisabledBorderThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- CheckBoxDisabledBorderThemeBrush; run: CheckBox checked CommonStates.Disabled -->
+      <SolidColorBrush x:Key="CheckBoxDisabledForegroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- CheckBoxDisabledForegroundThemeBrush; run: CheckBox checked CommonStates.Disabled -->
+      <SolidColorBrush x:Key="CheckBoxForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- CheckBoxForegroundThemeBrush; run: CheckBox checked base -->
+      <SolidColorBrush x:Key="CheckBoxPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- CheckBoxPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="CheckBoxPointerOverBorderThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- CheckBoxPointerOverBorderThemeBrush -->
+      <SolidColorBrush x:Key="CheckBoxPointerOverForegroundThemeBrush" Color="{StaticResource PhoneBaseBlackColor}" /> <!-- CheckBoxPointerOverForegroundThemeBrush -->
+      <SolidColorBrush x:Key="CheckBoxPressedBackgroundThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- CheckBoxPressedBackgroundThemeBrush; run: CheckBox checked CommonStates.Pressed -->
+      <SolidColorBrush x:Key="CheckBoxPressedBorderThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- CheckBoxPressedBorderThemeBrush -->
+      <SolidColorBrush x:Key="CheckBoxPressedForegroundThemeBrush" Color="{StaticResource PhoneTextOverAccentColor}" /> <!-- CheckBoxPressedForegroundThemeBrush; run: CheckBox checked CommonStates.Pressed -->
+      <SolidColorBrush x:Key="ComboBoxBorderThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ComboBoxBorderThemeBrush; run: ComboBox closed base -->
+      <SolidColorBrush x:Key="ComboBoxDisabledBorderThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- ComboBoxDisabledBorderThemeBrush; run: ComboBox closed CommonStates.Disabled -->
+      <SolidColorBrush x:Key="ComboBoxDisabledForegroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- ComboBoxDisabledForegroundThemeBrush; run: ComboBox closed CommonStates.Disabled -->
+      <SolidColorBrush x:Key="ComboBoxForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ComboBoxForegroundThemeBrush; run: ComboBox closed base -->
+      <SolidColorBrush x:Key="ComboBoxHighlightedBackgroundThemeBrush" Color="#FFFFFFFF" /> <!-- ComboBoxHighlightedBackgroundThemeBrush; run: ComboBox closed CommonStates.Highlighted -->
+      <SolidColorBrush x:Key="ComboBoxHighlightedBorderThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- ComboBoxHighlightedBorderThemeBrush; run: ComboBox closed CommonStates.Highlighted -->
+      <SolidColorBrush x:Key="ComboBoxHighlightedForegroundThemeBrush" Color="#FF000000" /> <!-- ComboBoxHighlightedForegroundThemeBrush; run: ComboBox closed CommonStates.Highlighted -->
+      <SolidColorBrush x:Key="ComboBoxInlinePlaceholderTextForegroundThemeBrush" Color="{StaticResource PhoneTextMidColor}" /> <!-- ComboBoxInlinePlaceholderTextForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ComboBoxItemDisabledForegroundThemeBrush" Color="{StaticResource PhoneBaseMidColor}" /> <!-- ComboBoxItemDisabledForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ComboBoxItemSelectedForegroundThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- ComboBoxItemSelectedForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ComboBoxPlaceholderTextForegroundThemeBrush" Color="{StaticResource PhoneTextLowColor}" /> <!-- ComboBoxPlaceholderTextForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ComboBoxPressedBackgroundThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- ComboBoxPressedBackgroundThemeBrush; run: ComboBox closed CommonStates.Pressed -->
+      <SolidColorBrush x:Key="ComboBoxPressedBorderThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ComboBoxPressedBorderThemeBrush; run: ComboBox closed CommonStates.Pressed -->
+      <SolidColorBrush x:Key="ComboBoxPressedForegroundThemeBrush" Color="{StaticResource PhoneTextOverAccentColor}" /> <!-- ComboBoxPressedForegroundThemeBrush; run: ComboBox closed CommonStates.Pressed -->
+      <SolidColorBrush x:Key="CommandBarBackgroundThemeBrush" Color="{StaticResource PhoneChromeColor}" /> <!-- CommandBarBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="CommandBarForegroundThemeBrush" Color="{StaticResource PhoneTextHighColor}" /> <!-- CommandBarForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ContentDialogBackgroundThemeBrush" Color="{StaticResource PhoneChromeColor}" /> <!-- ContentDialogBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ContentDialogDimmingThemeBrush" Color="{StaticResource ContentDialogDimmingColor}" /> <!-- ContentDialogDimmingThemeBrush -->
+      <SolidColorBrush x:Key="DatePickerForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- DatePickerForegroundThemeBrush; run: DatePicker default base -->
+      <SolidColorBrush x:Key="DefaultTextForegroundThemeBrush" Color="#FF000000" /> <!-- DefaultTextForegroundThemeBrush -->
+      <SolidColorBrush x:Key="FlipViewButtonBackgroundThemeBrush" Color="{StaticResource PhoneBaseMediumMidColor}" /> <!-- FlipViewButtonBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="FlipViewButtonBorderThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- FlipViewButtonBorderThemeBrush -->
+      <SolidColorBrush x:Key="FlipViewButtonForegroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- FlipViewButtonForegroundThemeBrush -->
+      <SolidColorBrush x:Key="FlipViewButtonPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- FlipViewButtonPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="FlipViewButtonPointerOverBorderThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- FlipViewButtonPointerOverBorderThemeBrush -->
+      <SolidColorBrush x:Key="FlipViewButtonPointerOverForegroundThemeBrush" Color="{StaticResource PhoneBaseBlackColor}" /> <!-- FlipViewButtonPointerOverForegroundThemeBrush -->
+      <SolidColorBrush x:Key="FlipViewButtonPressedBackgroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- FlipViewButtonPressedBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="FlipViewButtonPressedBorderThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- FlipViewButtonPressedBorderThemeBrush -->
+      <SolidColorBrush x:Key="FlipViewButtonPressedForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- FlipViewButtonPressedForegroundThemeBrush -->
+      <SolidColorBrush x:Key="FlyoutBackgroundThemeBrush" Color="{StaticResource PhoneChromeColor}" /> <!-- FlyoutBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="FocusVisualBlackStrokeThemeBrush" Color="{StaticResource PhoneBaseBlackColor}" /> <!-- FocusVisualBlackStrokeThemeBrush -->
+      <SolidColorBrush x:Key="FocusVisualWhiteStrokeThemeBrush" Color="{StaticResource PhoneBaseWhiteColor}" /> <!-- FocusVisualWhiteStrokeThemeBrush -->
+      <SolidColorBrush x:Key="GridViewItemPlaceholderBackgroundThemeBrush" Color="{StaticResource PhoneChromeColor}" /> <!-- GridViewItemPlaceholderBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="HyperlinkDisabledThemeBrush" Color="{StaticResource PhoneDisabledColor}" /> <!-- HyperlinkDisabledThemeBrush; run: HyperlinkButton default CommonStates.Disabled -->
+      <SolidColorBrush x:Key="HyperlinkForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- HyperlinkForegroundThemeBrush; run: HyperlinkButton default base -->
+      <SolidColorBrush x:Key="HyperlinkPointerOverForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- HyperlinkPointerOverForegroundThemeBrush -->
+      <SolidColorBrush x:Key="HyperlinkPressedForegroundThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- HyperlinkPressedForegroundThemeBrush -->
+      <SolidColorBrush x:Key="JumpListDefaultDisabledBackground" Color="#FFDEDEDE" /> <!-- JumpListDefaultDisabledBackground -->
+      <SolidColorBrush x:Key="JumpListDefaultDisabledForeground" Color="#FFA5A5A5" /> <!-- JumpListDefaultDisabledForeground -->
+      <SolidColorBrush x:Key="JumpListDefaultEnabledBackground" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- JumpListDefaultEnabledBackground -->
+      <SolidColorBrush x:Key="JumpListDefaultEnabledForeground" Color="{StaticResource PhoneTextOverAccentColor}" /> <!-- JumpListDefaultEnabledForeground -->
+      <SolidColorBrush x:Key="ListBoxBackgroundThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- ListBoxBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ListBoxDisabledForegroundThemeBrush" Color="{StaticResource PhoneDisabledColor}" /> <!-- ListBoxDisabledForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ListBoxFocusBackgroundThemeBrush" Color="{StaticResource PhoneBaseWhiteColor}" /> <!-- ListBoxFocusBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ListBoxForegroundThemeBrush" Color="{StaticResource PhoneBaseBlackColor}" /> <!-- ListBoxForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ListBoxItemDisabledForegroundThemeBrush" Color="{StaticResource PhoneBaseMediumMidColor}" /> <!-- ListBoxItemDisabledForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ListBoxItemPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- ListBoxItemPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ListBoxItemPointerOverForegroundThemeBrush" Color="{StaticResource PhoneBaseBlackColor}" /> <!-- ListBoxItemPointerOverForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ListBoxItemPressedBackgroundThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- ListBoxItemPressedBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ListBoxItemPressedForegroundThemeBrush" Color="{StaticResource PhoneBaseBlackColor}" /> <!-- ListBoxItemPressedForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ListBoxItemSelectedBackgroundThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- ListBoxItemSelectedBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ListBoxItemSelectedDisabledBackgroundThemeBrush" Color="{StaticResource PhoneDisabledColor}" /> <!-- ListBoxItemSelectedDisabledBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ListBoxItemSelectedDisabledForegroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- ListBoxItemSelectedDisabledForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ListBoxItemSelectedForegroundThemeBrush" Color="{StaticResource PhoneBaseWhiteColor}" /> <!-- ListBoxItemSelectedForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ListBoxItemSelectedPointerOverBackgroundThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- ListBoxItemSelectedPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ListPickerFlyoutPresenterSelectedItemBackgroundThemeBrush" Color="#00FFFFFF" /> <!-- ListPickerFlyoutPresenterSelectedItemBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ListPickerFlyoutPresenterSelectedItemForegroundThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- ListPickerFlyoutPresenterSelectedItemForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ListViewGroupHeaderForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ListViewGroupHeaderForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ListViewGroupHeaderPointerOverForegroundThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- ListViewGroupHeaderPointerOverForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ListViewGroupHeaderPressedForegroundThemeBrush" Color="{StaticResource PhoneBaseMediumMidColor}" /> <!-- ListViewGroupHeaderPressedForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ListViewItemCheckHintThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- ListViewItemCheckHintThemeBrush -->
+      <SolidColorBrush x:Key="ListViewItemCheckSelectingThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- ListViewItemCheckSelectingThemeBrush -->
+      <SolidColorBrush x:Key="ListViewItemCheckThemeBrush" Color="{StaticResource PhoneTextOverAccentColor}" /> <!-- ListViewItemCheckThemeBrush; run: ListViewItem default base -->
+      <SolidColorBrush x:Key="ListViewItemDragBackgroundThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- ListViewItemDragBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ListViewItemDragForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ListViewItemDragForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ListViewItemFocusBorderThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ListViewItemFocusBorderThemeBrush -->
+      <SolidColorBrush x:Key="ListViewItemOverlayBackgroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- ListViewItemOverlayBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ListViewItemOverlayForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ListViewItemOverlayForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ListViewItemOverlaySecondaryForegroundThemeBrush" Color="{StaticResource PhoneBaseMidColor}" /> <!-- ListViewItemOverlaySecondaryForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ListViewItemPlaceholderBackgroundThemeBrush" Color="{StaticResource PhonePageBackgroundColor}" /> <!-- ListViewItemPlaceholderBackgroundThemeBrush; run: ListViewItem default base -->
+      <SolidColorBrush x:Key="ListViewItemPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- ListViewItemPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ListViewItemSelectedBackgroundThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- ListViewItemSelectedBackgroundThemeBrush; run: ListViewItem default base -->
+      <SolidColorBrush x:Key="ListViewItemSelectedForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ListViewItemSelectedForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ListViewItemSelectedPointerOverBackgroundThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- ListViewItemSelectedPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ListViewItemSelectedPointerOverBorderThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- ListViewItemSelectedPointerOverBorderThemeBrush -->
+      <SolidColorBrush x:Key="LoopingSelectorForegroundThemeBrush" Color="#40000000" /> <!-- LoopingSelectorForegroundThemeBrush -->
+      <SolidColorBrush x:Key="LoopingSelectorSelectionBackgroundThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- LoopingSelectorSelectionBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="LoopingSelectorSelectionForegroundThemeBrush" Color="{StaticResource PhoneTextOverAccentColor}" /> <!-- LoopingSelectorSelectionForegroundThemeBrush -->
+      <SolidColorBrush x:Key="MediaButtonForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- MediaButtonForegroundThemeBrush -->
+      <SolidColorBrush x:Key="MediaButtonPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- MediaButtonPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="MediaButtonPointerOverForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- MediaButtonPointerOverForegroundThemeBrush -->
+      <SolidColorBrush x:Key="MediaButtonPressedBackgroundThemeBrush" Color="{StaticResource PhoneBaseWhiteColor}" /> <!-- MediaButtonPressedBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="MediaButtonPressedBorderThemeBrush" Color="{StaticResource PhoneBaseWhiteColor}" /> <!-- MediaButtonPressedBorderThemeBrush -->
+      <SolidColorBrush x:Key="MediaButtonPressedForegroundThemeBrush" Color="{StaticResource PhoneBaseBlackColor}" /> <!-- MediaButtonPressedForegroundThemeBrush -->
+      <SolidColorBrush x:Key="MediaControlPanelAudioThemeBrush" Color="{StaticResource PhoneBaseBlackColor}" /> <!-- MediaControlPanelAudioThemeBrush -->
+      <SolidColorBrush x:Key="MediaDownloadProgressIndicatorThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- MediaDownloadProgressIndicatorThemeBrush -->
+      <SolidColorBrush x:Key="MediaErrorBackgroundThemeBrush" Color="{StaticResource PhoneBackgroundColor}" /> <!-- MediaErrorBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="MediaTextThemeBrush" Color="{StaticResource PhoneTextHighColor}" /> <!-- MediaTextThemeBrush -->
+      <SolidColorBrush x:Key="MenuFlyoutBackgroundThemeBrush" Color="{StaticResource PhoneBackgroundColor}" /> <!-- MenuFlyoutBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="MenuFlyoutBorderThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- MenuFlyoutBorderThemeBrush -->
+      <SolidColorBrush x:Key="MenuFlyoutItemDisabledForegroundThemeBrush" Color="{StaticResource PhoneDisabledColor}" /> <!-- MenuFlyoutItemDisabledForegroundThemeBrush -->
+      <SolidColorBrush x:Key="PhoneAccentBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- PhoneAccentBrush; run: index.json -->
+      <SolidColorBrush x:Key="PhoneBackgroundBrush" Color="{StaticResource PhoneBackgroundColor}" /> <!-- PhoneBackgroundBrush; run: index.json -->
+      <SolidColorBrush x:Key="PhoneButtonBasePressedForegroundBrush" Color="{StaticResource PhoneTextOverAccentColor}" /> <!-- PhoneButtonBasePressedForegroundBrush; run: ToggleButton checked base -->
+      <SolidColorBrush x:Key="PhoneChromeBrush" Color="{StaticResource PhoneChromeColor}" /> <!-- PhoneChromeBrush -->
+      <SolidColorBrush x:Key="PhoneDisabledBrush" Color="{StaticResource PhoneDisabledColor}" /> <!-- PhoneDisabledBrush; run: ToggleButton checked base -->
+      <SolidColorBrush x:Key="PhoneForegroundBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- PhoneForegroundBrush; run: index.json -->
+      <SolidColorBrush x:Key="PhoneHighContrastSelectedBackgroundThemeBrush" Color="#00FFFFFF" /> <!-- PhoneHighContrastSelectedBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="PhoneHighContrastSelectedForegroundThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- PhoneHighContrastSelectedForegroundThemeBrush -->
+      <SolidColorBrush x:Key="PhoneLowBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- PhoneLowBrush -->
+      <SolidColorBrush x:Key="PhoneMidBrush" Color="{StaticResource PhoneBaseMidColor}" /> <!-- PhoneMidBrush; run: TextBlock ControlContextualInfoTextBlockStyle base -->
+      <SolidColorBrush x:Key="PhoneRadioCheckBoxBorderBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- PhoneRadioCheckBoxBorderBrush; run: RadioButton checked base -->
+      <SolidColorBrush x:Key="PhoneRadioCheckBoxCheckBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- PhoneRadioCheckBoxCheckBrush; run: RadioButton checked base -->
+      <SolidColorBrush x:Key="PhoneRadioCheckBoxPressedBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- PhoneRadioCheckBoxPressedBrush -->
+      <SolidColorBrush x:Key="PivotHeaderBackgroundSelectedBrush" Color="{StaticResource PhoneControlBackgroundColor}" /> <!-- PivotHeaderBackgroundSelectedBrush -->
+      <SolidColorBrush x:Key="PivotHeaderForegroundSelectedBrush" Color="{StaticResource PhoneControlForegroundColor}" /> <!-- PivotHeaderForegroundSelectedBrush -->
+      <SolidColorBrush x:Key="PivotHeaderForegroundUnselectedBrush" Color="{StaticResource PhoneControlDisabledColor}" /> <!-- PivotHeaderForegroundUnselectedBrush -->
+      <SolidColorBrush x:Key="ProgressBarBackgroundThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" Opacity="0.16" /> <!-- ProgressBarBackgroundThemeBrush; run: ProgressBar indeterminate base -->
+      <SolidColorBrush x:Key="ProgressBarForegroundThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- ProgressBarForegroundThemeBrush; run: ProgressBar indeterminate base -->
+      <SolidColorBrush x:Key="ProgressBarHighContrastAccentBarThemeBrush" Color="Transparent" /> <!-- ProgressBarHighContrastAccentBarThemeBrush; run: ProgressBar indeterminate base -->
+      <SolidColorBrush x:Key="ProgressBarIndeterminateForegroundThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- ProgressBarIndeterminateForegroundThemeBrush; run: ProgressBar indeterminate base -->
+      <SolidColorBrush x:Key="ProgressRingTextForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ProgressRingTextForegroundThemeBrush -->
+      <SolidColorBrush x:Key="RadioButtonBackgroundThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- RadioButtonBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="RadioButtonBorderThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- RadioButtonBorderThemeBrush -->
+      <SolidColorBrush x:Key="RadioButtonContentDisabledForegroundThemeBrush" Color="{StaticResource PhoneDisabledColor}" /> <!-- RadioButtonContentDisabledForegroundThemeBrush -->
+      <SolidColorBrush x:Key="RadioButtonContentForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- RadioButtonContentForegroundThemeBrush -->
+      <SolidColorBrush x:Key="RadioButtonDisabledBackgroundThemeBrush" Color="{StaticResource PhoneDisabledColor}" /> <!-- RadioButtonDisabledBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="RadioButtonDisabledBorderThemeBrush" Color="{StaticResource PhoneDisabledColor}" /> <!-- RadioButtonDisabledBorderThemeBrush -->
+      <SolidColorBrush x:Key="RadioButtonDisabledForegroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- RadioButtonDisabledForegroundThemeBrush -->
+      <SolidColorBrush x:Key="RadioButtonForegroundThemeBrush" Color="{StaticResource PhoneBaseBlackColor}" /> <!-- RadioButtonForegroundThemeBrush -->
+      <SolidColorBrush x:Key="RadioButtonPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- RadioButtonPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="RadioButtonPointerOverBorderThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- RadioButtonPointerOverBorderThemeBrush -->
+      <SolidColorBrush x:Key="RadioButtonPointerOverForegroundThemeBrush" Color="{StaticResource PhoneBaseBlackColor}" /> <!-- RadioButtonPointerOverForegroundThemeBrush -->
+      <SolidColorBrush x:Key="RadioButtonPressedBackgroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- RadioButtonPressedBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="RadioButtonPressedBorderThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- RadioButtonPressedBorderThemeBrush -->
+      <SolidColorBrush x:Key="RadioButtonPressedForegroundThemeBrush" Color="{StaticResource PhoneBackgroundColor}" /> <!-- RadioButtonPressedForegroundThemeBrush -->
+      <SolidColorBrush x:Key="RepeatButtonBorderThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- RepeatButtonBorderThemeBrush -->
+      <SolidColorBrush x:Key="RepeatButtonDisabledBorderThemeBrush" Color="{StaticResource PhoneDisabledColor}" /> <!-- RepeatButtonDisabledBorderThemeBrush -->
+      <SolidColorBrush x:Key="RepeatButtonDisabledForegroundThemeBrush" Color="{StaticResource PhoneDisabledColor}" /> <!-- RepeatButtonDisabledForegroundThemeBrush -->
+      <SolidColorBrush x:Key="RepeatButtonForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- RepeatButtonForegroundThemeBrush -->
+      <SolidColorBrush x:Key="RepeatButtonPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- RepeatButtonPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="RepeatButtonPointerOverForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- RepeatButtonPointerOverForegroundThemeBrush -->
+      <SolidColorBrush x:Key="RepeatButtonPressedBackgroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- RepeatButtonPressedBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="RepeatButtonPressedForegroundThemeBrush" Color="{StaticResource PhoneBackgroundColor}" /> <!-- RepeatButtonPressedForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ScrollBarButtonForegroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- ScrollBarButtonForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ScrollBarButtonPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- ScrollBarButtonPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ScrollBarButtonPointerOverBorderThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- ScrollBarButtonPointerOverBorderThemeBrush -->
+      <SolidColorBrush x:Key="ScrollBarButtonPointerOverForegroundThemeBrush" Color="{StaticResource PhoneBaseBlackColor}" /> <!-- ScrollBarButtonPointerOverForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ScrollBarButtonPressedBackgroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- ScrollBarButtonPressedBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ScrollBarButtonPressedBorderThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- ScrollBarButtonPressedBorderThemeBrush -->
+      <SolidColorBrush x:Key="ScrollBarButtonPressedForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ScrollBarButtonPressedForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ScrollBarPanningBackgroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- ScrollBarPanningBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ScrollBarThumbBackgroundThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- ScrollBarThumbBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ScrollBarThumbBorderThemeBrush" Color="{StaticResource PhoneBaseMediumMidColor}" /> <!-- ScrollBarThumbBorderThemeBrush -->
+      <SolidColorBrush x:Key="ScrollBarThumbPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- ScrollBarThumbPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ScrollBarThumbPointerOverBorderThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- ScrollBarThumbPointerOverBorderThemeBrush -->
+      <SolidColorBrush x:Key="ScrollBarThumbPressedBackgroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- ScrollBarThumbPressedBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ScrollBarThumbPressedBorderThemeBrush" Color="{StaticResource PhoneBaseMediumMidColor}" /> <!-- ScrollBarThumbPressedBorderThemeBrush -->
+      <SolidColorBrush x:Key="ScrollBarTrackBackgroundThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- ScrollBarTrackBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ScrollBarTrackBorderThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- ScrollBarTrackBorderThemeBrush -->
+      <SolidColorBrush x:Key="SemanticZoomButtonBackgroundThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- SemanticZoomButtonBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="SemanticZoomButtonBorderThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- SemanticZoomButtonBorderThemeBrush -->
+      <SolidColorBrush x:Key="SemanticZoomButtonForegroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- SemanticZoomButtonForegroundThemeBrush -->
+      <SolidColorBrush x:Key="SemanticZoomButtonPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- SemanticZoomButtonPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="SemanticZoomButtonPointerOverBorderThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- SemanticZoomButtonPointerOverBorderThemeBrush -->
+      <SolidColorBrush x:Key="SemanticZoomButtonPointerOverForegroundThemeBrush" Color="{StaticResource PhoneBaseBlackColor}" /> <!-- SemanticZoomButtonPointerOverForegroundThemeBrush -->
+      <SolidColorBrush x:Key="SemanticZoomButtonPressedBackgroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- SemanticZoomButtonPressedBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="SemanticZoomButtonPressedBorderThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- SemanticZoomButtonPressedBorderThemeBrush -->
+      <SolidColorBrush x:Key="SemanticZoomButtonPressedForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- SemanticZoomButtonPressedForegroundThemeBrush -->
+      <SolidColorBrush x:Key="SliderThumbBackgroundThemeBrush" Color="#FF000000" /> <!-- SliderThumbBackgroundThemeBrush; run: Slider value-30 base -->
+      <SolidColorBrush x:Key="SliderThumbBorderThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- SliderThumbBorderThemeBrush -->
+      <SolidColorBrush x:Key="SliderThumbDisabledBackgroundThemeBrush" Color="#FF808080" /> <!-- SliderThumbDisabledBackgroundThemeBrush; run: Slider value-30 CommonStates.Disabled -->
+      <SolidColorBrush x:Key="SliderThumbDisabledBorderThemeBrush" Color="#FF808080" /> <!-- SliderThumbDisabledBorderThemeBrush; run: Slider value-30 CommonStates.Disabled -->
+      <SolidColorBrush x:Key="SliderThumbPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- SliderThumbPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="SliderThumbPointerOverBorderThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- SliderThumbPointerOverBorderThemeBrush -->
+      <SolidColorBrush x:Key="SliderThumbPressedBackgroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- SliderThumbPressedBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="SliderThumbPressedBorderThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- SliderThumbPressedBorderThemeBrush -->
+      <SolidColorBrush x:Key="SliderTickMarkInlineBackgroundThemeBrush" Color="{StaticResource PhoneBackgroundColor}" /> <!-- SliderTickMarkInlineBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="SliderTickMarkInlineDisabledForegroundThemeBrush" Color="{StaticResource PhoneBackgroundColor}" /> <!-- SliderTickMarkInlineDisabledForegroundThemeBrush -->
+      <SolidColorBrush x:Key="SliderTickMarkOutsideDisabledForegroundThemeBrush" Color="{StaticResource PhoneBaseMediumMidColor}" /> <!-- SliderTickMarkOutsideDisabledForegroundThemeBrush -->
+      <SolidColorBrush x:Key="SliderTickmarkOutsideBackgroundThemeBrush" Color="{StaticResource PhoneBaseMediumMidColor}" /> <!-- SliderTickmarkOutsideBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="SliderTrackBackgroundThemeBrush" Color="#FFDEDEDE" /> <!-- SliderTrackBackgroundThemeBrush; run: Slider value-30 base -->
+      <SolidColorBrush x:Key="SliderTrackBorderThemeBrush" Color="#FFDEDEDE" /> <!-- SliderTrackBorderThemeBrush; run: Slider value-30 base -->
+      <SolidColorBrush x:Key="SliderTrackDecreaseBackgroundThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- SliderTrackDecreaseBackgroundThemeBrush; run: Slider value-30 base -->
+      <SolidColorBrush x:Key="SliderTrackDecreaseDisabledBackgroundThemeBrush" Color="#FFBDBDBD" /> <!-- SliderTrackDecreaseDisabledBackgroundThemeBrush; run: Slider value-30 CommonStates.Disabled -->
+      <SolidColorBrush x:Key="SliderTrackDecreasePointerOverBackgroundThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- SliderTrackDecreasePointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="SliderTrackDecreasePressedBackgroundThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- SliderTrackDecreasePressedBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="SliderTrackDisabledBackgroundThemeBrush" Color="#FFDEDEDE" /> <!-- SliderTrackDisabledBackgroundThemeBrush; run: Slider value-30 CommonStates.Disabled -->
+      <SolidColorBrush x:Key="SliderTrackDisabledBorderThemeBrush" Color="#FFDEDEDE" /> <!-- SliderTrackDisabledBorderThemeBrush; run: Slider value-30 CommonStates.Disabled -->
+      <SolidColorBrush x:Key="SliderTrackPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- SliderTrackPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="SliderTrackPressedBackgroundThemeBrush" Color="{StaticResource PhoneBaseMediumMidColor}" /> <!-- SliderTrackPressedBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="TextBoxBackgroundThemeBrush" Color="{StaticResource TextBoxBackgroundColor}" /> <!-- TextBoxBackgroundThemeBrush; run: PasswordBox password base -->
+      <SolidColorBrush x:Key="TextBoxBorderThemeBrush" Color="{StaticResource TextBoxBorderColor}" /> <!-- TextBoxBorderThemeBrush; run: PasswordBox password base -->
+      <SolidColorBrush x:Key="TextBoxButtonForegroundThemeBrush" Color="{StaticResource PhoneBaseBlackColor}" /> <!-- TextBoxButtonForegroundThemeBrush -->
+      <SolidColorBrush x:Key="TextBoxButtonPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- TextBoxButtonPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="TextBoxButtonPointerOverForegroundThemeBrush" Color="{StaticResource PhoneBaseBlackColor}" /> <!-- TextBoxButtonPointerOverForegroundThemeBrush -->
+      <SolidColorBrush x:Key="TextBoxButtonPressedBackgroundThemeBrush" Color="{StaticResource PhoneBackgroundColor}" /> <!-- TextBoxButtonPressedBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="TextBoxButtonPressedForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- TextBoxButtonPressedForegroundThemeBrush -->
+      <SolidColorBrush x:Key="TextBoxDisabledBorderThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- TextBoxDisabledBorderThemeBrush; run: PasswordBox password CommonStates.Disabled -->
+      <SolidColorBrush x:Key="TextBoxDisabledForegroundThemeBrush" Color="{StaticResource PhoneBaseLowSolidColor}" /> <!-- TextBoxDisabledForegroundThemeBrush; run: PasswordBox password CommonStates.Disabled -->
+      <SolidColorBrush x:Key="TextBoxDisabledHeaderForegroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- TextBoxDisabledHeaderForegroundThemeBrush; run: PasswordBox password CommonStates.Disabled -->
+      <SolidColorBrush x:Key="TextBoxFocusedBackgroundThemeBrush" Color="#FFFFFFFF" /> <!-- TextBoxFocusedBackgroundThemeBrush; run: PasswordBox password CommonStates.Focused -->
+      <SolidColorBrush x:Key="TextBoxForegroundHeaderThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- TextBoxForegroundHeaderThemeBrush; run: PasswordBox password base -->
+      <SolidColorBrush x:Key="TextBoxForegroundThemeBrush" Color="{StaticResource TextBoxForegroundColor}" /> <!-- TextBoxForegroundThemeBrush; run: PasswordBox password base -->
+      <SolidColorBrush x:Key="TextBoxPlaceholderTextThemeBrush" Color="{StaticResource TextBoxPlaceholderColor}" /> <!-- TextBoxPlaceholderTextThemeBrush; run: PasswordBox password base -->
+      <SolidColorBrush x:Key="TextSelectionHighlightColorThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- TextSelectionHighlightColorThemeBrush; run: PasswordBox password CommonStates.Focused -->
+      <SolidColorBrush x:Key="ThumbBackgroundThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- ThumbBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ThumbBorderThemeBrush" Color="{StaticResource PhoneBaseMediumMidColor}" /> <!-- ThumbBorderThemeBrush -->
+      <SolidColorBrush x:Key="ThumbPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- ThumbPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ThumbPointerOverBorderThemeBrush" Color="{StaticResource PhoneBaseMediumHighColor}" /> <!-- ThumbPointerOverBorderThemeBrush -->
+      <SolidColorBrush x:Key="ThumbPressedBackgroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- ThumbPressedBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ThumbPressedBorderThemeBrush" Color="{StaticResource PhoneBaseMediumMidColor}" /> <!-- ThumbPressedBorderThemeBrush -->
+      <SolidColorBrush x:Key="TimePickerForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- TimePickerForegroundThemeBrush; run: TimePicker default base -->
+      <SolidColorBrush x:Key="ToggleButtonBorderThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ToggleButtonBorderThemeBrush -->
+      <SolidColorBrush x:Key="ToggleButtonCheckedBackgroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ToggleButtonCheckedBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ToggleButtonCheckedBorderThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ToggleButtonCheckedBorderThemeBrush -->
+      <SolidColorBrush x:Key="ToggleButtonCheckedDisabledBackgroundThemeBrush" Color="{StaticResource PhoneDisabledColor}" /> <!-- ToggleButtonCheckedDisabledBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ToggleButtonCheckedDisabledForegroundThemeBrush" Color="{StaticResource PhoneBackgroundColor}" /> <!-- ToggleButtonCheckedDisabledForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ToggleButtonCheckedForegroundThemeBrush" Color="{StaticResource PhoneBackgroundColor}" /> <!-- ToggleButtonCheckedForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ToggleButtonCheckedPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneBaseMidColor}" /> <!-- ToggleButtonCheckedPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ToggleButtonCheckedPointerOverBorderThemeBrush" Color="{StaticResource PhoneBaseMidColor}" /> <!-- ToggleButtonCheckedPointerOverBorderThemeBrush -->
+      <SolidColorBrush x:Key="ToggleButtonCheckedPressedBorderThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ToggleButtonCheckedPressedBorderThemeBrush -->
+      <SolidColorBrush x:Key="ToggleButtonCheckedPressedForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ToggleButtonCheckedPressedForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ToggleButtonDisabledBorderThemeBrush" Color="{StaticResource PhoneDisabledColor}" /> <!-- ToggleButtonDisabledBorderThemeBrush -->
+      <SolidColorBrush x:Key="ToggleButtonDisabledForegroundThemeBrush" Color="{StaticResource PhoneDisabledColor}" /> <!-- ToggleButtonDisabledForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ToggleButtonForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ToggleButtonForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ToggleButtonPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- ToggleButtonPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ToggleButtonPressedBackgroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ToggleButtonPressedBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ToggleButtonPressedForegroundThemeBrush" Color="{StaticResource PhoneBackgroundColor}" /> <!-- ToggleButtonPressedForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ToggleSwitchCurtainBackgroundThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- ToggleSwitchCurtainBackgroundThemeBrush; run: ToggleSwitch no-header base -->
+      <SolidColorBrush x:Key="ToggleSwitchCurtainDisabledBackgroundThemeBrush" Color="{StaticResource PhoneBaseMediumMidSolidColor}" /> <!-- ToggleSwitchCurtainDisabledBackgroundThemeBrush; run: ToggleSwitch no-header CommonStates.Disabled -->
+      <SolidColorBrush x:Key="ToggleSwitchCurtainPointerOverBackgroundThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- ToggleSwitchCurtainPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ToggleSwitchCurtainPressedBackgroundThemeBrush" Color="{DynamicResource SystemColorControlAccentColor}" /> <!-- ToggleSwitchCurtainPressedBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ToggleSwitchDisabledForegroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- ToggleSwitchDisabledForegroundThemeBrush; run: ToggleSwitch no-header CommonStates.Disabled -->
+      <SolidColorBrush x:Key="ToggleSwitchForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ToggleSwitchForegroundThemeBrush; run: ToggleSwitch no-header base -->
+      <SolidColorBrush x:Key="ToggleSwitchHeaderDisabledForegroundThemeBrush" Color="{StaticResource PhoneDisabledColor}" /> <!-- ToggleSwitchHeaderDisabledForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ToggleSwitchHeaderForegroundThemeBrush" Color="{StaticResource PhoneBaseMidColor}" /> <!-- ToggleSwitchHeaderForegroundThemeBrush; run: ToggleSwitch no-header base -->
+      <SolidColorBrush x:Key="ToggleSwitchOuterBorderBorderThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ToggleSwitchOuterBorderBorderThemeBrush; run: ToggleSwitch no-header base -->
+      <SolidColorBrush x:Key="ToggleSwitchOuterBorderDisabledBorderThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- ToggleSwitchOuterBorderDisabledBorderThemeBrush; run: ToggleSwitch no-header CommonStates.Disabled -->
+      <SolidColorBrush x:Key="ToggleSwitchThumbBackgroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ToggleSwitchThumbBackgroundThemeBrush; run: ToggleSwitch no-header base -->
+      <SolidColorBrush x:Key="ToggleSwitchThumbBorderThemeBrush" Color="{StaticResource PhoneBackgroundColor}" /> <!-- ToggleSwitchThumbBorderThemeBrush; run: ToggleSwitch no-header base -->
+      <SolidColorBrush x:Key="ToggleSwitchThumbDisabledBackgroundThemeBrush" Color="{StaticResource PhoneBaseMediumMidSolidColor}" /> <!-- ToggleSwitchThumbDisabledBackgroundThemeBrush; run: ToggleSwitch no-header CommonStates.Disabled -->
+      <SolidColorBrush x:Key="ToggleSwitchThumbDisabledBorderThemeBrush" Color="{StaticResource PhoneBackgroundColor}" /> <!-- ToggleSwitchThumbDisabledBorderThemeBrush; run: ToggleSwitch no-header CommonStates.Disabled -->
+      <SolidColorBrush x:Key="ToggleSwitchThumbPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ToggleSwitchThumbPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ToggleSwitchThumbPointerOverBorderThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ToggleSwitchThumbPointerOverBorderThemeBrush -->
+      <SolidColorBrush x:Key="ToggleSwitchThumbPressedBackgroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ToggleSwitchThumbPressedBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ToggleSwitchThumbPressedForegroundThemeBrush" Color="{StaticResource PhoneForegroundColor}" /> <!-- ToggleSwitchThumbPressedForegroundThemeBrush -->
+      <SolidColorBrush x:Key="ToggleSwitchTrackBackgroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- ToggleSwitchTrackBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ToggleSwitchTrackDisabledBackgroundThemeBrush" Color="{StaticResource PhoneBaseMediumMidColor}" /> <!-- ToggleSwitchTrackDisabledBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ToggleSwitchTrackPointerOverBackgroundThemeBrush" Color="{StaticResource PhoneBaseLowColor}" /> <!-- ToggleSwitchTrackPointerOverBackgroundThemeBrush -->
+      <SolidColorBrush x:Key="ToggleSwitchTrackPressedBackgroundThemeBrush" Color="{StaticResource PhoneBaseMediumMidColor}" /> <!-- ToggleSwitchTrackPressedBackgroundThemeBrush -->
+      <!-- Opacity (1) -->
+      <x:Double x:Key="ComboBoxFlyoutListPlaceholderTextOpacity">0.45</x:Double> <!-- ComboBoxFlyoutListPlaceholderTextOpacity; run: TextBlock ComboBoxPlaceholderTextBlockStyle base -->
+    </ResourceDictionary>
+  </ResourceDictionary.ThemeDictionaries>
+
+  <!-- The same in both themes: the entries outside the SDK file's theme dictionaries. -->
+  <!-- Colours (2) -->
+  <Color x:Key="MediaControlPanelVideoThemeColor">#4D000000</Color> <!-- MediaControlPanelVideoThemeColor -->
+  <Color x:Key="MediaControlTimeRowThemeColor">#73000000</Color> <!-- MediaControlTimeRowThemeColor -->
+  <!-- Brushes (32) -->
+  <SolidColorBrush x:Key="AppBarItemBackgroundThemeBrush" Color="Transparent" /> <!-- AppBarItemBackgroundThemeBrush; run: AppBarButton default base -->
+  <SolidColorBrush x:Key="AppBarToggleButtonCheckedDisabledBorderThemeBrush" Color="Transparent" /> <!-- AppBarToggleButtonCheckedDisabledBorderThemeBrush; run: AppBarToggleButton checked CommonStates.CheckedDisabled -->
+  <SolidColorBrush x:Key="AppBarToggleButtonCheckedPressedBackgroundThemeBrush" Color="Transparent" /> <!-- AppBarToggleButtonCheckedPressedBackgroundThemeBrush; run: AppBarToggleButton checked CommonStates.CheckedPressed -->
+  <SolidColorBrush x:Key="BackButtonBackgroundThemeBrush" Color="Transparent" /> <!-- BackButtonBackgroundThemeBrush -->
+  <SolidColorBrush x:Key="ButtonBackgroundThemeBrush" Color="Transparent" /> <!-- ButtonBackgroundThemeBrush -->
+  <SolidColorBrush x:Key="ButtonDisabledBackgroundThemeBrush" Color="Transparent" /> <!-- ButtonDisabledBackgroundThemeBrush; run: Button default CommonStates.Disabled -->
+  <SolidColorBrush x:Key="CheckBoxBackgroundThemeBrush" Color="Transparent" /> <!-- CheckBoxBackgroundThemeBrush; run: CheckBox checked base -->
+  <SolidColorBrush x:Key="CheckBoxDisabledBackgroundThemeBrush" Color="Transparent" /> <!-- CheckBoxDisabledBackgroundThemeBrush; run: CheckBox checked CommonStates.Disabled -->
+  <SolidColorBrush x:Key="ComboBoxBackgroundThemeBrush" Color="Transparent" /> <!-- ComboBoxBackgroundThemeBrush; run: ComboBox closed base -->
+  <SolidColorBrush x:Key="ComboBoxDisabledBackgroundThemeBrush" Color="Transparent" /> <!-- ComboBoxDisabledBackgroundThemeBrush; run: ComboBox closed CommonStates.Disabled -->
+  <SolidColorBrush x:Key="HyperlinkButtonBackgroundThemeBrush" Color="Transparent" /> <!-- HyperlinkButtonBackgroundThemeBrush; run: HyperlinkButton default base -->
+  <SolidColorBrush x:Key="HyperlinkButtonBorderThemeBrush" Color="Transparent" /> <!-- HyperlinkButtonBorderThemeBrush; run: HyperlinkButton default base -->
+  <SolidColorBrush x:Key="ListBoxBorderThemeBrush" Color="Transparent" /> <!-- ListBoxBorderThemeBrush -->
+  <SolidColorBrush x:Key="MediaButtonBackgroundThemeBrush" Color="Transparent" /> <!-- MediaButtonBackgroundThemeBrush -->
+  <SolidColorBrush x:Key="MediaControlPanelPhoneVideoThemeBrush" Color="Transparent" /> <!-- MediaControlPanelPhoneVideoThemeBrush -->
+  <SolidColorBrush x:Key="MediaControlPanelVideoThemeBrush" Color="{StaticResource MediaControlPanelVideoThemeColor}" /> <!-- MediaControlPanelVideoThemeBrush -->
+  <SolidColorBrush x:Key="MediaControlPlayPauseThemeBrush" Color="{StaticResource MediaControlPanelVideoThemeColor}" /> <!-- MediaControlPlayPauseThemeBrush -->
+  <SolidColorBrush x:Key="MediaControlTimeRowThemeBrush" Color="{StaticResource MediaControlTimeRowThemeColor}" /> <!-- MediaControlTimeRowThemeBrush -->
+  <SolidColorBrush x:Key="PhoneRadioCheckBoxBrush" Color="Transparent" /> <!-- PhoneRadioCheckBoxBrush; run: RadioButton checked base -->
+  <SolidColorBrush x:Key="PivotHeaderBackgroundUnselectedBrush" Color="Transparent" /> <!-- PivotHeaderBackgroundUnselectedBrush -->
+  <SolidColorBrush x:Key="ProgressBarBorderThemeBrush" Color="Transparent" /> <!-- ProgressBarBorderThemeBrush; run: ProgressBar indeterminate base -->
+  <SolidColorBrush x:Key="RepeatButtonDisabledBackgroundThemeBrush" Color="Transparent" /> <!-- RepeatButtonDisabledBackgroundThemeBrush -->
+  <SolidColorBrush x:Key="SliderBorderThemeBrush" Color="Transparent" /> <!-- SliderBorderThemeBrush; run: Slider value-30 base -->
+  <SolidColorBrush x:Key="SliderDisabledBorderThemeBrush" Color="Transparent" /> <!-- SliderDisabledBorderThemeBrush; run: Slider value-30 CommonStates.Disabled -->
+  <SolidColorBrush x:Key="TextBoxButtonBackgroundThemeBrush" Color="Transparent" /> <!-- TextBoxButtonBackgroundThemeBrush -->
+  <SolidColorBrush x:Key="TextBoxButtonBorderThemeBrush" Color="Transparent" /> <!-- TextBoxButtonBorderThemeBrush -->
+  <SolidColorBrush x:Key="TextBoxButtonPointerOverBorderThemeBrush" Color="Transparent" /> <!-- TextBoxButtonPointerOverBorderThemeBrush -->
+  <SolidColorBrush x:Key="TextBoxButtonPressedBorderThemeBrush" Color="Transparent" /> <!-- TextBoxButtonPressedBorderThemeBrush -->
+  <SolidColorBrush x:Key="TextBoxDisabledBackgroundThemeBrush" Color="Transparent" /> <!-- TextBoxDisabledBackgroundThemeBrush; run: PasswordBox password CommonStates.Disabled -->
+  <SolidColorBrush x:Key="ToggleButtonBackgroundThemeBrush" Color="Transparent" /> <!-- ToggleButtonBackgroundThemeBrush -->
+  <SolidColorBrush x:Key="ToggleButtonCheckedPressedBackgroundThemeBrush" Color="Transparent" /> <!-- ToggleButtonCheckedPressedBackgroundThemeBrush -->
+  <SolidColorBrush x:Key="ToggleSwitchTrackBorderThemeBrush" Color="Transparent" /> <!-- ToggleSwitchTrackBorderThemeBrush; run: ToggleSwitch no-header base -->
+</ResourceDictionary>

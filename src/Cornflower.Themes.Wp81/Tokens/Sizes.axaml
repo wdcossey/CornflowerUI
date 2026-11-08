@@ -1,0 +1,132 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!--
+    Thicknesses, sizes, opacities and offsets.
+
+    Source: the entries outside the theme dictionaries of the Windows Phone 8.1 SDK's themeresources.xaml, the
+    same in both themes. Each entry ends with a comment naming its source key and, where the reference app read
+    the value on the phone, "run:" with the capture's specimen, variant and state (refapp run
+    20261108-1443-dev11, device 11). Values are in view pixels.
+
+    Each keeps the file's type, even where its template's property has another: CheckBoxBorderThemeThickness
+    and RadioButtonBorderThemeThickness are doubles, and SliderBorderThemeThickness is a Thickness that the
+    Slider template binds to a Rectangle's StrokeThickness.
+  -->
+
+  <!-- Thicknesses (66) -->
+  <Thickness x:Key="AppBarBottomBorderThemeThickness">0,1.5,0,0</Thickness> <!-- AppBarBottomBorderThemeThickness -->
+  <Thickness x:Key="AppBarBottomThemePadding">0,0,0,1.5</Thickness> <!-- AppBarBottomThemePadding -->
+  <Thickness x:Key="AppBarTopBorderThemeThickness">0,0,0,1.5</Thickness> <!-- AppBarTopBorderThemeThickness -->
+  <Thickness x:Key="AppBarTopThemePadding">0,1.5,0,0</Thickness> <!-- AppBarTopThemePadding -->
+  <Thickness x:Key="AutoSuggestListViewItemMargin">6.5,9.5,0,0</Thickness> <!-- AutoSuggestListViewItemMargin -->
+  <Thickness x:Key="ButtonBorderThemeThickness">1.5</Thickness> <!-- ButtonBorderThemeThickness -->
+  <Thickness x:Key="CheckBoxAndRadioButtonTextPaddingThickness">8,0,0,0</Thickness> <!-- CheckBoxAndRadioButtonTextPaddingThickness; run: CheckBox checked base -->
+  <Thickness x:Key="ComboBoxBorderThemeThickness">2.5</Thickness> <!-- ComboBoxBorderThemeThickness; run: ComboBox closed base -->
+  <Thickness x:Key="ComboBoxFlyoutListPlaceholderTextThemeMargin">0,2.5</Thickness> <!-- ComboBoxFlyoutListPlaceholderTextThemeMargin; run: TextBlock ComboBoxPlaceholderTextBlockStyle base -->
+  <Thickness x:Key="ComboBoxItemHighContrastBackgroundThemeMargin">0,0,0,3.5</Thickness> <!-- ComboBoxItemHighContrastBackgroundThemeMargin -->
+  <Thickness x:Key="ComboBoxPlaceholderTextThemeMargin">6.5,0.8</Thickness> <!-- ComboBoxPlaceholderTextThemeMargin; run: ComboBox closed base -->
+  <Thickness x:Key="ContentDialogButton1HostPadding">19,24,9.5,9.5</Thickness> <!-- ContentDialogButton1HostPadding -->
+  <Thickness x:Key="ContentDialogButton2HostPadding">9.5,24,19,9.5</Thickness> <!-- ContentDialogButton2HostPadding -->
+  <Thickness x:Key="ContentDialogContentMargin">19,16.5,19,0</Thickness> <!-- ContentDialogContentMargin -->
+  <Thickness x:Key="ContentDialogTitleMargin">19,33.5,19,0</Thickness> <!-- ContentDialogTitleMargin -->
+  <Thickness x:Key="DateTimeFlyoutContentPanelLandscapeThemeMargin">0,19,0,0</Thickness> <!-- DateTimeFlyoutContentPanelLandscapeThemeMargin -->
+  <Thickness x:Key="DateTimeFlyoutContentPanelPortraitThemeMargin">0,37,0,0</Thickness> <!-- DateTimeFlyoutContentPanelPortraitThemeMargin -->
+  <Thickness x:Key="DateTimeFlyoutTitleThemeMargin">19,0,19,17.5</Thickness> <!-- DateTimeFlyoutTitleThemeMargin -->
+  <Thickness x:Key="FlipViewButtonBorderThemeThickness">0.8</Thickness> <!-- FlipViewButtonBorderThemeThickness -->
+  <Thickness x:Key="FlyoutContentPanelLandscapeThemeMargin">0,0,0,0</Thickness> <!-- FlyoutContentPanelLandscapeThemeMargin -->
+  <Thickness x:Key="FlyoutContentPanelPortraitThemeMargin">0,25.5,0,0</Thickness> <!-- FlyoutContentPanelPortraitThemeMargin -->
+  <Thickness x:Key="FlyoutContentThemeMargin">0,0,0,0</Thickness> <!-- FlyoutContentThemeMargin -->
+  <Thickness x:Key="GridViewItemMargin">0</Thickness> <!-- GridViewItemMargin -->
+  <Thickness x:Key="GridViewItemMultiselectBorderThickness">2.5</Thickness> <!-- GridViewItemMultiselectBorderThickness; run: ListViewItem default base -->
+  <Thickness x:Key="HubHeaderMarginThickness">15,1,0,0</Thickness> <!-- HubHeaderMarginThickness; run: Hub two-sections base -->
+  <Thickness x:Key="HubSectionHeaderMarginThickness">-1,5,0,31.5</Thickness> <!-- HubSectionHeaderMarginThickness -->
+  <Thickness x:Key="HubSectionMarginThickness">19,0,0,0</Thickness> <!-- HubSectionMarginThickness -->
+  <Thickness x:Key="HyperlinkButtonBorderThemeThickness">0</Thickness> <!-- HyperlinkButtonBorderThemeThickness -->
+  <Thickness x:Key="ListBoxBorderThemeThickness">1.5</Thickness> <!-- ListBoxBorderThemeThickness -->
+  <Thickness x:Key="ListPickerFlyoutPresenterItemMargin">0,0,0,19</Thickness> <!-- ListPickerFlyoutPresenterItemMargin -->
+  <Thickness x:Key="ListPickerFlyoutPresenterMultiselectCheckBoxMargin">0,9.5,0,0</Thickness> <!-- ListPickerFlyoutPresenterMultiselectCheckBoxMargin -->
+  <Thickness x:Key="ListViewItemMargin">0</Thickness> <!-- ListViewItemMargin -->
+  <Thickness x:Key="ListViewItemMultiselectCheckBoxMargin">0,9.5,0,0</Thickness> <!-- ListViewItemMultiselectCheckBoxMargin; run: ListViewItem default base -->
+  <Thickness x:Key="MenuFlyoutItemThemePadding">0,8.5</Thickness> <!-- MenuFlyoutItemThemePadding -->
+  <Thickness x:Key="MenuFlyoutLandscapeThemePadding">19,59.5,0,65</Thickness> <!-- MenuFlyoutLandscapeThemePadding -->
+  <Thickness x:Key="MenuFlyoutLeftLandscapeBorderThemeThickness">0,0,1.5,0</Thickness> <!-- MenuFlyoutLeftLandscapeBorderThemeThickness -->
+  <Thickness x:Key="MenuFlyoutPortraitBorderThemeThickness">0,1.5</Thickness> <!-- MenuFlyoutPortraitBorderThemeThickness -->
+  <Thickness x:Key="MenuFlyoutPortraitThemePadding">19,13.5,0,26</Thickness> <!-- MenuFlyoutPortraitThemePadding -->
+  <Thickness x:Key="MenuFlyoutRightLandscapeBorderThemeThickness">1.5,0,0,0</Thickness> <!-- MenuFlyoutRightLandscapeBorderThemeThickness -->
+  <Thickness x:Key="PasswordBoxCheckBoxThemeMargin">0,-6.5,0,0</Thickness> <!-- PasswordBoxCheckBoxThemeMargin; run: PasswordBox password base -->
+  <Thickness x:Key="PhoneBorderThickness">2.5</Thickness> <!-- PhoneBorderThickness; run: Button default base -->
+  <Thickness x:Key="PhoneButtonContentPadding">9.5,0,9.5,3.5</Thickness> <!-- PhoneButtonContentPadding; run: Button default base -->
+  <Thickness x:Key="PhoneTouchTargetLargeOverhang">0,16</Thickness> <!-- PhoneTouchTargetLargeOverhang; run: CheckBox checked base -->
+  <Thickness x:Key="PhoneTouchTargetOverhang">0,9.5</Thickness> <!-- PhoneTouchTargetOverhang; run: Button default base -->
+  <Thickness x:Key="PickerFlyoutContentPanelLandscapeThemeMargin">19,19,19,0</Thickness> <!-- PickerFlyoutContentPanelLandscapeThemeMargin -->
+  <Thickness x:Key="PickerFlyoutContentPanelPortraitThemeMargin">19,37,19,0</Thickness> <!-- PickerFlyoutContentPanelPortraitThemeMargin -->
+  <Thickness x:Key="PickerFlyoutTitleThemeMargin">0,0,0,32.5</Thickness> <!-- PickerFlyoutTitleThemeMargin -->
+  <Thickness x:Key="PivotHeaderItemMargin">16,-6.5,0,0</Thickness> <!-- PivotHeaderItemMargin -->
+  <Thickness x:Key="PivotHeaderItemPadding">0,0,0,6.5</Thickness> <!-- PivotHeaderItemPadding -->
+  <Thickness x:Key="PivotItemMargin">19,22.5,19,0</Thickness> <!-- PivotItemMargin -->
+  <Thickness x:Key="PivotLandscapeThemePadding">19,25,0,0</Thickness> <!-- PivotLandscapeThemePadding -->
+  <Thickness x:Key="PivotPortraitThemePadding">19,38,0,0</Thickness> <!-- PivotPortraitThemePadding -->
+  <Thickness x:Key="ProgressBarBorderThemeThickness">0</Thickness> <!-- ProgressBarBorderThemeThickness -->
+  <Thickness x:Key="ProgressRingElipseThemeMargin">7.5</Thickness> <!-- ProgressRingElipseThemeMargin -->
+  <Thickness x:Key="ProgressRingTextThemeMargin">0,16.5,0,0</Thickness> <!-- ProgressRingTextThemeMargin -->
+  <Thickness x:Key="RepeatButtonBorderThemeThickness">1.5</Thickness> <!-- RepeatButtonBorderThemeThickness -->
+  <Thickness x:Key="RichEditBoxTextThemeMargin">2.5,2.5,2.5,2.5</Thickness> <!-- RichEditBoxTextThemeMargin; run: PasswordBox password base -->
+  <Thickness x:Key="SliderBorderThemeThickness">0</Thickness> <!-- SliderBorderThemeThickness; run: the Slider border Rectangles draw StrokeThickness 1, the type mismatch falling back to the default (Slider value-30 Disabled); see the PR -->
+  <Thickness x:Key="TextControlBorderThemeThickness">2.5</Thickness> <!-- TextControlBorderThemeThickness; run: PasswordBox password base -->
+  <Thickness x:Key="TextControlHeaderMarginThemeThickness">0,0,0,4.8</Thickness> <!-- TextControlHeaderMarginThemeThickness; run: PasswordBox password base -->
+  <Thickness x:Key="TextControlMarginThemeThickness">0,9.5,0,9.5</Thickness> <!-- TextControlMarginThemeThickness; run: PasswordBox password base -->
+  <Thickness x:Key="TextControlPlaceholderThemePadding">9.5,2.5,8,4</Thickness> <!-- TextControlPlaceholderThemePadding -->
+  <Thickness x:Key="TextControlThemePadding">7,0.8,8,0</Thickness> <!-- TextControlThemePadding; run: PasswordBox password base -->
+  <Thickness x:Key="TimePickerFirstHostThemeMargin">0,0,16,0</Thickness> <!-- TimePickerFirstHostThemeMargin -->
+  <Thickness x:Key="TimePickerThirdHostThemeMargin">16,0,0,0</Thickness> <!-- TimePickerThirdHostThemeMargin -->
+  <Thickness x:Key="ToggleButtonBorderThemeThickness">1.5</Thickness> <!-- ToggleButtonBorderThemeThickness -->
+
+  <!-- Sizes, opacities and offsets (47) -->
+  <x:Double x:Key="AppBarThemeMinHeight">54.5</x:Double> <!-- AppBarThemeMinHeight -->
+  <x:Double x:Key="CheckBoxAndRadioButtonMinWidthSize">168</x:Double> <!-- CheckBoxAndRadioButtonMinWidthSize; run: CheckBox checked base -->
+  <x:Double x:Key="CheckBoxBorderThemeThickness">2.5</x:Double> <!-- CheckBoxBorderThemeThickness; run: ListViewItem default base -->
+  <x:Double x:Key="ComboBoxItemDisabledThemeOpacity">0.4</x:Double> <!-- ComboBoxItemDisabledThemeOpacity -->
+  <x:Double x:Key="ComboBoxItemMinHeightThemeSize">33.5</x:Double> <!-- ComboBoxItemMinHeightThemeSize; run: ComboBox closed base -->
+  <x:Double x:Key="ContentDialogButtonsMinHeight">45</x:Double> <!-- ContentDialogButtonsMinHeight -->
+  <x:Double x:Key="ContentDialogContentLandscapeWidth">400</x:Double> <!-- ContentDialogContentLandscapeWidth -->
+  <x:Double x:Key="ContentDialogContentMinHeight">35</x:Double> <!-- ContentDialogContentMinHeight -->
+  <x:Double x:Key="ContentDialogTitleMinHeight">19</x:Double> <!-- ContentDialogTitleMinHeight -->
+  <x:Double x:Key="DatePickerSelectorThemeMinWidth">64</x:Double> <!-- DatePickerSelectorThemeMinWidth -->
+  <x:Double x:Key="DatePickerSpacingThemeHeight">16</x:Double> <!-- DatePickerSpacingThemeHeight -->
+  <x:Double x:Key="DatePickerSpacingThemeWidth">16</x:Double> <!-- DatePickerSpacingThemeWidth -->
+  <x:Double x:Key="FlyoutThemeMinHeight">43</x:Double> <!-- FlyoutThemeMinHeight -->
+  <x:Double x:Key="GridViewItemSelectedBorderThemeThickness">3</x:Double> <!-- GridViewItemSelectedBorderThemeThickness -->
+  <x:Double x:Key="ListPickerFlyoutFooterThemeHeight">80</x:Double> <!-- ListPickerFlyoutFooterThemeHeight -->
+  <x:Double x:Key="ListViewItemContentOffsetX">-40.5</x:Double> <!-- ListViewItemContentOffsetX -->
+  <x:Double x:Key="ListViewItemContentTranslateX">40.5</x:Double> <!-- ListViewItemContentTranslateX -->
+  <x:Double x:Key="ListViewItemDisabledThemeOpacity">0.4</x:Double> <!-- ListViewItemDisabledThemeOpacity; run: ListViewItem default CommonStates.Disabled -->
+  <x:Double x:Key="ListViewItemDragThemeOpacity">0.60</x:Double> <!-- ListViewItemDragThemeOpacity -->
+  <x:Double x:Key="ListViewItemReorderHintThemeOffset">32</x:Double> <!-- ListViewItemReorderHintThemeOffset -->
+  <x:Double x:Key="ListViewItemSelectedBorderThemeThickness">3</x:Double> <!-- ListViewItemSelectedBorderThemeThickness -->
+  <x:Double x:Key="PhoneButtonMinHeight">57.5</x:Double> <!-- PhoneButtonMinHeight; run: Button default base -->
+  <x:Double x:Key="PhoneButtonMinWidth">109</x:Double> <!-- PhoneButtonMinWidth; run: Button default base -->
+  <x:Double x:Key="PhonePivotLockedTranslation">40</x:Double> <!-- PhonePivotLockedTranslation -->
+  <x:Double x:Key="PhonePivotUnselectedItemOpacity">0.4</x:Double> <!-- PhonePivotUnselectedItemOpacity -->
+  <x:Double x:Key="PhoneStrokeThickness">2.5</x:Double> <!-- PhoneStrokeThickness; run: RadioButton checked base -->
+  <x:Double x:Key="ProgressBarIndeterminateRectagleThemeSize">3.5</x:Double> <!-- ProgressBarIndeterminateRectagleThemeSize -->
+  <x:Double x:Key="ProgressBarThemeMinHeight">3.5</x:Double> <!-- ProgressBarThemeMinHeight; run: ProgressBar indeterminate base -->
+  <x:Double x:Key="ProgressRingActiveBackgroundOpacity">0.8</x:Double> <!-- ProgressRingActiveBackgroundOpacity; run: read 0, the Active storyboard not applied at capture (ProgressRing active Active); see the PR -->
+  <x:Double x:Key="ProgressRingElipseThemeSize">6.5</x:Double> <!-- ProgressRingElipseThemeSize -->
+  <x:Double x:Key="ProgressRingThemeSize">57.5</x:Double> <!-- ProgressRingThemeSize; run: ProgressRing active base -->
+  <x:Double x:Key="RadioButtonBorderThemeThickness">0</x:Double> <!-- RadioButtonBorderThemeThickness -->
+  <x:Double x:Key="ScrollBarMinThemeHeight">7</x:Double> <!-- ScrollBarMinThemeHeight -->
+  <x:Double x:Key="ScrollBarMinThemeWidth">7</x:Double> <!-- ScrollBarMinThemeWidth -->
+  <x:Double x:Key="ScrollBarPanningThumbThemeHeight">2.4</x:Double> <!-- ScrollBarPanningThumbThemeHeight -->
+  <x:Double x:Key="ScrollBarPanningThumbThemeWidth">2.4</x:Double> <!-- ScrollBarPanningThumbThemeWidth -->
+  <x:Double x:Key="ScrollBarTrackBorderThemeThickness">0</x:Double> <!-- ScrollBarTrackBorderThemeThickness -->
+  <x:Double x:Key="SliderOutsideTickBarThemeHeight">5</x:Double> <!-- SliderOutsideTickBarThemeHeight; run: Slider value-30 base -->
+  <x:Double x:Key="SliderTrackThemeHeight">9</x:Double> <!-- SliderTrackThemeHeight; run: Slider value-30 base -->
+  <x:Double x:Key="TextControlBackgroundThemeOpacity">0.8</x:Double> <!-- TextControlBackgroundThemeOpacity -->
+  <x:Double x:Key="TextControlBorderThemeOpacity">0.8</x:Double> <!-- TextControlBorderThemeOpacity; run: PasswordBox password CommonStates.Normal -->
+  <x:Double x:Key="TextControlHeaderMinHeightSize">9.5</x:Double> <!-- TextControlHeaderMinHeightSize -->
+  <x:Double x:Key="TextControlPointerOverBackgroundThemeOpacity">0.87</x:Double> <!-- TextControlPointerOverBackgroundThemeOpacity -->
+  <x:Double x:Key="TextControlPointerOverBorderThemeOpacity">0.87</x:Double> <!-- TextControlPointerOverBorderThemeOpacity -->
+  <x:Double x:Key="TextControlThemeMinHeight">34</x:Double> <!-- TextControlThemeMinHeight; run: PasswordBox password base -->
+  <x:Double x:Key="TextControlThemeMinWidth">51</x:Double> <!-- TextControlThemeMinWidth; run: PasswordBox password base -->
+  <x:Double x:Key="TimePickerSelectorThemeMinWidth">64</x:Double> <!-- TimePickerSelectorThemeMinWidth -->
+</ResourceDictionary>
