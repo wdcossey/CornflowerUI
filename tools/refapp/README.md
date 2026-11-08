@@ -50,7 +50,8 @@ the signed-in desktop. Run from an SSH session, `ISETool` starts a hidden second
   `RenderTargetBitmap` and writes the PNG and JSON. It writes `index.json` and then `done.txt` last.
 - **`TreeDump.cs`** writes the visual tree. Bounds are relative to the specimen, and the stage
   offset is recorded, so a JSON rectangle maps to PNG pixels as
-  `(elementInStage + bounds) × resolutionScale / 100`.
+  `(elementInStage + bounds) × rawPixelsPerViewPixel`. Not `resolutionScale`: it reports 180 on
+  every profile read so far, including the 1080p ones at 2.4 and 2.2.
 
 What a capture is and isn't:
 
@@ -100,7 +101,18 @@ TimePicker 2, AppBarButton 12, AppBarToggleButton 36, ListViewItem 84, ListView 
 - **Popups.** ComboBox `DropDownStates.Opened` and `PresenterStates.Full` change the control
   itself, but the list they open is a popup outside the stage. The same goes for flyouts,
   `ContentDialog` and the app bar.
-- **Other profiles.** Only device 10 has run. Run `-Device 13` for qHD 5", and so on.
+- **Other profiles.** Devices 10, 11 and 12 have run (below). Run `-Device 13` for qHD 5", and so on.
+
+## Runs by profile (2026-11-08)
+
+All three: 504 captures, 0 errors, accent `#FF3E65FF`. The reference profile is device 11
+([ADR 0001](../../docs/decisions/0001-what-faithful-means.md)).
+
+| Device | Profile | Folder | `RawPixelsPerViewPixel` | View | `ResolutionScale` |
+|---|---|---|---|---|---|
+| 10 | U1 720P 4.7" | `20261108-0754-dev10` | 1.8 | 400 × 711.11 | 180 |
+| 11 | U1 1080P 5.5" | `20261108-1443-dev11` | 2.4 | 450 × 800 | 180 |
+| 12 | U1 1080P 6" | `20261108-1451-dev12` | 2.2 | 490.91 × 872.73 | 180 |
 
 ## The probe's first numbers (2026-11-08, Update 1 720p 4.7", dark)
 
