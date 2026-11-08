@@ -24,7 +24,7 @@ namespace RefApp
     /// States are forced with VisualStateManager.GoToState on a fresh instance each time, so a capture shows
     /// what the template draws in that state, not the motion into it. Motion comes from screen recordings.
     /// </summary>
-    internal sealed class Suite
+    internal sealed partial class Suite
     {
         /// <summary>The phone's page margin, in logical pixels, used to place specimens as a page would.</summary>
         public const double PageMargin = 19;
@@ -57,7 +57,9 @@ namespace RefApp
             }
 
             _width = Window.Current.Bounds.Width;
-            var specimens = Catalog.All();
+            var options = await Options.LoadAsync();
+            var specimens = options.PopupsOnly ? new List<Specimen>() : Catalog.All().Where(s => options.Matches(s.Name)).ToList();
+            var popups = options.Popups ? PopupCatalog.All().Where(p => options.Matches(p.Name)).ToList() : new List<PopupSpecimen>();
             var themes = new[] { ElementTheme.Dark, ElementTheme.Light };
 
             // Work out each specimen's states once: they come from the template and don't depend on the theme.
@@ -67,7 +69,8 @@ namespace RefApp
                 states[s] = s.States ? await StatesOf(s) : new List<KeyValuePair<string, string>>();
             }
 
-            _total = themes.Length * specimens.Sum(s => 1 + states[s].Count);
+            // A popup gives its stage and one capture per open popup; two is the usual count.
+            _total = themes.Length * (specimens.Sum(s => 1 + states[s].Count) + 2 * popups.Count);
 
             _captures.Arr();
             foreach (var theme in themes)
@@ -78,6 +81,16 @@ namespace RefApp
                     foreach (var st in states[s])
                     {
                         await Capture(theme, s, st.Key, st.Value);
+                    }
+                }
+
+                foreach (var p in popups)
+                {
+                    // A popup that never closes would stall the run; give each one 30 s.
+                    var capture = CapturePopup(theme, p);
+                    if (await Task.WhenAny(capture, Task.Delay(30000)) != capture)
+                    {
+                        _errors.Add(Id(theme, new Specimen { Name = p.Name, Variant = p.Variant }, "popup") + ": timed out after 30 s");
                     }
                 }
             }
@@ -92,7 +105,9 @@ namespace RefApp
             await WriteEnvironment(index);
             index.Prop("pageMargin", PageMargin);
             index.Prop("stateSettleMs", StateSettleMs);
+            index.Prop("only", options.Only);
             index.Prop("specimens", specimens.Count);
+            index.Prop("popupSpecimens", popups.Count);
             index.Prop("captureCount", _count);
             index.Key("errors").Arr();
             foreach (var e in _errors)
@@ -139,6 +154,7 @@ namespace RefApp
             var name = Id(theme, s, group == null ? "base" : group + "." + state);
             _count++;
             _log.Text = string.Format(CultureInfo.InvariantCulture, "{0}/{1} {2}", _count, _total, name);
+            await Write("progress.txt", name);
             try
             {
                 var stage = await Place(theme, s);

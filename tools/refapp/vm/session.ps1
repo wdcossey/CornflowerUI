@@ -44,6 +44,9 @@ $started = Get-Date
 Status 'running: app launched, waiting for done.txt'
 $deadline = $started.AddMinutes($TimeoutMinutes)
 $done = $false
+$stalled = $false
+$lastPngs = -1
+$lastChange = Get-Date
 while ((Get-Date) -lt $deadline) {
     Start-Sleep -Seconds 20
     $listing = (& $ise dir "deviceindex:$Device" $ProductId 2>&1) -join "`n"
@@ -53,12 +56,9 @@ while ((Get-Date) -lt $deadline) {
     }
 
     $pngs = ([regex]::Matches($listing, '\.png')).Count
+    if ($pngs -ne $lastPngs) { $lastPngs = $pngs; $lastChange = Get-Date }
+    elseif (((Get-Date) - $lastChange).TotalMinutes -ge 3) { $stalled = $true; break }
     Status ('running: {0} PNGs so far after {1:N0} s' -f $pngs, ((Get-Date) - $started).TotalSeconds)
-}
-
-if (-not $done) {
-    Status "failed: no done.txt after $TimeoutMinutes minutes"
-    exit 1
 }
 
 $out = Join-Path $Root 'out'
@@ -66,6 +66,14 @@ Remove-Item $out -Recurse -Force -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force $out | Out-Null
 Status "pulling the app's local folder"
 & $ise ts "deviceindex:$Device" $ProductId $out 2>&1 | Add-Content -Path $log
+
+# A run that stalls or runs out of time still leaves what it wrote, including progress.txt, the last item started.
+if (-not $done) {
+    $why = if ($stalled) { "no new PNG for 3 minutes at $lastPngs" } else { "no done.txt after $TimeoutMinutes minutes" }
+    $last = Get-Content (Join-Path $out 'IsolatedStore\progress.txt') -ErrorAction SilentlyContinue
+    Status "failed: $why; last started: $last; partial results pulled"
+    exit 1
+}
 
 $count = (Get-ChildItem $out -Recurse -File).Count
 $summary = Get-Content (Join-Path $out 'IsolatedStore\done.txt') -ErrorAction SilentlyContinue
