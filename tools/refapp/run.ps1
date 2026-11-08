@@ -16,12 +16,18 @@
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File tools\refapp\run.ps1
   powershell -ExecutionPolicy Bypass -File tools\refapp\run.ps1 -Device 13
+  powershell -ExecutionPolicy Bypass -File tools\refapp\run.ps1 -Device 11 -Only 'Flyout|Dialog|ComboBox'
+
+  -Only keeps the specimens and popups whose name matches the regex, for a quick run.
+  -Popups also or -Popups only adds the popups (flyouts, dialogs, pickers), which are left out by default.
 
   Device indexes come from AppDeployCmd /EnumerateDevices: 7 to 13 are the 8.1 Update 1 profiles,
   10 is 720p 4.7", 13 is qHD 5". See R:\cornflower-reference\wp81-emulator-profiles.md.
 #>
 param(
-    [int]$Device = 10,
+    [int]$Device = 11,
+    [string]$Only = '',
+    [ValidateSet('', 'also', 'only')][string]$Popups = '',
     [string]$HostAlias = 'cornflower-ref',
     [string]$Out = 'R:\cornflower-reference\refapp',
     [int]$TimeoutMinutes = 40
@@ -61,7 +67,17 @@ function Copy-Scp([string[]]$Arguments) {
 
 Write-Host "1/5 copying the app to ${HostAlias}:$remote"
 Remote "Remove-Item '$remote\app','$remote\vm','$remote\out','$remote\status.txt' -Recurse -Force -ErrorAction SilentlyContinue; New-Item -ItemType Directory -Force '$remote' | Out-Null" | Out-Null
-Copy-Scp @((Join-Path $here 'app'), (Join-Path $here 'vm'), "${HostAlias}:C:/cornflower/refapp/")
+$options = Join-Path $here 'app\run-options.txt'
+$lines = @()
+if ($Only) { $lines += "only=$Only" }
+if ($Popups) { $lines += "popups=$Popups" }
+if ($lines) { Set-Content -Path $options -Value $lines -Encoding ASCII } else { Remove-Item $options -ErrorAction SilentlyContinue }
+try {
+    Copy-Scp @((Join-Path $here 'app'), (Join-Path $here 'vm'), "${HostAlias}:C:/cornflower/refapp/")
+}
+finally {
+    Remove-Item $options -ErrorAction SilentlyContinue
+}
 
 Write-Host '2/5 building with MSBuild 14'
 $build = @(Remote "& '$remote\vm\build.ps1' -Root '$remote'; exit `$LASTEXITCODE")
@@ -96,6 +112,13 @@ do {
 
 Remote "Unregister-ScheduledTask -TaskName '$task' -Confirm:`$false -ErrorAction SilentlyContinue" | Out-Null
 if ($status -notmatch '^done') {
+    if ($status -match 'partial results pulled') {
+        $partial = Join-Path $Out ("{0}-dev{1}-partial" -f (Get-Date -Format 'yyyyMMdd-HHmm'), $Device)
+        New-Item -ItemType Directory -Force $partial | Out-Null
+        Copy-Scp @("${HostAlias}:C:/cornflower/refapp/out", "${HostAlias}:C:/cornflower/refapp/session.log", $partial)
+        Write-Host "  partial results in $partial"
+    }
+
     Write-Host '  session.log on the VM:'
     Remote "Get-Content '$remote\session.log' -Tail 20" | ForEach-Object { Write-Host "    $_" }
     throw "the run did not finish: $status"

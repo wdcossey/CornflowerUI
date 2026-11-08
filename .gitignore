@@ -418,6 +418,8 @@ FodyWeavers.xsd
 *.msp
 
 # Cornflower
+# Written by tools/refapp/run.ps1 -Only for one run, then deleted.
+tools/refapp/app/run-options.txt
 # Local working files; never committed.
 .scratch/
 # Microsoft's SDK files are read as a specification and never enter the repository.
