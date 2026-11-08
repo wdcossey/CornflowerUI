@@ -24,11 +24,12 @@ measure the reference before writing a line, and you build and test before every
 | `src/Cornflower.Controls/` | Cornflower's own controls and behaviours. Empty |
 | `src/Cornflower.Themes.Wp81/` | The Windows Phone 8.1 theme. `Wp81Theme` merges every discovered file under `Tokens/` and `Controls/`, in ordinal order. No files yet |
 | `src/Cornflower/` | Umbrella package referencing the two above. No code |
-| `tests/Cornflower.Tests/` | Avalonia.Headless with Skia and xunit v3. Harness tests, discovery tests run on fixtures in `Discovery/Fixture/`, and the spikes in `Spikes/` (one collection, not run in parallel) |
+| `tests/Cornflower.Tests/` | Avalonia.Headless with Skia and xunit v3. Harness tests, discovery tests run on fixtures in `Discovery/Fixture/`, the spikes in `Spikes/` (one collection, not run in parallel), and the repository guard in `Repository/` |
 | `tools/refapp/` | The Windows Phone 8.1 reference app and `run.ps1`, which builds it on the reference VM, runs it in the emulator and pulls the captures back. Not in the solution: it builds with MSBuild 14 on the VM |
 | `tools/winrt-api/` | Lists the XAML control types in a `Windows.winmd`, and which have a default style in a `generic.xaml`. In the solution, so CI builds it |
 | `tools/fonts/` | Node scripts that compare font metrics, weight by weight |
 | `tools/collect-vm.ps1`, `tools/setres.ps1` | Run on the reference VM: inventory its SDK files; set its desktop resolution |
+| `tools/guard/` | `hash-reference.js` writes the SHA-256 list of the pulled Microsoft files that the repository guard test checks against |
 | `.github/workflows/ci.yml` | Restore, build and test in Release on every push to `main` and every PR |
 | `docs/PROCESS.md` | The control loop: plan, build, compare, review, document |
 | `docs/ROADMAP.md` | Scope, the control inventory by tier, the Tier 0 checklist |
@@ -70,6 +71,10 @@ repository**. They live outside it, in `R:\cornflower-reference\` on the maintai
 4. **Tests assert the reference's behaviour**, from a capture or measurement named in the PR.
 5. **No literal colours outside a theme's `Tokens/`.** No visual opinion in `Cornflower.Controls`.
 6. **No Microsoft fonts, templates or SDK files in the repo.** Every template is written new.
+   `MicrosoftFileGuardTests` fails on any file git would commit that is a font not on its
+   allowed list, is named `generic.xaml`, `themeresources.xaml` or `*.winmd`, or has the bytes of a
+   file pulled from the reference VM. The hash list is regenerated with
+   `node tools/guard/hash-reference.js <reference folder>` whenever more files are pulled.
 7. **Add files, don't register them.** A control's theme file is found by auto-discovery; a PR
    for one control touches no shared file.
 8. **This file is ground truth.** Update it in the PR that makes a statement here true.
