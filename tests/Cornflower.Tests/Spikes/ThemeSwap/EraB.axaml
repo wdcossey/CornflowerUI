@@ -1,0 +1,18 @@
+<!-- Spike 1: one of two eras. Each gives Button a template whose root is named after the era, and
+     defines the same brush key with its own colour. -->
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Styles.Resources>
+    <SolidColorBrush x:Key="SpikeAccentBrush" Color="#FF0000FF" />
+    <ControlTheme x:Key="{x:Type Button}" TargetType="Button">
+      <Setter Property="Background" Value="{DynamicResource SpikeAccentBrush}" />
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Border Name="EraB" Background="{TemplateBinding Background}">
+            <ContentPresenter Name="PART_ContentPresenter" Content="{TemplateBinding Content}" />
+          </Border>
+        </ControlTemplate>
+      </Setter>
+    </ControlTheme>
+  </Styles.Resources>
+</Styles>
