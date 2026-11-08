@@ -1,0 +1,11 @@
+<!-- Spike 3: a subclass's theme in a file of its own, based on the ComboBox theme in another file
+     merged into the same dictionary, as two control files in a theme would be. -->
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:spikes="using:Cornflower.Tests.Spikes">
+  <ControlTheme x:Key="{x:Type spikes:BasedOnComboBox}"
+                TargetType="spikes:BasedOnComboBox"
+                BasedOn="{StaticResource {x:Type ComboBox}}">
+    <Setter Property="Opacity" Value="0.5" />
+  </ControlTheme>
+</ResourceDictionary>
