@@ -42,7 +42,7 @@ internal sealed class ThemeText : IDisposable
         Dispatcher.UIThread.RunJobs();
 
         Assert.IsType<FontFamily>(Block.FontFamily);
-        Assert.Contains("Cornflower.Themes.Wp81/Fonts/", Block.FontFamily.Key?.Source.OriginalString);
+        Assert.Contains("avares://Cornflower.Themes.Wp81/Fonts", Block.FontFamily.Key?.Source.OriginalString);
     }
 
     public TextLine Line => Assert.Single(Block.TextLayout.TextLines);
