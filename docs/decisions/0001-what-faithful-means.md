@@ -1,6 +1,6 @@
 # ADR 0001 — What "faithful" means here
 
-**Date:** 2026-11-08 · **Status:** Accepted 2026-11-08
+**Date:** 2026-11-08 · **Status:** Accepted 2026-11-08; item 1 amended 2026-11-08
 
 ## Context
 
@@ -22,18 +22,35 @@ contradicted "faithful" and were never revisited
    |---|---|
    | Build | Windows Phone 8.1 Update 1 (emulator package 8.10.14141.167) |
    | Emulator image | `flash.update1.vhd`, dated 2014-07-15 |
-   | Profile | "Emulator 8.1 U1 WVGA 4 inch", device index 8 in `AppDeployCmd /EnumerateDevices` |
-   | Resolution | 480×800 |
-   | Memory | 1024 MB |
-   | Diagonal | 4" |
-   | Resolution scale | **Not read yet.** It was taken to be 1.0 when the profile was chosen; that was never checked. Windows Phone 8.1 is thought to lay out every phone class about 400 view pixels wide, which would put this profile at 1.2 (unconfirmed). The reference app reads `DisplayInformation.ResolutionScale` and `RawPixelsPerViewPixel` on its first run on this profile |
+   | Profile | "Emulator 8.1 U1 1080P 5.5 inch", device index 11 in `AppDeployCmd /EnumerateDevices` |
+   | Resolution | 1080×1920 |
+   | Memory | 2048 MB |
+   | Diagonal | 5.5" |
+   | Scale | `RawPixelsPerViewPixel` **2.4**, a **450 × 800** view, read by the reference app on 2026-11-08 |
 
-   This profile was chosen over "Emulator 8.1 U1 720P 4.7 inch" (device index 10), which made
-   the first 504 captures. That profile reads `ResolutionScale` 180: 1.8 raw pixels per view
-   pixel, a 400 × 711.11 view. The reason was that at a scale of 1.0 a headless frame from our tests
-   and a capture from the emulator would compare pixel for pixel, with no resampling. That reason
-   holds only if the scale is 1.0. **This item is provisional:** if the first run on this profile reads
-   any other scale, the choice of profile is reopened and this item amended.
+   **Amended 2026-11-08.** This item first named the WVGA profile (device 8), on the assumption
+   that it ran at a scale of 1.0 and so would compare pixel for pixel with our frames. That was
+   never read, and the maintainer chose 1080p instead. The reference app then read three profiles:
+
+   | Device | Profile | `RawPixelsPerViewPixel` | View | `ResolutionScale` |
+   |---|---|---|---|---|
+   | 10 | U1 720P 4.7" | 1.8 | 400 × 711.11 | 180 |
+   | **11** | **U1 1080P 5.5"** | **2.4** | **450 × 800** | 180 |
+   | 12 | U1 1080P 6" | 2.2 | 490.91 × 872.73 | 180 |
+
+   - **`ResolutionScale` reports 180 on every profile**, so it isn't the scale. The scale is
+     `RawPixelsPerViewPixel`, and the capture PNGs agree with it: a 100-pixel-tall stage is 180,
+     240 and 220 pixels tall.
+   - **Phones don't all lay out about 400 view pixels wide**, as was assumed: the 1080p profiles
+     lay out 450 and 491 wide.
+   - **The templates' values are the same in view pixels on all three.** On Button:
+     `FontSize` 18.14, `BorderThickness` 2.5, `Padding` 9.5,0,9.5,3.5, `MinWidth` 109. What the
+     profile changes is how layout rounds to the raw pixel grid (the same Button is 108.89, 109.17
+     and 109.09 wide) and the view's width, which only a layout that stretches can see.
+
+   Of the two 1080p profiles, device 11 is the reference: its view is whole numbers, so a test
+   window can match it exactly, and it has the most raw pixels per view pixel. The 720p captures
+   (device 10) and the device 12 captures are kept as second readings, not as the reference.
 
 2. **Geometry, colour, motion and behaviour are reproduced and measured.** Every number in a
    control's plan comes from the templates or from a capture, with its source beside it.

@@ -143,7 +143,7 @@ Nothing in Tier 1 starts until this list is done.
 - [x] ADR 0001 accepted, naming the reference build, image, profile and resolution (2026-11-08).
 - [x] `PROCESS.md`, `ROADMAP.md`, `ARCHITECTURE.md` and ADR 0002 in the repo (2026-11-08,
       [#4](https://github.com/wdcossey/CornflowerUI/issues/4)).
-- [ ] The reference profile's resolution scale read by the reference app's first run on it, and
+- [x] The reference profile's resolution scale read by the reference app's first run on it, and
       ADR 0001 confirmed or amended ([#3](https://github.com/wdcossey/CornflowerUI/issues/3)).
 - [x] This inventory regenerated, with real counts (2026-11-07).
 - [x] `tools/winrt-api` written and run on the 8.1 metadata (2026-11-07). It hasn't been run on

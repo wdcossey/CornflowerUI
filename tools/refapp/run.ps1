@@ -124,7 +124,7 @@ img { width: 240px; border: 1px solid #444; display: block; }
 code { color: #9cdcfe; }
 </style>
 <h1>Cornflower reference app: $(Split-Path -Leaf $dest)</h1>
-<p>Scale <code>$($index.display.resolutionScale)</code>, window <code>$($index.display.windowBounds -join ' x ')</code>,
+<p>Raw pixels per view pixel <code>$($index.display.rawPixelsPerViewPixel)</code> (<code>ResolutionScale</code> $($index.display.resolutionScale)), window <code>$($index.display.windowBounds -join ' x ')</code>,
 captures <code>$($index.captureCount)</code>, errors <code>$($index.errors.Count)</code>.
 Accent dark <code>$($index.resources.dark.PhoneAccentBrush)</code>,
 page background dark <code>$($index.resources.dark.ApplicationPageBackgroundThemeBrush)</code>
