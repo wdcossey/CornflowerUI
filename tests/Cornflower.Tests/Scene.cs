@@ -61,9 +61,17 @@ internal sealed class Scene : IDisposable
         Window.Styles.Add(new SimpleTheme());
         Window.Styles.Add(new Wp81Theme());
         Window.SetRenderScaling(scaling);
-        Window.Content = content;
-        Window.Show();
-        Dispatcher.UIThread.RunJobs();
+        try
+        {
+            Window.Content = content;
+            Window.Show();
+            Dispatcher.UIThread.RunJobs();
+        }
+        catch
+        {
+            Dispose();
+            throw;
+        }
     }
 
     /// <summary>Renders the scene as it is now. The caller disposes the frame.</summary>

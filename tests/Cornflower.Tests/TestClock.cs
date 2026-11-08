@@ -11,12 +11,18 @@ namespace Cornflower.Tests;
 /// </summary>
 /// <remarks>
 /// Avalonia's <c>Transitions</c> and <c>Animation</c> don't read this clock and still run on real
-/// time. Only one <see cref="TestClock"/> can be installed at a time.
+/// time. The clock is process-wide, so only one <see cref="TestClock"/> can be installed at a time,
+/// and a test doesn't hold one across an <c>await</c>: other tests share the UI thread and could
+/// run in the gap.
 /// </remarks>
 internal sealed class TestClock : IClockSource, IDisposable
 {
     private readonly IClockSource _previous;
+    /// <summary>More callbacks than this in one <see cref="At"/> is a timeline rescheduling itself without moving on.</summary>
+    private const int MaxCallbacksPerAt = 100_000;
+
     private readonly List<Scheduled> _scheduled = [];
+    private bool _advancing;
     private bool _disposed;
 
     public TestClock()
@@ -44,12 +50,26 @@ internal sealed class TestClock : IClockSource, IDisposable
         var target = TimeSpan.FromMilliseconds(milliseconds);
         if (target < Now)
             throw new ArgumentOutOfRangeException(nameof(milliseconds), $"The clock is at {Now.TotalMilliseconds} ms and doesn't go back.");
+        if (_advancing)
+            throw new InvalidOperationException("At was called from a callback it was running.");
 
-        while (_scheduled.Where(s => !s.IsDisposed && s.Due <= target).OrderBy(s => s.Due).FirstOrDefault() is { } next)
+        _advancing = true;
+        try
         {
-            _scheduled.Remove(next);
-            Now = next.Due;
-            next.Callback();
+            var ran = 0;
+            while (_scheduled.Where(s => !s.IsDisposed && s.Due <= target).OrderBy(s => s.Due).FirstOrDefault() is { } next)
+            {
+                if (++ran > MaxCallbacksPerAt)
+                    throw new InvalidOperationException($"More than {MaxCallbacksPerAt} callbacks by {target.TotalMilliseconds} ms: a timeline is rescheduling itself without a delay.");
+
+                _scheduled.Remove(next);
+                Now = next.Due;
+                next.Callback();
+            }
+        }
+        finally
+        {
+            _advancing = false;
         }
 
         _scheduled.RemoveAll(s => s.IsDisposed);
@@ -57,8 +77,10 @@ internal sealed class TestClock : IClockSource, IDisposable
         return Now;
     }
 
+    /// <summary>As <see cref="Avalonia.Threading.DispatcherTimer"/>, a negative delay is refused.</summary>
     public IDisposable Schedule(Action callback, TimeSpan delay)
     {
+        ArgumentOutOfRangeException.ThrowIfLessThan(delay, TimeSpan.Zero);
         var item = new Scheduled(Now + delay, callback);
         _scheduled.Add(item);
         return item;

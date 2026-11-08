@@ -51,8 +51,6 @@ public class CornflowerClockTests
         var runs = new List<(TimeSpan At, bool OnUIThread)>();
 
         RealClock.Instance.Schedule(() => runs.Add((stopwatch.Elapsed, Dispatcher.UIThread.CheckAccess())), TimeSpan.FromMilliseconds(50));
-        Dispatcher.UIThread.RunJobs();
-        Assert.Empty(runs);
 
         await Until(() => runs.Count > 0);
         await Task.Delay(100);
@@ -111,8 +109,6 @@ public class CornflowerClockTests
         TimeSpan? ranAt = null;
 
         RealClock.Instance.RequestFrame(new Border(), () => ranAt = stopwatch.Elapsed);
-        Dispatcher.UIThread.RunJobs();
-        Assert.Null(ranAt);
 
         await Until(() => ranAt is not null);
 

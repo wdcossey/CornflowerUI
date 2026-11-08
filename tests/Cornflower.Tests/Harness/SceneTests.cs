@@ -148,5 +148,24 @@ public class SceneTests
         Assert.Same(second.Window, TopLevel.GetTopLevel(content));
     }
 
+    // Content that throws as it is shown leaves no open window behind for the next test.
+    [AvaloniaFact]
+    public void A_Scene_Whose_Content_Throws_Is_Closed_And_Emptied()
+    {
+        var content = new Border();
+        var thrown = false;
+        content.AttachedToVisualTree += (_, _) =>
+        {
+            if (thrown) return;
+            thrown = true;
+            throw new InvalidOperationException("thrown on attach");
+        };
+
+        Assert.Throws<InvalidOperationException>(() => new Scene(content));
+
+        Assert.False(content.IsAttachedToVisualTree());
+        Assert.Null(content.Parent);
+    }
+
     private static double Luminance(Color c) => 0.2126 * c.R + 0.7152 * c.G + 0.0722 * c.B;
 }

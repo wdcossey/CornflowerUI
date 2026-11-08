@@ -118,6 +118,40 @@ public class TestClockTests
         Assert.Same(clock, CornflowerClock.Source);
     }
 
+    // DispatcherTimer refuses a negative delay too; accepted, it would run in the past.
+    [AvaloniaFact]
+    public void A_Negative_Delay_Is_Refused()
+    {
+        using var clock = new TestClock();
+        clock.At(100);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => CornflowerClock.Schedule(() => { }, TimeSpan.FromMilliseconds(-10)));
+    }
+
+    [AvaloniaFact]
+    public void At_Is_Refused_From_A_Callback_It_Is_Running()
+    {
+        using var clock = new TestClock();
+        Exception? refused = null;
+        CornflowerClock.Schedule(() => refused = Record.Exception(() => clock.At(200)), TimeSpan.FromMilliseconds(10));
+
+        clock.At(20);
+
+        Assert.IsType<InvalidOperationException>(refused);
+        Assert.Equal(TimeSpan.FromMilliseconds(20), CornflowerClock.Now);
+    }
+
+    // A real dispatcher would yield between runs; At would spin for ever and hang the session.
+    [AvaloniaFact]
+    public void A_Timeline_Rescheduling_Itself_Without_A_Delay_Fails_Instead_Of_Hanging()
+    {
+        using var clock = new TestClock();
+        void Step() => CornflowerClock.Schedule(Step, TimeSpan.Zero);
+        CornflowerClock.Schedule(Step, TimeSpan.Zero);
+
+        Assert.Throws<InvalidOperationException>(() => clock.At(16));
+    }
+
     [AvaloniaFact]
     public void Time_Does_Not_Go_Back()
     {
