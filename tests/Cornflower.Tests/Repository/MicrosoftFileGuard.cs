@@ -6,8 +6,9 @@ namespace Cornflower.Tests.Repository;
 
 /// <summary>
 /// Rule 6 of CLAUDE.md, made mechanical: no Microsoft fonts, templates or SDK files in the repository.
-/// A file fails if it is a font not on <see cref="AllowedFonts"/>, if it has the name of an SDK file
-/// we read as a specification, or if its bytes are one of the files pulled from the reference VM.
+/// A file fails if it is a font that isn't on <see cref="AllowedFonts"/> with the bytes listed there, if
+/// it has the name of an SDK file we read as a specification, or if its bytes are one of the files
+/// pulled from the reference VM.
 /// </summary>
 internal static class MicrosoftFileGuard
 {
@@ -17,8 +18,18 @@ internal static class MicrosoftFileGuard
     private static readonly HashSet<string> SdkFileNames =
         new(["generic.xaml", "themeresources.xaml"], StringComparer.OrdinalIgnoreCase);
 
-    /// <summary>Repository-relative paths of the fonts Cornflower bundles. None yet.</summary>
-    internal static readonly HashSet<string> AllowedFonts = new(StringComparer.Ordinal);
+    /// <summary>
+    /// The fonts Cornflower bundles: repository-relative path to lowercase SHA-256 hex. Selawik 1.01, from
+    /// <c>https://github.com/microsoft/Selawik/releases/download/1.01/Selawik_Release.zip</c>, unchanged.
+    /// </summary>
+    internal static readonly IReadOnlyDictionary<string, string> AllowedFonts = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        ["src/Cornflower.Themes.Wp81/Fonts/Selawik/selawk.ttf"] = "e9d98518d8ac2817782a9a382430463a2e0793ea68350b695bb727d9a830ee1c",
+        ["src/Cornflower.Themes.Wp81/Fonts/Selawik/selawkb.ttf"] = "f0db5e174a90e0956ad7d2844bdca1d5e6da92ec65b2c04e57ba9b180668c904",
+        ["src/Cornflower.Themes.Wp81/Fonts/Selawik/selawkl.ttf"] = "8e19d073091a1e869b5b0d48b925e605c0a4c6ece7df7b22a364fb065314c4c5",
+        ["src/Cornflower.Themes.Wp81/Fonts/Selawik/selawksb.ttf"] = "0a9e9d0549a10f24bef9b3a29e06fe6e0b5c21e7a784c503b048a307841a7783",
+        ["src/Cornflower.Themes.Wp81/Fonts/SelawikSemilight/selawksl.ttf"] = "8620960344f12093482cded984a1aafa5a57d24cbf7e9299da125ccf0e9d4102",
+    };
 
     /// <summary>Lowercase SHA-256 hex of each pulled Microsoft file, from <c>microsoft-sha256.txt</c>.</summary>
     internal static IReadOnlyDictionary<string, string> MicrosoftHashes { get; } = LoadHashes();
@@ -27,7 +38,7 @@ internal static class MicrosoftFileGuard
     internal static IReadOnlyList<string> Check(
         IEnumerable<(string Path, Func<Stream> Open)> files,
         IReadOnlyDictionary<string, string> hashes,
-        ISet<string> allowedFonts)
+        IReadOnlyDictionary<string, string> allowedFonts)
     {
         var problems = new List<string>();
         foreach (var (path, open) in files)
@@ -35,14 +46,21 @@ internal static class MicrosoftFileGuard
             var name = Path.GetFileName(path);
             var extension = Path.GetExtension(path);
 
-            if (FontExtensions.Contains(extension) && !allowedFonts.Contains(path))
-                problems.Add($"{path}: a font that isn't one Cornflower bundles");
+            string hash;
+            using (var stream = open())
+                hash = Convert.ToHexStringLower(SHA256.HashData(stream));
+
+            if (FontExtensions.Contains(extension))
+            {
+                if (!allowedFonts.TryGetValue(path, out var allowed))
+                    problems.Add($"{path}: a font that isn't one Cornflower bundles");
+                else if (allowed != hash)
+                    problems.Add($"{path}: a font that isn't the bytes of the one Cornflower bundles there");
+            }
 
             if (SdkFileNames.Contains(name) || extension.Equals(".winmd", StringComparison.OrdinalIgnoreCase))
                 problems.Add($"{path}: the name of a Windows Phone SDK file");
 
-            using var stream = open();
-            var hash = Convert.ToHexStringLower(SHA256.HashData(stream));
             if (hashes.TryGetValue(hash, out var original))
                 problems.Add($"{path}: the same bytes as Microsoft's {original}, pulled from the reference VM");
         }
