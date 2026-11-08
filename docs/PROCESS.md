@@ -177,8 +177,7 @@ over SSH.
   resolution, scale and date beside them. The JSON template-tree dumps stay outside the repo; a
   plan quotes the numbers it uses and names the dump
   ([ADR 0002](decisions/0002-decisions-of-2026-11-08.md#reference-material)).
-  *The reference app exists and has run, outside the repo. Moving it into `tools/refapp` is a
-  Tier 0 item ([#5](https://github.com/wdcossey/CornflowerUI/issues/5)); `ref/wp81/` doesn't exist
+  The reference app is [`tools/refapp`](../tools/refapp/README.md). *`ref/wp81/` doesn't exist
   yet.*
 - **A capture is a forced state on a fresh instance, without the motion into it.** Motion (the
   tilt, page transitions, the ToggleSwitch drag) comes from screen recordings of the emulator

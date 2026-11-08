@@ -1,0 +1,11 @@
+<Page
+    x:Class="RefApp.MainPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Background="Black">
+    <Grid>
+        <!-- Each capture's stage is placed here, rendered with RenderTargetBitmap, then removed. -->
+        <Grid x:Name="StageHost" HorizontalAlignment="Left" VerticalAlignment="Top" />
+        <TextBlock x:Name="Log" VerticalAlignment="Bottom" Margin="12,0,12,24" FontSize="15" Foreground="Gray" TextWrapping="Wrap" />
+    </Grid>
+</Page>

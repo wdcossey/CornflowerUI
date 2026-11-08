@@ -107,7 +107,7 @@ src/Cornflower.Fonts.Noto/          planned         the optional fallback font p
 tests/Cornflower.Tests/             exists          Avalonia.Headless with Skia and xunit v3: harness and discovery tests
 samples/Cornflower.Sample/          planned (#9)    phone-sized app, one page per control
 samples/Cornflower.Sample.Android/  planned (#10)   the real-device target, from Tier 0
-tools/                              planned (#5)    spec extraction, reference capture, breakage, generators
+tools/                              exists          reference capture (refapp), spec extraction (winrt-api), font metrics; later breakage, generators
 docs/                               exists          process, roadmap, decisions, this file; later a folder per control
 ref/wp81/                           planned         committed reference captures from the emulator
 ```
