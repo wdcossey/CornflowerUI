@@ -21,8 +21,7 @@ Not in scope at all: a port of UWP or WinRT XAML (Uno Platform does that), and W
 ## The inventory
 
 Read on 2026-11-07 from the phone's `Windows.winmd` and `generic.xaml`, taken from the Windows
-Phone 8.1 SDK on the reference VM. The `.winmd` was read with `tools/winrt-api`, which is outside
-the repo until [#5](https://github.com/wdcossey/CornflowerUI/issues/5). The full type table is in
+Phone 8.1 SDK on the reference VM. The `.winmd` was read with [`tools/winrt-api`](../tools/winrt-api/Program.cs). The full type table is in
 the reference folder, as `wp81-control-types.md`.
 
 | | Count |
@@ -147,14 +146,13 @@ Nothing in Tier 1 starts until this list is done.
 - [ ] The reference profile's resolution scale read by the reference app's first run on it, and
       ADR 0001 confirmed or amended ([#3](https://github.com/wdcossey/CornflowerUI/issues/3)).
 - [x] This inventory regenerated, with real counts (2026-11-07).
-- [x] `tools/winrt-api` written and run on the 8.1 metadata (2026-11-07). It is outside the repo
-      until [#5](https://github.com/wdcossey/CornflowerUI/issues/5), and hasn't been run on the
-      Windows 10 files.
+- [x] `tools/winrt-api` written and run on the 8.1 metadata (2026-11-07). It hasn't been run on
+      the Windows 10 files.
 - [x] The reference app and capture script (2026-11-08): every catalogued control at rest and in
       every template state, dark and light, a PNG and a template-tree JSON each, pulled back with
-      one command. First run, on the 720p profile: 504 captures, 0 errors. It is outside the repo
-      until [#5](https://github.com/wdcossey/CornflowerUI/issues/5).
-- [ ] The reference app, `tools/winrt-api` and the font measurement scripts moved into `tools/`
+      one command. First run, on the 720p profile: 504 captures, 0 errors. In
+      [`tools/refapp`](../tools/refapp/README.md).
+- [x] The reference app, `tools/winrt-api` and the font measurement scripts moved into `tools/`
       ([#5](https://github.com/wdcossey/CornflowerUI/issues/5)).
 - [ ] Captures committed under `ref/wp81/<control>/`, from the reference profile.
 - [ ] The reference app captures flyouts, dialogs and the app bar

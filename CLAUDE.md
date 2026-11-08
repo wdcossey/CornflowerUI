@@ -25,6 +25,10 @@ measure the reference before writing a line, and you build and test before every
 | `src/Cornflower.Themes.Wp81/` | The Windows Phone 8.1 theme. `Wp81Theme` merges every discovered file under `Tokens/` and `Controls/`, in ordinal order. No files yet |
 | `src/Cornflower/` | Umbrella package referencing the two above. No code |
 | `tests/Cornflower.Tests/` | Avalonia.Headless with Skia and xunit v3. Harness tests, discovery tests run on fixtures in `Discovery/Fixture/`, and the spikes in `Spikes/` (one collection, not run in parallel) |
+| `tools/refapp/` | The Windows Phone 8.1 reference app and `run.ps1`, which builds it on the reference VM, runs it in the emulator and pulls the captures back. Not in the solution: it builds with MSBuild 14 on the VM |
+| `tools/winrt-api/` | Lists the XAML control types in a `Windows.winmd`, and which have a default style in a `generic.xaml`. In the solution, so CI builds it |
+| `tools/fonts/` | Node scripts that compare font metrics, weight by weight |
+| `tools/collect-vm.ps1`, `tools/setres.ps1` | Run on the reference VM: inventory its SDK files; set its desktop resolution |
 | `.github/workflows/ci.yml` | Restore, build and test in Release on every push to `main` and every PR |
 | `docs/PROCESS.md` | The control loop: plan, build, compare, review, document |
 | `docs/ROADMAP.md` | Scope, the control inventory by tier, the Tier 0 checklist |
