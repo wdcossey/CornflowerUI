@@ -5,6 +5,7 @@ mobile first. It themes Avalonia's own controls and adds the controls Avalonia l
 era is Windows Phone 8.1.
 
 This file states **only what exists**. A plan, a proposal or an intention does not go here.
+Plans live in `docs/ROADMAP.md`; process in `docs/PROCESS.md`; decisions in `docs/decisions/`; design in `docs/ARCHITECTURE.md`.
 
 ## Persona
 
@@ -25,6 +26,10 @@ measure the reference before writing a line, and you build and test before every
 | `src/Cornflower/` | Umbrella package referencing the two above. No code |
 | `tests/Cornflower.Tests/` | Avalonia.Headless with Skia and xunit v3. Harness tests, and discovery tests run on fixtures in `Discovery/Fixture/` |
 | `.github/workflows/ci.yml` | Restore, build and test in Release on every push to `main` and every PR |
+| `docs/PROCESS.md` | The control loop: plan, build, compare, review, document |
+| `docs/ROADMAP.md` | Scope, the control inventory by tier, the Tier 0 checklist |
+| `docs/ARCHITECTURE.md` | Eras, layout, the ladder, theming, platform features, metrics and testing; the draft mapping rules |
+| `docs/decisions/` | ADR 0001, what "faithful" means; ADR 0002, the decisions of 2026-11-08 |
 
 ## Build
 
