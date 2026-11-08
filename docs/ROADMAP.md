@@ -154,8 +154,8 @@ Nothing in Tier 1 starts until this list is done.
       every template state, dark and light, a PNG and a template-tree JSON each, pulled back with
       one command. First run, on the 720p profile: 504 captures, 0 errors. It is outside the repo
       until [#5](https://github.com/wdcossey/CornflowerUI/issues/5).
-- [ ] The reference app, `tools/winrt-api` and the font measurement scripts moved into `tools/`,
-      with the template's logos replaced ([#5](https://github.com/wdcossey/CornflowerUI/issues/5)).
+- [ ] The reference app, `tools/winrt-api` and the font measurement scripts moved into `tools/`
+      ([#5](https://github.com/wdcossey/CornflowerUI/issues/5)).
 - [ ] Captures committed under `ref/wp81/<control>/`, from the reference profile.
 - [ ] The reference app captures flyouts, dialogs and the app bar
       ([#23](https://github.com/wdcossey/CornflowerUI/issues/23)).

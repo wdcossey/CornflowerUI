@@ -26,12 +26,14 @@ contradicted "faithful" and were never revisited
    | Resolution | 480×800 |
    | Memory | 1024 MB |
    | Diagonal | 4" |
-   | Resolution scale | **Expected 1.0** (one raw pixel per view pixel). **Not read yet.** The reference app reads `DisplayInformation.ResolutionScale` and `RawPixelsPerViewPixel` on its first run on this profile; this item is confirmed, or amended, then |
+   | Resolution scale | **Not read yet.** It was taken to be 1.0 when the profile was chosen; that was never checked. Windows Phone 8.1 is thought to lay out every phone class about 400 view pixels wide, which would put this profile at 1.2 (unconfirmed). The reference app reads `DisplayInformation.ResolutionScale` and `RawPixelsPerViewPixel` on its first run on this profile |
 
    This profile was chosen over "Emulator 8.1 U1 720P 4.7 inch" (device index 10), which made
    the first 504 captures. That profile reads `ResolutionScale` 180: 1.8 raw pixels per view
-   pixel, a 400 × 711.11 view. At a scale of 1.0, a headless frame from our tests and a capture
-   from the emulator compare pixel for pixel, with no resampling.
+   pixel, a 400 × 711.11 view. The reason was that at a scale of 1.0 a headless frame from our tests
+   and a capture from the emulator would compare pixel for pixel, with no resampling. That reason
+   holds only if the scale is 1.0. **This item is provisional:** if the first run on this profile reads
+   any other scale, the choice of profile is reopened and this item amended.
 
 2. **Geometry, colour, motion and behaviour are reproduced and measured.** Every number in a
    control's plan comes from the templates or from a capture, with its source beside it.
