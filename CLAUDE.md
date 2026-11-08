@@ -21,10 +21,10 @@ measure the reference before writing a line, and you build and test before every
 | `Directory.Build.props` | Shared settings: nullable, warnings as errors, central package versions, NuGet metadata |
 | `Directory.Packages.props` | Every package version. Avalonia 12.1.4, xunit v3; Avalonia.Themes.Simple and Avalonia.Fonts.Inter for the tests only |
 | `Directory.Build.targets` | Auto-discovery: a project that sets `CornflowerDiscoverXaml` gets an internal `XamlManifest.Paths` of its `CornflowerDiscoveredXaml` globs |
-| `src/Cornflower.Controls/` | Cornflower's own controls and behaviours. Empty |
+| `src/Cornflower.Controls/` | Cornflower's own controls and behaviours. No controls yet. `CornflowerClock`, internal: the time every Cornflower timeline reads (now, a one-shot delay, the next frame), so a test can replace it |
 | `src/Cornflower.Themes.Wp81/` | The Windows Phone 8.1 theme. `Wp81Theme` merges every discovered file under `Tokens/` and `Controls/`, in ordinal order. No files yet |
 | `src/Cornflower/` | Umbrella package referencing the two above. No code |
-| `tests/Cornflower.Tests/` | Avalonia.Headless with Skia and xunit v3. Harness tests, discovery tests run on fixtures in `Discovery/Fixture/`, the spikes in `Spikes/` (one collection, not run in parallel), and the repository guard in `Repository/` |
+| `tests/Cornflower.Tests/` | Avalonia.Headless with Skia and xunit v3. The harness: `Scene`, a shown window at the reference profile (a 450 × 800 view at render scaling 2.4, so a frame is 1080 × 1920 like the emulator's; `SimpleTheme` then `Wp81Theme` in its `Styles` before the content; dark unless light is asked for), closed and emptied on dispose; `Frames.PixelAt`; `TestClock`, which replaces `CornflowerClock` and moves only when the test moves it. Their tests in `Harness/`, discovery tests run on fixtures in `Discovery/Fixture/`, the spikes in `Spikes/` (one collection, not run in parallel), and the repository guard in `Repository/` |
 | `tools/refapp/` | The Windows Phone 8.1 reference app and `run.ps1`, which builds it on the reference VM, runs it in the emulator and pulls the captures back. Not in the solution: it builds with MSBuild 14 on the VM |
 | `tools/winrt-api/` | Lists the XAML control types in a `Windows.winmd`, and which have a default style in a `generic.xaml`. In the solution, so CI builds it |
 | `tools/fonts/` | Node scripts that compare font metrics, weight by weight |
