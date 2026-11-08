@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Umbrella package: references Controls and the Windows Phone 8.1 theme. Contains no code of its own. -->
+  <PropertyGroup>
+    <PackageId>Cornflower</PackageId>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Cornflower.Controls\Cornflower.Controls.csproj" />
+    <ProjectReference Include="..\Cornflower.Themes.Wp81\Cornflower.Themes.Wp81.csproj" />
+  </ItemGroup>
+
+</Project>

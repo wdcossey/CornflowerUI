@@ -1,0 +1,23 @@
+<Project>
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <!-- NuGet metadata shared by the packable projects under src/ -->
+  <PropertyGroup>
+    <Authors>William Cossey</Authors>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/wdcossey/CornflowerUI</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/wdcossey/CornflowerUI</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>avalonia;windows-phone;metro;theme;mobile;touch</PackageTags>
+    <Description>A faithful reproduction of the Windows Phone design languages for AvaloniaUI. Not affiliated with or endorsed by Microsoft or the AvaloniaUI team.</Description>
+  </PropertyGroup>
+
+</Project>

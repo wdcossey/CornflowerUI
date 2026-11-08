@@ -1,0 +1,6 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+  <!-- Test fixture for auto-discovery. Not a token. -->
+  <sys:String x:Key="Cornflower.Tests.Discovery.First">first</sys:String>
+</ResourceDictionary>

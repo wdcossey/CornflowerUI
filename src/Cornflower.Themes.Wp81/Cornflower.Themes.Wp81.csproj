@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <PackageId>Cornflower.Themes.Wp81</PackageId>
+    <Description>The Windows Phone 8.1 theme: ControlThemes for Avalonia's controls and Cornflower's, and the era's tokens.</Description>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+  </ItemGroup>
+
+  <!-- *.axaml files are included automatically by Avalonia 12's build props. -->
+
+  <!-- Merged by Wp81Theme; see Directory.Build.targets. -->
+  <PropertyGroup>
+    <CornflowerDiscoverXaml>true</CornflowerDiscoverXaml>
+  </PropertyGroup>
+  <ItemGroup>
+    <CornflowerDiscoveredXaml Include="Tokens/**/*.axaml;Controls/**/*.axaml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Cornflower.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Cornflower.Controls\Cornflower.Controls.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,4 @@
+# Normalise line endings; Visual Studio expects CRLF in solution files.
+* text=auto
+*.sln text eol=crlf
+*.png binary

@@ -1,0 +1,39 @@
+<Project>
+
+  <!--
+    Auto-discovery of compiled XAML, carried over from Avonic. A project sets
+    CornflowerDiscoverXaml to true, declares CornflowerDiscoveredXaml globs, and gets an internal
+    XamlManifest.Paths listing those files, so a control adds its own .axaml and never edits a
+    shared registration.
+
+    The property, not the item, switches the target on: a theme with no controls yet still gets
+    an empty manifest, so the code that reads it compiles from day one.
+
+    AssetLoader.GetAssets cannot do this: compiled .axaml is not in the asset index.
+
+    Deliberately no Inputs/Outputs, so added and deleted files are always seen.
+    WriteOnlyWhenDifferent keeps the build incremental. Runs before BeforeCompile so the compiler's
+    dependency cache sees the generated file.
+  -->
+  <Target Name="GenerateCornflowerXamlManifest"
+          BeforeTargets="BeforeCompile"
+          Condition="'$(CornflowerDiscoverXaml)' == 'true'">
+
+    <PropertyGroup>
+      <_CornflowerXamlManifestFile>$(IntermediateOutputPath)XamlManifest.g.cs</_CornflowerXamlManifestFile>
+      <!-- Windows globs yield backslashes: invalid C# escapes and wrong avares:// URIs. -->
+      <_CornflowerXamlManifestPaths>@(CornflowerDiscoveredXaml->Replace('\', '/')->'"%(Identity)"', ', ')</_CornflowerXamlManifestPaths>
+    </PropertyGroup>
+
+    <WriteLinesToFile File="$(_CornflowerXamlManifestFile)"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true"
+                      Lines="// &lt;auto-generated /&gt;;namespace $(RootNamespace)%3B;internal static class XamlManifest { internal static readonly string[] Paths = [$(_CornflowerXamlManifestPaths)]%3B }" />
+
+    <ItemGroup>
+      <Compile Include="$(_CornflowerXamlManifestFile)" />
+      <FileWrites Include="$(_CornflowerXamlManifestFile)" />
+    </ItemGroup>
+  </Target>
+
+</Project>

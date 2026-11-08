@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <!-- Libraries target net8.0 (Directory.Build.props). Tests run on the current runtime:
+         xunit.v3 test projects are executables and need the SDK's own apphost pack. -->
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Headless" />
+    <PackageReference Include="Avalonia.Headless.XUnit" />
+    <PackageReference Include="Avalonia.Skia" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Cornflower.Controls\Cornflower.Controls.csproj" />
+    <ProjectReference Include="..\..\src\Cornflower.Themes.Wp81\Cornflower.Themes.Wp81.csproj" />
+  </ItemGroup>
+
+  <!-- The theme has no files to discover yet, so the tests prove the manifest target on fixtures
+       of their own: nested folders, forward slashes, and that each path loads. -->
+  <PropertyGroup>
+    <CornflowerDiscoverXaml>true</CornflowerDiscoverXaml>
+  </PropertyGroup>
+  <ItemGroup>
+    <CornflowerDiscoveredXaml Include="Discovery/Fixture/**/*.axaml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>

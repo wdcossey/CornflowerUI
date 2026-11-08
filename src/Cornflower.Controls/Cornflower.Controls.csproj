@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <PackageId>Cornflower.Controls</PackageId>
+    <Description>Cornflower's own controls, subclasses, part classes and attached behaviours: behaviour only, no visual opinion. Pair with a Cornflower theme or your own templates.</Description>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Cornflower.Tests" />
+  </ItemGroup>
+
+</Project>
