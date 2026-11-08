@@ -20,6 +20,11 @@
 
   -Only keeps the specimens and popups whose name matches the regex, for a quick run.
   -Popups also or -Popups only adds the popups (flyouts, dialogs, pickers), which are left out by default.
+  -Demo deploys the app with its demo page (a button per popup, and dark or light) and leaves it
+  open in the emulator, for screenshots by hand. It captures nothing.
+  -Grab holds each popup open for 5 s while vm\grab-loop.ps1 grabs the emulator's window, and
+  writes <id>__screen.png beside each popup's dumps. Use it with -Popups only, with the
+  emulator's zoom at 100%, so the window is 1080 x 1920, one pixel per phone pixel.
 
   Device indexes come from AppDeployCmd /EnumerateDevices: 7 to 13 are the 8.1 Update 1 profiles,
   10 is 720p 4.7", 13 is qHD 5". See R:\cornflower-reference\wp81-emulator-profiles.md.
@@ -28,6 +33,8 @@ param(
     [int]$Device = 11,
     [string]$Only = '',
     [ValidateSet('', 'also', 'only')][string]$Popups = '',
+    [switch]$Demo,
+    [switch]$Grab,
     [string]$HostAlias = 'cornflower-ref',
     [string]$Out = 'R:\cornflower-reference\refapp',
     [int]$TimeoutMinutes = 40
@@ -71,6 +78,8 @@ $options = Join-Path $here 'app\run-options.txt'
 $lines = @()
 if ($Only) { $lines += "only=$Only" }
 if ($Popups) { $lines += "popups=$Popups" }
+if ($Demo) { $lines += 'demo' }
+if ($Grab) { $lines += 'hold=5000' }
 if ($lines) { Set-Content -Path $options -Value $lines -Encoding ASCII } else { Remove-Item $options -ErrorAction SilentlyContinue }
 try {
     Copy-Scp @((Join-Path $here 'app'), (Join-Path $here 'vm'), "${HostAlias}:C:/cornflower/refapp/")
@@ -89,7 +98,7 @@ if (-not ($build -match '^built ')) {
 $build | Select-Object -Last 3 | ForEach-Object { Write-Host "  $_" }
 
 Write-Host "3/5 starting the session task for device $Device"
-$taskArgs = "-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File $remote\vm\session.ps1 -Device $Device -ProductId $productId -Root $remote -TimeoutMinutes $TimeoutMinutes"
+$taskArgs = "-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File $remote\vm\session.ps1 -Device $Device -ProductId $productId -Root $remote -TimeoutMinutes $TimeoutMinutes$(if ($Demo) { ' -Demo' })$(if ($Grab) { ' -Grab' })"
 Remote @"
 `$a = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument '$taskArgs'
 `$p = New-ScheduledTaskPrincipal -UserId `$env:USERNAME -LogonType Interactive -RunLevel Highest
@@ -111,6 +120,11 @@ do {
 } until ($status -match '^(done|failed)' -or (Get-Date) -gt $deadline)
 
 Remote "Unregister-ScheduledTask -TaskName '$task' -Confirm:`$false -ErrorAction SilentlyContinue" | Out-Null
+if ($Demo -and $status -match '^done') {
+    Write-Host '  the demo is open in the emulator on the VM'
+    return
+}
+
 if ($status -notmatch '^done') {
     if ($status -match 'partial results pulled') {
         $partial = Join-Path $Out ("{0}-dev{1}-partial" -f (Get-Date -Format 'yyyyMMdd-HHmm'), $Device)
@@ -131,6 +145,24 @@ Copy-Scp @("${HostAlias}:C:/cornflower/refapp/out", "${HostAlias}:C:/cornflower/
 $store = Join-Path $dest 'out\IsolatedStore'
 Get-ChildItem $store | Move-Item -Destination $dest
 Remove-Item (Join-Path $dest 'out') -Recurse -Force
+
+if ($Grab) {
+    # Each held popup gets the last distinct frame grabbed inside its hold, the steady frame, grabbed after the previous popup closed.
+    Copy-Scp @("${HostAlias}:C:/cornflower/refapp/frames", $dest)
+    $frames = Get-ChildItem (Join-Path $dest 'frames') -Filter '*.png' | ForEach-Object {
+        [pscustomobject]@{ File = $_.FullName; At = [DateTimeOffset]::ParseExact($_.BaseName, 'yyyyMMddTHHmmssfff', [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]::AssumeUniversal) }
+    } | Sort-Object At
+    $picked = 0; $prevTo = [DateTimeOffset]::MinValue
+    foreach ($line in (Get-Content (Join-Path $dest 'held.txt') -ErrorAction SilentlyContinue)) {
+        $id, $from, $to = $line -split "`t"
+        $hi = [DateTimeOffset]::Parse($to).AddSeconds(-1)
+        $frame = $frames | Where-Object { $_.At -le $hi } | Select-Object -Last 1
+        if ($frame -and $frame.At -gt $prevTo) { Copy-Item $frame.File (Join-Path $dest "$id`__screen.png"); $picked++ }
+        else { Write-Host "  no frame for $id" }
+        $prevTo = [DateTimeOffset]::Parse($to)
+    }
+    Write-Host "  $picked screen grabs picked from $(@($frames).Count) frames"
+}
 
 $index = Get-Content -Raw (Join-Path $dest 'index.json') | ConvertFrom-Json
 $html = New-Object System.Text.StringBuilder

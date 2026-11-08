@@ -8,7 +8,9 @@ namespace RefApp
     /// <summary>
     /// What a run captures. run.ps1 -Only writes run-options.txt into the package; without it, everything runs.
     /// One setting per line: <c>only=&lt;regex&gt;</c> keeps the specimens and popups whose name matches;
-    /// <c>popups=only</c> or <c>popups=also</c> adds the popups, which a run leaves out by default.
+    /// <c>popups=only</c> or <c>popups=also</c> adds the popups, which a run leaves out by default;
+    /// <c>demo</c> shows the demo page instead of running the suite; <c>hold=&lt;ms&gt;</c> holds each popup open,
+    /// full window, for the screen grabs (run.ps1 -Grab).
     /// </summary>
     internal sealed class Options
     {
@@ -20,6 +22,12 @@ namespace RefApp
 
         /// <summary>Capture only the popups, not the specimens.</summary>
         public bool PopupsOnly;
+
+        /// <summary>Show <see cref="Demo"/>, a page to use by hand, and capture nothing.</summary>
+        public bool Demo;
+
+        /// <summary>How long each popup stays open after it is dumped, for vm\grab-loop.ps1 to grab the screen. 0: no hold.</summary>
+        public int HoldMs;
 
         public bool Matches(string name) =>
             string.IsNullOrEmpty(Only) || Regex.IsMatch(name, Only, RegexOptions.IgnoreCase);
@@ -40,6 +48,14 @@ namespace RefApp
                     else if (line == "popups=also")
                     {
                         options.Popups = true;
+                    }
+                    else if (line.StartsWith("hold=", StringComparison.Ordinal))
+                    {
+                        options.HoldMs = int.Parse(line.Substring(5), System.Globalization.CultureInfo.InvariantCulture);
+                    }
+                    else if (line == "demo")
+                    {
+                        options.Demo = true;
                     }
                     else if (line == "popups=only")
                     {
