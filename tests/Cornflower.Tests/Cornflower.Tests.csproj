@@ -34,6 +34,11 @@
     <CornflowerDiscoveredXaml Include="Discovery/Fixture/**/*.axaml" />
   </ItemGroup>
 
+  <!-- Hashes of the Microsoft files pulled from the reference VM, for the repository guard. -->
+  <ItemGroup>
+    <EmbeddedResource Include="Repository/microsoft-sha256.txt" LogicalName="Cornflower.Tests.Repository.microsoft-sha256.txt" />
+  </ItemGroup>
+
   <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
