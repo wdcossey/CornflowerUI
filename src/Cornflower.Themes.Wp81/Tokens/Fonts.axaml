@@ -1,0 +1,19 @@
+<!--
+  The FontFamily keys of the Windows Phone 8.1 theme resources, under their WinRT names: the six
+  FontFamily resources in the phone SDK's themeresources.xaml. The phone points them at Segoe WP,
+  which is Microsoft's and never ships. Selawik stands in for it (ADR 0001, item 3).
+
+  Each key names one face by its family name, as the phone's do. Selawik Semilight is in a folder
+  of its own because its file says weight 300, the same as Light. In one font collection the two
+  would share one slot, and "Selawik Semilight" would draw Light. Fonts/README.md has the details,
+  and tests/Cornflower.Tests/Fonts proves which file each key draws.
+-->
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <FontFamily x:Key="PhoneFontFamilyNormal">avares://Cornflower.Themes.Wp81/Fonts/Selawik#Selawik</FontFamily>
+  <FontFamily x:Key="PhoneFontFamilyLight">avares://Cornflower.Themes.Wp81/Fonts/Selawik#Selawik Light</FontFamily>
+  <FontFamily x:Key="PhoneFontFamilySemiLight">avares://Cornflower.Themes.Wp81/Fonts/SelawikSemilight#Selawik Semilight</FontFamily>
+  <FontFamily x:Key="PhoneFontFamilySemiBold">avares://Cornflower.Themes.Wp81/Fonts/Selawik#Selawik Semibold</FontFamily>
+  <FontFamily x:Key="ContentControlThemeFontFamily">avares://Cornflower.Themes.Wp81/Fonts/Selawik#Selawik</FontFamily>
+  <FontFamily x:Key="PivotHeaderItemFontFamily">avares://Cornflower.Themes.Wp81/Fonts/SelawikSemilight#Selawik Semilight</FontFamily>
+</ResourceDictionary>

@@ -12,6 +12,13 @@
 
   <!-- *.axaml files are included automatically by Avalonia 12's build props. -->
 
+  <!-- Selawik 1.01 (SIL OFL 1.1). Semilight is in a folder of its own: see Fonts/README.md.
+       The licence travels with the fonts in the package. -->
+  <ItemGroup>
+    <AvaloniaResource Include="Fonts/**/*.ttf" />
+    <None Include="Fonts/OFL.txt" Pack="true" PackagePath="fonts/Selawik/OFL.txt" />
+  </ItemGroup>
+
   <!-- Merged by Wp81Theme; see Directory.Build.targets. -->
   <PropertyGroup>
     <CornflowerDiscoverXaml>true</CornflowerDiscoverXaml>
