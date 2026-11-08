@@ -28,6 +28,7 @@ measure the reference before writing a line, and you build and test before every
 | `tools/refapp/` | The Windows Phone 8.1 reference app and `run.ps1`, which builds it on the reference VM, runs it in the emulator and pulls the captures back. Not in the solution: it builds with MSBuild 14 on the VM |
 | `tools/winrt-api/` | Lists the XAML control types in a `Windows.winmd`, and which have a default style in a `generic.xaml`. In the solution, so CI builds it |
 | `tools/fonts/` | Node scripts that compare font metrics, weight by weight |
+| `tools/tokens/` | Python scripts: `crosscheck.py` compares the SDK's theme resource values with a refapp run's captures; `gen.py` writes the four generated files in `Tokens/` and `TokenExpectations.cs` from the SDK files and that comparison. They read Microsoft's files at run time from outside the repo |
 | `tools/collect-vm.ps1`, `tools/setres.ps1` | Run on the reference VM: inventory its SDK files; set its desktop resolution |
 | `tools/guard/` | `hash-reference.js` writes the SHA-256 list of the pulled Microsoft files that the repository guard test checks against |
 | `.github/workflows/ci.yml` | Restore, build and test in Release on every push to `main` and every PR |

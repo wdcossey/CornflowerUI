@@ -420,6 +420,8 @@ FodyWeavers.xsd
 # Cornflower
 # Written by tools/refapp/run.ps1 -Only for one run, then deleted.
 tools/refapp/app/run-options.txt
+# Written by tools/tokens/crosscheck.py by default: values read from Microsoft's files and the captures.
+tools/tokens/out/
 # Local working files; never committed.
 .scratch/
 # Microsoft's SDK files are read as a specification and never enter the repository.
