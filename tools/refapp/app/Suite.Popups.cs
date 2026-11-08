@@ -27,7 +27,9 @@ namespace RefApp
         /// </summary>
         private async Task CapturePopup(ElementTheme theme, PopupSpecimen p)
         {
-            var s = new Specimen { Name = p.Name, Variant = p.Variant, Height = p.Height, Make = p.MakeHost };
+            // Held for a screen grab, the stage fills the window, so the page behind the popup has the theme's background.
+            var height = _holdMs > 0 ? Window.Current.Bounds.Height : p.Height;
+            var s = new Specimen { Name = p.Name, Variant = p.Variant, Height = height, Make = p.MakeHost };
             var baseName = Id(theme, s, "popup");
             _log.Text = string.Format(CultureInfo.InvariantCulture, "{0}/{1} {2}", _count + 1, _total, baseName);
             await Write("progress.txt", baseName);
@@ -79,6 +81,16 @@ namespace RefApp
                     TreeDump.Write(j, child, child);
                     j.EndObj();
                     await Write(Id(theme, s, "popup" + k) + ".json", j.ToString());
+                }
+
+                if (_holdMs > 0)
+                {
+                    // vm\grab-loop.ps1 grabs the emulator's window all along; run.ps1 picks the frame inside this span.
+                    var from = DateTimeOffset.UtcNow;
+                    await Task.Delay(_holdMs);
+                    var line = baseName + "\t" + from.ToString("o", CultureInfo.InvariantCulture) + "\t" + DateTimeOffset.UtcNow.ToString("o", CultureInfo.InvariantCulture) + "\n";
+                    var timeline = await _out.CreateFileAsync("held.txt", CreationCollisionOption.OpenIfExists);
+                    await FileIO.AppendTextAsync(timeline, line);
                 }
             }
             catch (Exception ex)

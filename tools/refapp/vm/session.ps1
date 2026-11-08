@@ -8,7 +8,9 @@ param(
     [int]$Device = 10,
     [Parameter(Mandatory = $true)][string]$ProductId,
     [string]$Root = 'C:\cornflower\refapp',
-    [int]$TimeoutMinutes = 40
+    [int]$TimeoutMinutes = 40,
+    [switch]$Demo,
+    [switch]$Grab
 )
 
 $ErrorActionPreference = 'Continue'
@@ -40,6 +42,19 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
+if ($Demo) {
+    Status "done: demo launched on device $Device; the app stays open"
+    exit 0
+}
+
+$grabber = $null
+$stopGrab = Join-Path $Root 'grab.stop'
+if ($Grab) {
+    Remove-Item $stopGrab, (Join-Path $Root 'frames') -Recurse -Force -ErrorAction SilentlyContinue
+    $grabber = Start-Process powershell.exe -PassThru -WindowStyle Hidden -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', (Join-Path $Root 'vm\grab-loop.ps1'), '-Out', (Join-Path $Root 'frames'), '-StopFile', $stopGrab)
+    Add-Content -Path $log -Value "$(Get-Date -Format s) grabbing the emulator window, pid $($grabber.Id)"
+}
+
 $started = Get-Date
 Status 'running: app launched, waiting for done.txt'
 $deadline = $started.AddMinutes($TimeoutMinutes)
@@ -59,6 +74,11 @@ while ((Get-Date) -lt $deadline) {
     if ($pngs -ne $lastPngs) { $lastPngs = $pngs; $lastChange = Get-Date }
     elseif (((Get-Date) - $lastChange).TotalMinutes -ge 3) { $stalled = $true; break }
     Status ('running: {0} PNGs so far after {1:N0} s' -f $pngs, ((Get-Date) - $started).TotalSeconds)
+}
+
+if ($grabber) {
+    Set-Content -Path $stopGrab -Value stop
+    $grabber.WaitForExit(30000) | Out-Null
 }
 
 $out = Join-Path $Root 'out'

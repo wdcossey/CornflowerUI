@@ -43,6 +43,7 @@
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="Catalog.cs" />
+    <Compile Include="Demo.cs" />
     <Compile Include="Json.cs" />
     <Compile Include="Options.cs" />
     <Compile Include="Popups.cs" />

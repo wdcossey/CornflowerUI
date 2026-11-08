@@ -40,6 +40,7 @@ namespace RefApp
         private double _width;
         private int _count;
         private int _total;
+        private int _holdMs;
 
         public Suite(Grid host, TextBlock log)
         {
@@ -58,6 +59,12 @@ namespace RefApp
 
             _width = Window.Current.Bounds.Width;
             var options = await Options.LoadAsync();
+            _holdMs = options.HoldMs;
+            if (_holdMs > 0)
+            {
+                // The screen is grabbed: nothing but the stage on it.
+                _log.Visibility = Visibility.Collapsed;
+            }
             var specimens = options.PopupsOnly ? new List<Specimen>() : Catalog.All().Where(s => options.Matches(s.Name)).ToList();
             var popups = options.Popups ? PopupCatalog.All().Where(p => options.Matches(p.Name)).ToList() : new List<PopupSpecimen>();
             var themes = new[] { ElementTheme.Dark, ElementTheme.Light };
@@ -88,7 +95,7 @@ namespace RefApp
                 {
                     // A popup that never closes would stall the run; give each one 30 s.
                     var capture = CapturePopup(theme, p);
-                    if (await Task.WhenAny(capture, Task.Delay(30000)) != capture)
+                    if (await Task.WhenAny(capture, Task.Delay(30000 + _holdMs)) != capture)
                     {
                         _errors.Add(Id(theme, new Specimen { Name = p.Name, Variant = p.Variant }, "popup") + ": timed out after 30 s");
                     }

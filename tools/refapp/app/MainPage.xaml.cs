@@ -31,6 +31,13 @@ namespace RefApp
                 // Not fatal: each stage is rendered on its own, not read from the screen.
             }
 
+            if ((await Options.LoadAsync()).Demo)
+            {
+                Log.Visibility = Windows.UI.Xaml.Visibility.Collapsed;
+                Demo.Show(StageHost);
+                return;
+            }
+
             await new Suite(StageHost, Log).RunAsync();
         }
     }

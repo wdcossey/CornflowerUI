@@ -19,6 +19,8 @@ powershell -ExecutionPolicy Bypass -File tools\refapp\run.ps1             # devi
 powershell -ExecutionPolicy Bypass -File tools\refapp\run.ps1 -Device 10  # 8.1 Update 1 720p 4.7"
 powershell -ExecutionPolicy Bypass -File tools\refapp\run.ps1 -Popups only                     # the popups alone, in about 2 minutes
 powershell -ExecutionPolicy Bypass -File tools\refapp\run.ps1 -Only 'CheckBox|Radio'             # just these specimens
+powershell -ExecutionPolicy Bypass -File tools\refapp\run.ps1 -Popups only -Grab               # the popups, with a screenshot of each, in about 4 minutes
+powershell -ExecutionPolicy Bypass -File tools\refapp\run.ps1 -Demo                            # the demo page, left open in the emulator
 ```
 
 Results go to `R:\cornflower-reference\refapp\<yyyyMMdd-HHmm>-dev<n>\`: one PNG and one JSON per
@@ -29,6 +31,14 @@ Device indexes are in `R:\cornflower-reference\wp81-emulator-profiles.md`.
 run and `-Popups only` runs them alone; by default a run leaves them out, because with them inside
 a full run the emulator connection broke at about 477 PNGs, twice. The app reads these from a
 `run-options.txt` that `run.ps1` writes into the package for that run and then deletes.
+
+`-Grab` holds each popup open for 5 s while `vm\grab-loop.ps1` saves a screenshot of the phone's
+display, and `run.ps1` puts it beside the popup's dumps as `<id>__screen.png`: the popup's pixels,
+at 1080 × 1920 on the reference profile (see [Popup pixels](#popup-pixels)). The loop's own shots
+are kept in `frames\`, and each popup's hold, in UTC, in `held.txt`.
+
+`-Demo` deploys the app with a page to use by hand instead of the suite: a button for each popup,
+ContentDialog first, and dark and light. The app stays open in the emulator; nothing is captured.
 
 A run that stops making PNGs for 3 minutes is given up, and whatever the app wrote is still
 pulled back, to a folder ending `-partial`. Its `progress.txt` names the last item started.
@@ -77,12 +87,11 @@ What a capture is and isn't:
   recordings with `ffmpeg`.
 - A state is forced, not reached by input. Where `stateApplied` is false, the template has no
   state of that name and the PNG shows the rest state.
-- **A popup has numbers but no pixels.** `RenderTargetBitmap` can't see popups on the phone:
+- **`RenderTargetBitmap` can't see popups on the phone,** so a popup's PNG comes from the screen (`-Grab`):
   rendering a popup's child throws `ArgumentException`, and rendering the whole window
   (`RenderAsync(null)`) leaves popups out. Moving a popup's child onto a stage does render, but
   not as the phone draws it: the content lays out again and loses its state (a list picker came
-  out 1921 × 2066, a menu flyout with no items), so that was dropped. Popup pixels need a capture
-  of the emulator's screen; that is still to do, with the app bar.
+  out 1921 × 2066, a menu flyout with no items), so that was dropped.
 - **Never close a popup by force.** Setting `IsOpen = false` on a full-screen picker or dialog
   while it animates out killed the app in all three runs that did it. Closing with `Hide()` and
   waiting for the popup to go, the next run finished.
@@ -123,9 +132,8 @@ TimePicker 2, AppBarButton 12, AppBarToggleButton 36, ListViewItem 84, ListView 
   template root. Their states are on inner parts, such as the date picker's flyout button and
   the list's items, and the suite doesn't walk those yet. The list items are covered by the
   separate ListViewItem specimen. The Slider's template really has only Normal and Disabled.
-- **Popup pixels and the app bar.** Popups are dumped, not rendered (above). The page's app bar
-  isn't captured at all yet, though the full-screen pickers and ContentDialog each bring a
-  CommandBar in a popup of their own, and its tree is dumped.
+- **The page's app bar.** It isn't captured yet. The full-screen pickers and ContentDialog each
+  bring a CommandBar in a popup of their own; its tree is dumped and `-Grab` shows its pixels.
 - **Other profiles.** Devices 10, 11 and 12 have run (below). Run `-Device 13` for qHD 5", and so on.
 
 ## Runs by profile (2026-11-08)
@@ -154,6 +162,31 @@ popups, in the order `GetOpenPopups` returns them, with their window bounds in l
 | ComboBox with 3 items | none: it opens inline, in the control | | |
 
 The ComboBox with 10 items opens a `ListPickerFlyoutPresenter`: the full-screen picker.
+
+## Popup pixels
+
+`RenderTargetBitmap` can't see popups, so `-Grab` takes the phone's display from the emulator.
+What was tried on 2026-11-08, on device 11 (1080 × 1920) with the VM's screen at 2560 × 1440:
+
+- **A grab of the emulator's window** (`OPWindowClass`, "Output Painter DX Child Window", with
+  `PrintWindow`) is only as sharp as the emulator's zoom. At the zoom that fits the screen the
+  window is 551 × 979, so the grab is scaled. At 100% it is 1080 × 1920, but the emulator doesn't
+  draw the part of the window below the screen: every row past about 1406 came out blank, which
+  is where the pickers' app bars are. The zoom also goes back to fitting when the emulator restarts.
+  A hidden "Output Painter Child Window" is 1080 × 1920 too, but holds no frame of its own.
+- **The emulator's own Screenshot tool** (Additional Tools > Screenshot > Capture, then Save...)
+  reads the whole display at 1080 × 1920 whatever the zoom. `-Grab` uses it:
+  `vm\grab-loop.ps1` watches the window, and each time the picture has changed and then held
+  still for 1.2 s, presses Capture and Save... through UI Automation and fills the save dialog
+  with Win32 messages (`vm\XdeWin32.cs`). Walking the modal file dialog through UI Automation
+  was slow enough to hang. If Additional Tools is closed, as after a restart, it presses the
+  toolbar's `>>` with posted mouse messages: the toolbar draws its own buttons, so UI Automation
+  doesn't see them. `vm\xde-tree.ps1` lists the emulator's UI Automation tree, to find controls.
+
+Two runs of `-Popups only -Grab`, the second from a cold emulator (`20261108-2248-dev11`,
+`20261108-2254-dev11`), gave 24 shots each, all 1080 × 1920. Compared, three shots were identical
+to the pixel and one differed in 7 pixels by 1 level, in the anti-aliasing of the app bar's icons.
+The ComboBox with 3 items, which opens inline, gets a shot too: the hold doesn't depend on a popup.
 
 ## The probe's first numbers (2026-11-08, Update 1 720p 4.7", dark)
 
