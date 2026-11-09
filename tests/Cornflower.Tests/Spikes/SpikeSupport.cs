@@ -61,7 +61,8 @@ internal sealed class SpikeWindow : IDisposable
         beforeContent?.Invoke(Window);
         Window.Content = content;
         Window.Show();
-        Spike.Settle();
+        // Drawn, not just laid out: headless input hit-tests the composed frame.
+        Frames.DrawFirstFrame(Window);
     }
 
     public void Dispose()

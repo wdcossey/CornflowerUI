@@ -19,7 +19,6 @@ namespace Cornflower.Tests.Sample;
 /// page drawn by the theme's keys. The device run (<c>tools/android/run.ps1</c>) reads the page's
 /// ready line, so its format is held here too.
 /// </summary>
-[Collection(SampleCollection.Name)]
 public class SampleTests
 {
     [AvaloniaFact]
@@ -126,7 +125,7 @@ public class SampleTests
             using var scene = new Scene(view);
             for (var frame = 0; frame < 4; frame++)
             {
-                AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+                ManualRenderTimer.ForceTick();
                 Dispatcher.UIThread.RunJobs();
             }
 
@@ -146,8 +145,8 @@ public class SampleTests
         MainView.Report = lines.Add;
         try
         {
-            // In and out with no dispatcher work between: the headless render timer is a real
-            // DispatcherTimer, so a RunJobs (Scene's own, say) could draw the page's frames first.
+            // In and out of a shown Scene: Scene's constructor draws the first frame, which would
+            // run the page's frame requests before it could leave.
             using var scene = new Scene();
             var view = new MainView();
             scene.Window.Content = view;
@@ -156,7 +155,7 @@ public class SampleTests
             Assert.False(view.IsAttachedToVisualTree());
             for (var frame = 0; frame < 4; frame++)
             {
-                AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+                ManualRenderTimer.ForceTick();
                 Dispatcher.UIThread.RunJobs();
             }
 
@@ -179,15 +178,4 @@ public class SampleTests
         var scaling = top.RenderScaling;
         return Frames.PixelAt(frame, (int)(centre.X * scaling), (int)(centre.Y * scaling));
     }
-}
-
-/// <summary>
-/// The sample's page asks for frames, and one test forces render ticks. Headless tests share one UI
-/// thread, and a test's <c>RunJobs</c> can run another test queued there, so a forced tick could
-/// land inside a harness test that counts frames. These run on their own, after the parallel tests.
-/// </summary>
-[CollectionDefinition(Name, DisableParallelization = true)]
-public sealed class SampleCollection
-{
-    public const string Name = "Sample";
 }

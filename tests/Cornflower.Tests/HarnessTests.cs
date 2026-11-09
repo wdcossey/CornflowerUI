@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Media;
+using Avalonia.Threading;
 
 namespace Cornflower.Tests;
 
@@ -33,6 +34,8 @@ public class HarnessTests
             Content = new Border { Background = new SolidColorBrush(Color.FromRgb(0x1B, 0xA1, 0xE2)) },
         };
         window.Show();
+        Dispatcher.UIThread.RunJobs();
+        ManualRenderTimer.ForceTick();
 
         using var frame = window.CaptureRenderedFrame();
 

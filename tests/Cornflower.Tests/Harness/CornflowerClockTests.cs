@@ -5,6 +5,7 @@ using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
+using Avalonia.Media;
 using Cornflower.Controls;
 
 namespace Cornflower.Tests.Harness;
@@ -75,16 +76,20 @@ public class CornflowerClockTests
     [AvaloniaFact]
     public void Real_RequestFrame_Runs_On_The_Windows_Next_Frame()
     {
-        var content = new Border();
+        var content = new Border { Background = Brushes.Red };
         using var scene = new Scene(content);
+        // A frame in flight: the change is committed, and composed only on the next render tick.
+        // Until then the window's next frame waits, so a callback merely posted to the dispatcher
+        // would run in the RunJobs below.
+        content.Background = Brushes.Blue;
+        Dispatcher.UIThread.RunJobs();
         var ran = false;
 
         RealClock.Instance.RequestFrame(content, () => ran = true);
-        // Not RunJobs here: the headless render timer is a real DispatcherTimer, so a tick that
-        // happens to be due would run the frame early, and the test would fail by timing.
+        Dispatcher.UIThread.RunJobs();
         Assert.False(ran);
 
-        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+        ManualRenderTimer.ForceTick();
         Dispatcher.UIThread.RunJobs();
         Assert.True(ran);
     }
@@ -97,7 +102,7 @@ public class CornflowerClockTests
         var ran = false;
 
         RealClock.Instance.RequestFrame(content, () => ran = true).Dispose();
-        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+        ManualRenderTimer.ForceTick();
         Dispatcher.UIThread.RunJobs();
 
         Assert.False(ran);
