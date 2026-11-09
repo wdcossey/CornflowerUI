@@ -4,8 +4,9 @@ Era 1 is Windows Phone 8.1. This file is the map; the GitHub issues are the work
 lists only what exists.
 
 Process per issue: [`PROCESS.md`](PROCESS.md) §0. Start an issue only when its blockers are
-merged. Decisions behind this plan: [ADR 0001](decisions/0001-what-faithful-means.md) and
-[ADR 0002](decisions/0002-decisions-of-2026-11-08.md).
+merged. Decisions behind this plan: [ADR 0001](decisions/0001-what-faithful-means.md),
+[ADR 0002](decisions/0002-decisions-of-2026-11-08.md) and
+[ADR 0003](decisions/0003-decisions-on-the-tier-0-infrastructure.md).
 
 ## Scope
 
@@ -156,42 +157,48 @@ Nothing in Tier 1 starts until this list is done.
       ([#5](https://github.com/wdcossey/CornflowerUI/issues/5)).
 - [ ] Captures committed under `ref/wp81/<control>/`, from the reference profile.
 - [ ] The reference app captures flyouts, dialogs and the app bar
-      ([#23](https://github.com/wdcossey/CornflowerUI/issues/23)).
+      ([#23](https://github.com/wdcossey/CornflowerUI/issues/23)). The popups have tree dumps, and 1080 × 1920
+      screenshots from the emulator's Screenshot tool (`run.ps1 -Popups only -Grab`). The page's
+      app bar is left.
 - [ ] Motion recordings: the tilt, page transitions, ToggleSwitch, the pickers
       ([#24](https://github.com/wdcossey/CornflowerUI/issues/24)).
 - [ ] Read from the emulator: the item count at which ComboBox goes full screen, and the
-      ToggleSwitch drag threshold ([#25](https://github.com/wdcossey/CornflowerUI/issues/25)).
+      ToggleSwitch drag threshold ([#25](https://github.com/wdcossey/CornflowerUI/issues/25)). Read so far: 10 items
+      open the full-screen picker and 3 open inline; the count where it flips isn't pinned down.
 - [ ] The checklist generator: one control's spec from the `.winmd` and `generic.xaml`
       ([#7](https://github.com/wdcossey/CornflowerUI/issues/7)). The `generic.xaml` half is still
       a search recipe, not a tool.
-- [ ] `tools/winjs-ref` ([#8](https://github.com/wdcossey/CornflowerUI/issues/8)).
+- [x] ~~`tools/winjs-ref`~~ ([#8](https://github.com/wdcossey/CornflowerUI/issues/8)). Not needed: the shipped WinJS
+      2.1 for Phone stylesheet was already pulled on 2026-11-07.
 - [ ] A side-by-side tool: two frames in one image.
-- [ ] A CI check that no Microsoft font or SDK file is committed
+- [x] A CI check that no Microsoft font or SDK file is committed
       ([#6](https://github.com/wdcossey/CornflowerUI/issues/6)).
-- [ ] The CI actions moved off Node 20 ([#2](https://github.com/wdcossey/CornflowerUI/issues/2)).
+- [x] The CI actions moved off Node 20 ([#2](https://github.com/wdcossey/CornflowerUI/issues/2)), in the
+      bootstrap.
 - [ ] The desktop sample: a phone-sized window, one auto-discovered page per control
-      ([#9](https://github.com/wdcossey/CornflowerUI/issues/9)).
+      ([#9](https://github.com/wdcossey/CornflowerUI/issues/9)). A nice-to-have, to watch progress as Avonic's sample
+      does. It doesn't hold up Tier 1.
 - [ ] The Android sample and a first device run on the Pixel 8
       ([#10](https://github.com/wdcossey/CornflowerUI/issues/10)).
-- [ ] The test harness: `Scene`, `Frames`, the clock hook and `TestClock`
+- [x] The test harness: `Scene`, `Frames`, the clock hook and `TestClock`
       ([#11](https://github.com/wdcossey/CornflowerUI/issues/11)).
 - [ ] Metrics from Avonic: the style budget, `StyleTrace`, the census, the benchmark, the Debug
       performance line, the breakage tool ([#12](https://github.com/wdcossey/CornflowerUI/issues/12)).
 - [ ] The test that lists every templated Avalonia control without a Wp81 theme
       ([#13](https://github.com/wdcossey/CornflowerUI/issues/13)).
-- [ ] Spike: does swapping the theme at run time re-template every control?
+- [x] Spike: does swapping the theme at run time re-template every control?
       ([#14](https://github.com/wdcossey/CornflowerUI/issues/14))
-- [ ] Spike: what does a control with no `ControlTheme` do?
+- [x] Spike: what does a control with no `ControlTheme` do?
       ([#15](https://github.com/wdcossey/CornflowerUI/issues/15))
-- [ ] Spike: a `ControlTheme` keyed to a subclass with `BasedOn` the base's gets the base's
+- [x] Spike: a `ControlTheme` keyed to a subclass with `BasedOn` the base's gets the base's
       template and can add to it; a subclass whose `StyleKeyOverride` returns the base type gets
       the base's theme unchanged ([#16](https://github.com/wdcossey/CornflowerUI/issues/16)).
-- [ ] Spike: an attached tilt on a stock `Button` reads the press point through
+- [x] Spike: an attached tilt on a stock `Button` reads the press point through
       `handledEventsToo` ([#17](https://github.com/wdcossey/CornflowerUI/issues/17)).
-- [ ] Fonts: Selawik bundled; Semilight addressed by name and the line-height metric settled by
+- [x] Fonts: Selawik bundled; Semilight addressed by name and the line-height metric settled by
       test ([#18](https://github.com/wdcossey/CornflowerUI/issues/18)). Selawik was measured
       against Segoe UI on 2026-11-06 and against Segoe WP on 2026-11-07.
-- [ ] Tokens: theme colours dark and light, the accent and the 20 named accents, the type ramp,
+- [x] Tokens: theme colours dark and light, the accent and the 20 named accents, the type ramp,
       sizes ([#19](https://github.com/wdcossey/CornflowerUI/issues/19)).
 - [ ] The template glyph set, drawn as our own paths and tested
       ([#20](https://github.com/wdcossey/CornflowerUI/issues/20)).
