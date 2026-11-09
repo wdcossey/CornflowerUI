@@ -5,6 +5,9 @@ using Avalonia.Controls.Platform;
 using Avalonia.Layout;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
+#if DEBUG
+using Cornflower.Sample.Diagnostics;
+#endif
 
 namespace Cornflower.Sample;
 
@@ -12,7 +15,8 @@ namespace Cornflower.Sample;
 /// The sample's one page: the accent, the 20 named accents, the type ramp and the font families,
 /// each read through its key, and what the device reports. Each time the page is shown, once it has
 /// drawn, it writes one <c>CORNFLOWER ready</c> line to standard output (logcat's <c>DOTNET</c> tag on Android), which
-/// <c>tools/android/run.ps1</c> waits for.
+/// <c>tools/android/run.ps1</c> waits for. In a Debug build, a line along the bottom says what the page
+/// cost to open, the first time it's shown (<see cref="Diagnostics.PerformanceMonitor"/>).
 /// </summary>
 public partial class MainView : UserControl
 {
@@ -42,8 +46,17 @@ public partial class MainView : UserControl
     private TopLevel? _top;
     private IInsetsManager? _insets;
 
+#if DEBUG
+    /// <summary>Times the page from before it's made until it's laid out; begun in the constructor.</summary>
+    private readonly PerformanceMonitor _performance = new();
+    private bool _performanceReported;
+#endif
+
     public MainView()
     {
+#if DEBUG
+        _performance.Begin();
+#endif
         AvaloniaXamlLoader.Load(this);
 
         var accents = this.GetControl<WrapPanel>("NamedAccents");
@@ -106,7 +119,25 @@ public partial class MainView : UserControl
 
         // The callback runs before the next frame is drawn; the one it asks for runs after it.
         top.RequestAnimationFrame(_ => top.RequestAnimationFrame(_ => ReportReady()));
+
+#if DEBUG
+        if (!_performanceReported)
+        {
+            _performanceReported = true;
+            _performance.Report(this.GetControl<TextBlock>("PageTitle").Text!, this, ShowPerformance);
+        }
+#endif
     }
+
+#if DEBUG
+    private void ShowPerformance(string line)
+    {
+        _performance.Dispose();
+        var shown = this.GetControl<TextBlock>("PerformanceLine");
+        shown.Text = line;
+        shown.IsVisible = true;
+    }
+#endif
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
@@ -116,6 +147,9 @@ public partial class MainView : UserControl
         if (_top is not null)
             _top.ScalingChanged -= OnScalingChanged;
         _top = null;
+#if DEBUG
+        _performance.Dispose(); // Reported once; a page gone before its line is never reported.
+#endif
         base.OnDetachedFromVisualTree(e);
     }
 

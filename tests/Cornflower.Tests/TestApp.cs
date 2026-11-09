@@ -1,5 +1,8 @@
+using System.Runtime.CompilerServices;
 using Avalonia;
 using Avalonia.Headless;
+using Cornflower.Sample.Diagnostics;
+using Cornflower.Tests.Performance;
 
 [assembly: AvaloniaTestApplication(typeof(Cornflower.Tests.TestApp))]
 
@@ -17,4 +20,18 @@ public class TestApp : Application
             .UseSkia()
             .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false })
             .AfterSetup(_ => ManualRenderTimer.Install());
+
+    /// <summary>
+    /// Turns on Avalonia's diagnostics, which <c>StyleTrace</c> and the Debug line's tests read. Avalonia
+    /// reads the switch once, so it's set as the assembly loads, before Avalonia starts. The benchmark
+    /// leaves it off, as an app has it, so <see cref="StyleTrace.ChecksFor"/> refuses to run then.
+    /// </summary>
+    [ModuleInitializer]
+    internal static void EnableDiagnostics()
+    {
+        if (Environment.GetEnvironmentVariable(StyleCostBenchmark.Variable) is null)
+        {
+            PerformanceMonitor.EnableDiagnostics();
+        }
+    }
 }
