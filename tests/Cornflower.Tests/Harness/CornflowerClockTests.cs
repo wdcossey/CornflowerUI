@@ -80,7 +80,8 @@ public class CornflowerClockTests
         var ran = false;
 
         RealClock.Instance.RequestFrame(content, () => ran = true);
-        Dispatcher.UIThread.RunJobs();
+        // Not RunJobs here: the headless render timer is a real DispatcherTimer, so a tick that
+        // happens to be due would run the frame early, and the test would fail by timing.
         Assert.False(ran);
 
         AvaloniaHeadlessPlatform.ForceRenderTimerTick();

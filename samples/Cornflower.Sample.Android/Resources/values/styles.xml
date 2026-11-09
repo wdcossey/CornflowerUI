@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<resources>
+  <!-- The window behind the Avalonia view is black, the dark page's own background, so the
+       app opens black instead of flashing white before the first frame. -->
+  <style name="Cornflower.NoActionBar" parent="@style/Theme.AppCompat.NoActionBar">
+    <item name="android:windowActionBar">false</item>
+    <item name="android:windowNoTitle">true</item>
+    <item name="android:windowBackground">@android:color/black</item>
+  </style>
+</resources>
