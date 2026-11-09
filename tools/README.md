@@ -4,7 +4,8 @@
 |---|---|---|
 | [`refapp/`](refapp/README.md) | The Windows Phone 8.1 reference app. `run.ps1` builds it on the reference VM, runs it in the emulator and pulls every capture back | This PC, driving the VM over SSH |
 | [`android/`](android/README.md) | The device run: builds the Android sample, installs and starts it on the phone over ADB, and pulls back a frame, the start time and what the device reported | This PC, with the phone on USB or wireless debugging |
-| [`winrt-api/`](winrt-api/Program.cs) | Lists the XAML control types in a `Windows.winmd`, and which have a default style in a `generic.xaml` | Anywhere with the .NET SDK |
+| [`winrt-api/`](winrt-api/Program.cs) | `types`: lists the XAML control types in a `Windows.winmd`, and which have a default style in a `generic.xaml`. `checklist <Type>`: one control's spec as a Markdown checklist, from the `.winmd`, `generic.xaml` and `themeresources.xaml`, beside Avalonia's control ([PROCESS.md](../docs/PROCESS.md) §1) | Anywhere with the .NET SDK, with the SDK files |
+| `breakage/run.js` | Breaks each behaviour in a list on its own, in a fresh clone, and checks that a test goes red ([docs/performance](../docs/performance/README.md)) | Anywhere with Node and the .NET SDK |
 | [`fonts/`](fonts/README.md) | Compares font metrics, weight by weight | Anywhere with Node |
 | [`tokens/`](tokens/README.md) | Writes the 8.1 theme's token files and the token tests' expected values from the SDK, and cross-checks the SDK's values against a reference app run | Anywhere with Python 3, with the SDK files and a capture |
 | `guard/hash-reference.js` | Writes the hashes of the pulled Microsoft files for the repository guard test (`tests/Cornflower.Tests/Repository/`). Run it whenever more files are pulled | Anywhere with Node, with the reference folder |

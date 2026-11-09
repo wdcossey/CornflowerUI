@@ -157,15 +157,15 @@ exists, the two images sit next to each other in the comparison.*
   pass on the fixed diff. Once for docs and samples. Findings are fixed or waived, with reasons,
   in the PR.
 - **Prove the tests can fail** by breaking each behaviour in a clean clone and checking a test
-  goes red. *The breakage tool is a Tier 0 item ([#12](https://github.com/wdcossey/CornflowerUI/issues/12)).*
+  goes red, with `tools/breakage/run.js` ([docs/performance](performance/README.md) has how).
 - **A screenshot** in the PR description of anything visual: the emulator's capture beside ours,
   through URLs pinned to the commit, naming the emulator profile and saying if ours is headless.
 - **The device run**, once per batch, before it is called ready to merge: the sample on the
-  Android device over ADB, with frames pulled back. Ask first. *The Android sample is a Tier 0
-  item ([#10](https://github.com/wdcossey/CornflowerUI/issues/10)).*
+  Android device over ADB, with frames pulled back, by
+  [`tools/android/run.ps1`](../tools/android/README.md). Ask first.
 - **The style budget** in CI. Over the limit, see whether the alternatives can go, or raise the
-  limit on purpose and say so in the PR. *The budget test is a Tier 0 item
-  ([#12](https://github.com/wdcossey/CornflowerUI/issues/12)).*
+  limit on purpose and say so in the PR (`StyleBudgetTests`;
+  [docs/performance](performance/README.md)).
 - A review finding can be wrong. Check it against the reference.
 
 ## 5. Document
