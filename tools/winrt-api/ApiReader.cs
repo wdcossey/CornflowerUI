@@ -49,7 +49,10 @@ internal sealed class ApiReader : IDisposable
     /// <summary>Whether the metadata defines <paramref name="fullName"/>.</summary>
     public bool Contains(string fullName) => _types.ContainsKey(fullName);
 
-    /// <summary>The chain from <paramref name="fullName"/> down to, not including, <paramref name="stopAt"/>.</summary>
+    /// <summary>
+    /// The chain from <paramref name="fullName"/> down its base types to, not including,
+    /// <paramref name="stopAt"/>. The type itself is always in it, even when it is the stop.
+    /// </summary>
     public IReadOnlyList<ApiType> Chain(string fullName, string stopAt)
     {
         if (!_types.ContainsKey(fullName))
@@ -58,7 +61,7 @@ internal sealed class ApiReader : IDisposable
         }
 
         var chain = new List<ApiType>();
-        for (var name = fullName; name != stopAt && _types.TryGetValue(name, out var handle);)
+        for (var name = fullName; (name == fullName || name != stopAt) && _types.TryGetValue(name, out var handle);)
         {
             var type = _md.GetTypeDefinition(handle);
             chain.Add(Read(name, type));
@@ -128,7 +131,10 @@ internal sealed class ApiReader : IDisposable
                 .Select(p => _md.GetString(p.Name))
                 .ToList();
             var arguments = string.Join(", ", signature.ParameterTypes.Select((t, i) => i < parameters.Count ? $"{t} {parameters[i]}" : t));
-            var overridable = (attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Family && (attributes & MethodAttributes.Virtual) != 0;
+            // Every protected instance method in a .winmd is virtual; one that can't be overridden is also final.
+            var overridable = (attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Family
+                && (attributes & MethodAttributes.Virtual) != 0
+                && (attributes & MethodAttributes.Final) == 0;
             methods.Add(new ApiMethod(name, $"{signature.ReturnType} {name}({arguments})", overridable));
         }
 

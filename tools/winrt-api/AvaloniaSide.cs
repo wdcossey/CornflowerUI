@@ -43,10 +43,7 @@ internal sealed class AvaloniaSide
     /// <param name="name">The WinRT control's name without its namespace.</param>
     public AvaloniaSide(string name)
     {
-        _type = Controls.GetExportedTypes()
-            .Where(t => t.Name == name && t.Namespace is "Avalonia.Controls" or "Avalonia.Controls.Primitives")
-            .OrderBy(t => t.Namespace == "Avalonia.Controls" ? 0 : 1)
-            .FirstOrDefault();
+        _type = FindType(name);
         for (var type = _type; type is not null; type = type.BaseType)
         {
             foreach (var attribute in type.GetCustomAttributesData())
@@ -71,6 +68,13 @@ internal sealed class AvaloniaSide
         }
     }
 
+    /// <summary>Avalonia's type of that name in <c>Avalonia.Controls</c>, then <c>.Primitives</c>.</summary>
+    private static Type? FindType(string name) =>
+        Controls.GetExportedTypes()
+            .Where(t => t.Name == name && t.Namespace is "Avalonia.Controls" or "Avalonia.Controls.Primitives")
+            .OrderBy(t => t.Namespace == "Avalonia.Controls" ? 0 : 1)
+            .FirstOrDefault();
+
     /// <summary>Avalonia's control, or null for a control Avalonia doesn't have.</summary>
     public Type? Type => _type;
 
@@ -80,9 +84,25 @@ internal sealed class AvaloniaSide
     /// <summary>The template parts Avalonia's control declares it looks for.</summary>
     public IReadOnlyList<string> Parts => _parts;
 
-    /// <summary><c>Button.IsPressed</c> if Avalonia's control has a public property of that name, its base types' included; else null.</summary>
-    public string? Property(string name) =>
-        _type?.GetProperty(name, BindingFlags.Public | BindingFlags.Instance) is { } property ? $"{property.DeclaringType!.Name}.{property.Name}" : null;
+    /// <summary>
+    /// <c>Button.IsPressed</c> if Avalonia's control has a public property of that name, its base types'
+    /// included; for an attached property (<c>ScrollViewer.HorizontalScrollBarVisibility</c>), the same
+    /// on Avalonia's type of the owner's name, as a static <c>…Property</c> field; else null.
+    /// </summary>
+    public string? Property(string name)
+    {
+        var dot = name.IndexOf('.');
+        if (dot > 0)
+        {
+            var owner = FindType(name[..dot]);
+            var attached = name[(dot + 1)..];
+            return owner?.GetField(attached + "Property", BindingFlags.Public | BindingFlags.Static) is not null
+                ? $"{owner.Name}.{attached} (attached)"
+                : null;
+        }
+
+        return _type?.GetProperty(name, BindingFlags.Public | BindingFlags.Instance) is { } property ? $"{property.DeclaringType!.Name}.{property.Name}" : null;
+    }
 
     /// <summary><c>Button.Click</c> if Avalonia's control has a public event of that name; else null.</summary>
     public string? Event(string name) =>

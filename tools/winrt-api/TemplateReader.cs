@@ -144,7 +144,7 @@ internal static partial class TemplateReader
     private static string DescribeAnimation(XElement animation)
     {
         var kind = animation.Name.LocalName;
-        var target = (string?)animation.Attribute("Storyboard.TargetName") ?? "";
+        var target = (string?)animation.Attribute("Storyboard.TargetName") ?? (string?)animation.Attribute("TargetName") ?? "";
         var property = (string?)animation.Attribute("Storyboard.TargetProperty");
         var subject = property is null ? target : $"{target}.{property}";
         if (kind.EndsWith("ThemeAnimation", StringComparison.Ordinal))
@@ -158,12 +158,12 @@ internal static partial class TemplateReader
         var frames = animation.Elements().Where(e => e.Name.LocalName.EndsWith("KeyFrame", StringComparison.Ordinal)).ToList();
         if (frames.Count == 1 && (string?)frames[0].Attribute("KeyTime") is null or "0" or "0:0:0")
         {
-            return $"{subject} = {(string?)frames[0].Attribute("Value")}";
+            return $"{subject} = {FrameValue(frames[0])}";
         }
 
         if (frames.Count > 0)
         {
-            return $"{subject}: {kind} " + string.Join(", ", frames.Select(f => $"{(string?)f.Attribute("KeyTime")} → {(string?)f.Attribute("Value")}"));
+            return $"{subject}: {kind} " + string.Join(", ", frames.Select(f => $"{(string?)f.Attribute("KeyTime")} → {FrameValue(f)}"));
         }
 
         var settings = string.Join(" ", animation.Attributes()
@@ -171,6 +171,13 @@ internal static partial class TemplateReader
             .Select(a => $"{a.Name.LocalName}={a.Value}"));
         return $"{subject}: {kind} {settings}".TrimEnd();
     }
+
+    /// <summary>A key frame's value, as an attribute or as an element (<c>&lt;DiscreteObjectKeyFrame.Value&gt;</c>).</summary>
+    private static string FrameValue(XElement frame) =>
+        (string?)frame.Attribute("Value")
+        ?? (frame.Elements().FirstOrDefault(e => e.Name.LocalName.EndsWith(".Value", StringComparison.Ordinal))?.Elements().FirstOrDefault() is { } value
+            ? Describe(value)
+            : "");
 
     /// <summary>An element as a value: its type and attributes, on one line.</summary>
     internal static string Describe(XElement element)
@@ -230,15 +237,16 @@ internal sealed partial class ThemeResources
 
     /// <summary>
     /// The key's dark and light values; the same value twice for a key outside the theme dictionaries;
-    /// null where it has none. A value that refers to another theme resource is followed, in the same
-    /// theme, to what that resolves to: <c>SolidColorBrush {ThemeResource PhoneForegroundColor} → #FFFFFFFF</c>.
+    /// null where it has none. A value that refers to another resource, as a <c>ThemeResource</c> or a
+    /// <c>StaticResource</c>, is followed, in the same theme, to what that resolves to:
+    /// <c>SolidColorBrush {ThemeResource PhoneForegroundColor} → #FFFFFFFF</c>.
     /// </summary>
     public (string? Dark, string? Light) this[string key] => (Resolve(key, _dark), Resolve(key, _light));
 
     private string? Resolve(string key, Dictionary<string, string> theme, int depth = 0)
     {
         var value = _shared.TryGetValue(key, out var shared) ? shared : theme.GetValueOrDefault(key);
-        if (value is null || depth > 4 || ThemeResourceUse().Match(value) is not { Success: true } use)
+        if (value is null || depth > 4 || ReferenceUse().Match(value) is not { Success: true } use)
         {
             return value;
         }
@@ -249,8 +257,8 @@ internal sealed partial class ThemeResources
     /// <summary>The end of a chain already followed.</summary>
     private static string Last(string resolved) => resolved[(resolved.LastIndexOf(" → ", StringComparison.Ordinal) is var arrow and >= 0 ? arrow + 3 : 0)..];
 
-    [System.Text.RegularExpressions.GeneratedRegex(@"\{ThemeResource ([^}\s]+)\}")]
-    private static partial System.Text.RegularExpressions.Regex ThemeResourceUse();
+    [System.Text.RegularExpressions.GeneratedRegex(@"\{(?:ThemeResource|StaticResource) ([^}\s]+)\}")]
+    private static partial System.Text.RegularExpressions.Regex ReferenceUse();
 
     private static string Value(XElement entry)
     {

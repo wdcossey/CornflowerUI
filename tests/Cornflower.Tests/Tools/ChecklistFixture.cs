@@ -66,6 +66,22 @@ namespace Windows.UI.Xaml.Controls
             public static object IsCheckedProperty => null!;
 
             public event RoutedEventHandler? Checked;
+
+            /// <summary>Virtual and final, as every protected method that can't be overridden is in a .winmd.</summary>
+            protected sealed override void OnToggle()
+            {
+            }
+        }
+    }
+
+    namespace Maps
+    {
+        /// <summary>Outside Controls and Primitives, so it's named in full.</summary>
+        public class MapControl : Control
+        {
+            public double ZoomLevel { get; set; }
+
+            public static object ZoomLevelProperty => null!;
         }
     }
 }

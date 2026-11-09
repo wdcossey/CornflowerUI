@@ -10,7 +10,8 @@ internal static class ChecklistCommand
     {
         using var api = new ApiReader(winmd);
         var fullName = Resolve(api, type);
-        var chain = api.Chain(fullName, stop ?? DefaultStop);
+        var stopAt = stop is null ? DefaultStop : Resolve(api, stop);
+        var chain = api.Chain(fullName, stopAt);
 
         var generic = Path.Combine(design, "generic.xaml");
         var themeResources = Path.Combine(design, "themeresources.xaml");
@@ -22,12 +23,43 @@ internal static class ChecklistCommand
         var style = TemplateReader.Read(File.ReadAllText(generic), ApiReader.Short(fullName));
         var resources = File.Exists(themeResources) ? new ThemeResources(File.ReadAllText(themeResources)) : null;
         var tokenKeys = Checklist.TokenKeys(tokens ?? FindTokens());
-        var command = $"dotnet run --project tools/winrt-api -- checklist {ApiReader.Short(fullName)} <Windows.winmd> <design folder>";
+        // As given, unless a short name would find another type: then in full. A --tokens folder is a local path, and left out.
+        var named = Resolve(api, ApiReader.Short(fullName), throwIfMissing: false) == fullName ? ApiReader.Short(fullName) : fullName;
+        var command = $"dotnet run --project tools/winrt-api -- checklist {named} <Windows.winmd> <design folder>"
+            + (stop is null ? "" : $" --stop {stop}");
         return Checklist.Render(fullName, chain, style, resources, tokenKeys, new AvaloniaSide(ApiReader.Short(fullName)), command);
     }
 
+    /// <summary>The options after the three arguments: <c>--stop</c> and <c>--tokens</c>, each with a value, at most once.</summary>
+    internal static IReadOnlyDictionary<string, string> Options(IReadOnlyList<string> options)
+    {
+        var parsed = new Dictionary<string, string>(StringComparer.Ordinal);
+        for (var i = 0; i < options.Count; i += 2)
+        {
+            var name = options[i];
+            if (name is not ("--stop" or "--tokens"))
+            {
+                throw new ArgumentException($"Unknown option {name}: the options are --stop <Type> and --tokens <folder>.");
+            }
+
+            if (i + 1 >= options.Count || options[i + 1].StartsWith("--", StringComparison.Ordinal))
+            {
+                throw new ArgumentException($"{name} needs a value.");
+            }
+
+            if (!parsed.TryAdd(name, options[i + 1]))
+            {
+                throw new ArgumentException($"{name} is given twice.");
+            }
+        }
+
+        return parsed;
+    }
+
     /// <summary>A full name as given, or the name under Windows.UI.Xaml.Controls, then .Primitives.</summary>
-    internal static string Resolve(ApiReader api, string type)
+    internal static string Resolve(ApiReader api, string type) => Resolve(api, type, throwIfMissing: true)!;
+
+    private static string? Resolve(ApiReader api, string type, bool throwIfMissing)
     {
         foreach (var candidate in new[] { type, $"{Controls}.{type}", $"{Controls}.Primitives.{type}" })
         {
@@ -37,7 +69,7 @@ internal static class ChecklistCommand
             }
         }
 
-        throw new ArgumentException($"{type} isn't in the metadata, as a full name or under {Controls} or its Primitives.");
+        return !throwIfMissing ? null : throw new ArgumentException($"{type} isn't in the metadata, as a full name or under {Controls} or its Primitives.");
     }
 
     /// <summary>The theme's Tokens folder, from the repo this runs in.</summary>

@@ -22,6 +22,8 @@ public class ChecklistTests
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="Foreground" Value="{ThemeResource ForegroundBrush}" />
             <Setter Property="Padding" Value="{StaticResource ButtonPadding}" />
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+            <Setter Property="ScrollViewer.Nothing" Value="1" />
             <Setter Property="Template">
               <Setter.Value>
                 <ControlTemplate TargetType="Button">
@@ -36,6 +38,13 @@ public class ChecklistTests
                               <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource PressedBrush}" />
                             </ObjectAnimationUsingKeyFrames>
                             <DoubleAnimation x:Name="Fade" Storyboard.TargetName="Grid" Storyboard.TargetProperty="Opacity" To="0.5" Duration="0:0:0.1" />
+                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="Grid" Storyboard.TargetProperty="Visibility">
+                              <DiscreteObjectKeyFrame KeyTime="0">
+                                <DiscreteObjectKeyFrame.Value>
+                                  <Visibility>Collapsed</Visibility>
+                                </DiscreteObjectKeyFrame.Value>
+                              </DiscreteObjectKeyFrame>
+                            </ObjectAnimationUsingKeyFrames>
                           </Storyboard>
                         </VisualState>
                         <VisualState x:Name="CheckedPointerOver">
@@ -48,6 +57,7 @@ public class ChecklistTests
                           <VisualTransition From="Pressed" To="Normal" GeneratedDuration="0:0:0.2">
                             <Storyboard>
                               <PointerUpThemeAnimation Storyboard.TargetName="Grid" />
+                              <FadeOutThemeAnimation TargetName="Border" />
                             </Storyboard>
                           </VisualTransition>
                         </VisualStateGroup.Transitions>
@@ -83,6 +93,8 @@ public class ChecklistTests
             </ResourceDictionary>
           </ResourceDictionary.ThemeDictionaries>
           <Thickness x:Key="ButtonPadding">9.5,0,9.5,3.5</Thickness>
+          <Color x:Key="BaseColor">#4D000000</Color>
+          <SolidColorBrush x:Key="StaticBrush" Color="{StaticResource BaseColor}" />
         </ResourceDictionary>
         """;
 
@@ -126,6 +138,24 @@ public class ChecklistTests
     }
 
     [Fact]
+    public void A_Sealed_Override_Is_Not_Overridable()
+    {
+        using var api = new ApiReader(Metadata);
+
+        var toggle = api.Chain($"{Controls}.Primitives.ToggleButton", $"{Controls}.Primitives.ButtonBase").Single();
+
+        Assert.False(toggle.Methods.Single(m => m.Name == "OnToggle").Overridable);
+    }
+
+    [Fact]
+    public void A_Type_That_Is_The_Stop_Still_Has_Its_Own_Api()
+    {
+        using var api = new ApiReader(Metadata);
+
+        Assert.Equal(["Control"], api.Chain($"{Controls}.Control", $"{Controls}.Control").Select(t => t.Name));
+    }
+
+    [Fact]
     public void A_Nullable_Is_Written_With_A_Question_Mark()
     {
         using var api = new ApiReader(Metadata);
@@ -153,7 +183,8 @@ public class ChecklistTests
         var style = TemplateReader.Read(Generic, "Button")!;
 
         Assert.Equal(
-            [new StyleSetter("Background", "Transparent"), new StyleSetter("Foreground", "{ThemeResource ForegroundBrush}"), new StyleSetter("Padding", "{StaticResource ButtonPadding}")],
+            [new StyleSetter("Background", "Transparent"), new StyleSetter("Foreground", "{ThemeResource ForegroundBrush}"), new StyleSetter("Padding", "{StaticResource ButtonPadding}"),
+             new StyleSetter("ScrollViewer.HorizontalScrollBarVisibility", "Disabled"), new StyleSetter("ScrollViewer.Nothing", "1")],
             style.Setters);
         Assert.Null(TemplateReader.Read(Generic, "ToggleButton"));
     }
@@ -177,7 +208,7 @@ public class ChecklistTests
         Assert.Equal(["Normal", "Pressed", "CheckedPointerOver", "MouseOver"], style.States.Select(s => s.Name));
         Assert.Empty(style.States[0].Changes);
         Assert.Equal(
-            ["PointerDownThemeAnimation on Grid", "Border.Background = {ThemeResource PressedBrush}", "Grid.Opacity: DoubleAnimation To=0.5 Duration=0:0:0.1"],
+            ["PointerDownThemeAnimation on Grid", "Border.Background = {ThemeResource PressedBrush}", "Grid.Opacity: DoubleAnimation To=0.5 Duration=0:0:0.1", "Grid.Visibility = Visibility Collapsed"],
             style.States[1].Changes.Select(c => c.Description));
         Assert.Equal(["Border.Opacity = 0.8"], style.States[2].Changes.Select(c => c.Description));
     }
@@ -188,7 +219,7 @@ public class ChecklistTests
         var transition = Assert.Single(TemplateReader.Read(Generic, "Button")!.Transitions);
 
         Assert.Equal(("CommonStates", "Pressed", "Normal", "0:0:0.2"), (transition.Group, transition.From, transition.To, transition.Duration));
-        Assert.Equal(["PointerUpThemeAnimation on Grid"], transition.Changes.Select(c => c.Description));
+        Assert.Equal(["PointerUpThemeAnimation on Grid", "FadeOutThemeAnimation on Border"], transition.Changes.Select(c => c.Description));
     }
 
     [Fact]
@@ -196,6 +227,12 @@ public class ChecklistTests
         Assert.Equal(["ForegroundBrush", "ButtonPadding", "PressedBrush"], TemplateReader.Read(Generic, "Button")!.Resources);
 
     // ── Theme resources ────────────────────────────────────────────────────────
+
+    [Fact]
+    public void A_Static_Resource_Is_Followed_Too() =>
+        Assert.Equal(
+            ("SolidColorBrush {StaticResource BaseColor} → #4D000000", "SolidColorBrush {StaticResource BaseColor} → #4D000000"),
+            new ThemeResources(ThemeResourcesXaml)["StaticBrush"]);
 
     [Fact]
     public void A_Theme_Resource_Has_Its_Dark_And_Light_Values_Followed_To_The_End()
@@ -279,10 +316,41 @@ public class ChecklistTests
         Assert.Contains("| `CommonStates` | `Normal` | nothing | the theme's plain setters |  |", markdown);
         Assert.Contains("`^:checked:pointerover` (:checked not raised by Avalonia's `Button`)", markdown);
         Assert.Contains("| `CommonStates` | `MouseOver` | nothing | no rule |  |", markdown);
-        Assert.Contains("| [ ] | `CommonStates` | `Pressed` → `Normal` | `0:0:0.2` | `PointerUpThemeAnimation on Grid` |  |", markdown);
+        Assert.Contains("| [ ] | `CommonStates` | `Pressed` → `Normal` | `0:0:0.2` | `PointerUpThemeAnimation on Grid`<br>`FadeOutThemeAnimation on Border` |  |", markdown);
+        Assert.Contains("| [ ] | `ScrollViewer.HorizontalScrollBarVisibility` | `Disabled` | `ScrollViewer.HorizontalScrollBarVisibility (attached)` |  |", markdown);
+        Assert.Contains("| [ ] | `ScrollViewer.Nothing` | `1` | none |  |", markdown);
+        Assert.Contains("> Generated by `dotnet run --project tools/winrt-api -- checklist Button <Windows.winmd> <design folder>`,", markdown);
         Assert.Contains("| [ ] | `ForegroundBrush` | `SolidColorBrush {ThemeResource ForegroundColor} → #FFFFFFFF` | `SolidColorBrush {ThemeResource ForegroundColor} → #DE000000` | yes |  |", markdown);
         Assert.Contains("| [ ] | `ButtonPadding` | `9.5,0,9.5,3.5` | same | no |  |", markdown);
     }
+
+    [Fact]
+    public void A_Short_Stop_Is_Found_Like_The_Type_And_Kept_In_The_Command()
+    {
+        var markdown = Render("Button", stop: "ContentControl");
+
+        Assert.Contains("## Properties, from `ButtonBase`", markdown);
+        Assert.DoesNotContain("from `ContentControl`", markdown);
+        Assert.Contains("checklist Button <Windows.winmd> <design folder> --stop ContentControl`", markdown);
+    }
+
+    [Fact]
+    public void A_Control_Outside_Controls_Is_Named_In_Full_In_The_Command() =>
+        Assert.Contains("checklist Windows.UI.Xaml.Controls.Maps.MapControl <Windows.winmd>", Render("Windows.UI.Xaml.Controls.Maps.MapControl"));
+
+    [Theory]
+    [InlineData(new[] { "--stopp", "Control" }, "Unknown option --stopp")]
+    [InlineData(new[] { "--stop" }, "--stop needs a value")]
+    [InlineData(new[] { "--stop", "--tokens", "x" }, "--stop needs a value")]
+    [InlineData(new[] { "--stop", "A", "--stop", "B" }, "--stop is given twice")]
+    public void A_Bad_Option_Is_Refused(string[] options, string message) =>
+        Assert.StartsWith(message, Assert.Throws<ArgumentException>(() => ChecklistCommand.Options(options)).Message, StringComparison.Ordinal);
+
+    [Fact]
+    public void Options_Are_Read_By_Name() =>
+        Assert.Equal(
+            new Dictionary<string, string> { ["--stop"] = "ContentControl", ["--tokens"] = "t" },
+            ChecklistCommand.Options(["--tokens", "t", "--stop", "ContentControl"]));
 
     [Fact]
     public void A_Control_Without_A_Default_Style_Says_So() =>
@@ -317,7 +385,7 @@ public class ChecklistTests
         $"""<ResourceDictionary xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"><SolidColorBrush x:Key="{key}" /></ResourceDictionary>""";
 
     /// <summary>The whole command, on files written to a temporary design folder.</summary>
-    private static string Render(string type)
+    private static string Render(string type, string? stop = null)
     {
         var design = Directory.CreateTempSubdirectory("cornflower-design-");
         var tokens = Directory.CreateTempSubdirectory("cornflower-tokens-");
@@ -326,7 +394,7 @@ public class ChecklistTests
             File.WriteAllText(Path.Combine(design.FullName, "generic.xaml"), Generic);
             File.WriteAllText(Path.Combine(design.FullName, "themeresources.xaml"), ThemeResourcesXaml);
             File.WriteAllText(Path.Combine(tokens.FullName, "Colors.axaml"), Tokens("ForegroundBrush"));
-            return ChecklistCommand.Run(type, Metadata, design.FullName, stop: null, tokens: tokens.FullName);
+            return ChecklistCommand.Run(type, Metadata, design.FullName, stop, tokens: tokens.FullName);
         }
         finally
         {

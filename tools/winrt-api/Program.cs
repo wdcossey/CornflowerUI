@@ -33,10 +33,11 @@ switch (args)
     case ["checklist", var type, var winmd, var design, .. var options]:
         try
         {
-            Console.Write(ChecklistCommand.Run(type, winmd, design, Option(options, "--stop"), Option(options, "--tokens")));
+            var parsed = ChecklistCommand.Options(options);
+            Console.Write(ChecklistCommand.Run(type, winmd, design, parsed.GetValueOrDefault("--stop"), parsed.GetValueOrDefault("--tokens")));
             return 0;
         }
-        catch (ArgumentException e)
+        catch (Exception e) when (e is ArgumentException or IOException or UnauthorizedAccessException or System.Xml.XmlException or BadImageFormatException)
         {
             Console.Error.WriteLine(e.Message);
             return 1;
@@ -47,8 +48,3 @@ switch (args)
         return 1;
 }
 
-static string? Option(string[] options, string name)
-{
-    var index = Array.IndexOf(options, name);
-    return index >= 0 && index + 1 < options.Length ? options[index + 1] : null;
-}
