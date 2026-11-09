@@ -24,6 +24,8 @@
     <ProjectReference Include="..\..\src\Cornflower.Controls\Cornflower.Controls.csproj" />
     <ProjectReference Include="..\..\src\Cornflower.Themes.Wp81\Cornflower.Themes.Wp81.csproj" />
     <ProjectReference Include="..\..\samples\Cornflower.Sample\Cornflower.Sample.csproj" />
+    <!-- The checklist generator, tested on fixtures in Tools/. -->
+    <ProjectReference Include="..\..\tools\winrt-api\winrt-api.csproj" />
   </ItemGroup>
 
   <!-- The theme has no files to discover yet, so the tests prove the manifest target on fixtures
