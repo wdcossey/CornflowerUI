@@ -40,6 +40,11 @@
     <EmbeddedResource Include="Repository/microsoft-sha256.txt" LogicalName="Cornflower.Tests.Repository.microsoft-sha256.txt" />
   </ItemGroup>
 
+  <!-- Every templated Avalonia control without a Wp81 theme, for the holes test. -->
+  <ItemGroup>
+    <EmbeddedResource Include="Completeness/Holes.txt" LogicalName="Cornflower.Tests.Completeness.Holes.txt" />
+  </ItemGroup>
+
   <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>

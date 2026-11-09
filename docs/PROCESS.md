@@ -32,8 +32,11 @@ only when its blockers are closed.
    `build-test` check must pass. The human reads the plan, the comparison and the diff at the PR,
    and merges or asks for changes. Only the merge marks the control done.
 
-A control's PR adds its own files and touches no shared file. A theme file is found by
-auto-discovery (`Directory.Build.targets`), so parallel PRs merge in any order. A control's PR
+A control's PR adds its own files and touches no shared file, except the holes list: it deletes
+its own lines from `tests/Cornflower.Tests/Completeness/Holes.txt`, which `HolesTests` requires
+([#13](https://github.com/wdcossey/CornflowerUI/issues/13)). A theme file is found by
+auto-discovery (`Directory.Build.targets`), so parallel PRs merge in any order; two that delete
+neighbouring lines of the holes list need a rebase. A control's PR
 doesn't edit the tables in `CLAUDE.md` or [`ROADMAP.md`](ROADMAP.md); see
 [Rolling up the tables](#rolling-up-the-tables).
 
