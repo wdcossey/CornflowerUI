@@ -7,6 +7,7 @@ using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Themes.Simple;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Cornflower.Sample;
 using Cornflower.Themes.Wp81;
 using Xunit;
@@ -145,8 +146,14 @@ public class SampleTests
         MainView.Report = lines.Add;
         try
         {
-            using var scene = new Scene(new MainView());
+            // In and out with no dispatcher work between: the headless render timer is a real
+            // DispatcherTimer, so a RunJobs (Scene's own, say) could draw the page's frames first.
+            using var scene = new Scene();
+            var view = new MainView();
+            scene.Window.Content = view;
+            Assert.True(view.IsAttachedToVisualTree());
             scene.Window.Content = null;
+            Assert.False(view.IsAttachedToVisualTree());
             for (var frame = 0; frame < 4; frame++)
             {
                 AvaloniaHeadlessPlatform.ForceRenderTimerTick();
