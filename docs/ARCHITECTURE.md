@@ -56,12 +56,12 @@ What 8.0 has that 8.1 replaced (reported, from Microsoft's archived documentatio
 |---|---|---|
 | Text font | Segoe WP | Segoe UI |
 | Icon font | Segoe UI Symbol | Segoe MDL2 Assets |
-| Typical border | 3 (`PhoneBorderThickness`, 8.0, reported). The 8.1 Button reads `BorderThickness` 2.5 (reference app, 720p profile, 2026-11-08) | 2 (`ButtonBorderThemeThickness`, read in 19041) |
+| Typical border | 8.1: 2.5 (`PhoneBorderThickness`, read in the SDK file and on device 11, 2026-11-08). 8.0: 3 (reported) | 2 (`ButtonBorderThemeThickness`, read in 19041) |
 | Spacing unit | Multiples of 12 (reported) | 4, on a 44 then 40 px control grid (reported) |
 | App bar | Fixed 72 high, lowercase menu (reported) | CommandBar, compact height 40 (`AppBarThemeCompactHeight`, read in 19041) |
 | Navigation | Pivot, Hub, back button | Hamburger and SplitView, Pivot |
 | Press feedback | Tilt | `PointerDownThemeAnimation` in 38 places in 19041; what it draws on each control is unconfirmed |
-| Accent | 20 named colours (the same 20 names in the 8.0 and 8.1 SDK design files) | The system accent; palette size unconfirmed |
+| Accent | 20 named colours, the same names in the 8.0 and 8.1 SDK design files; only Cobalt's value differs (read). The emulator's default, `#FF3E65FF`, is none of the 20 | The system accent; palette size unconfirmed |
 | Theme dictionaries | 8.1: `Default` (dark), `Light`, `HighContrastBlack`, `HighContrastWhite` (read) | `Default` (dark), `Light`, `HighContrast` (read in 19041) |
 
 Every "reported" cell is measured from the era's own files before it goes in a plan.
@@ -98,16 +98,16 @@ src/Cornflower.Controls/            exists, empty   new controls, the listed sub
   Behaviors/                        planned         the tilt, theme transitions, anything a template attaches
   Icons/                            planned         generated from Lucide; the icon control
 src/Cornflower.Themes.Wp81/         exists          era 1: tokens and ControlThemes
-  Tokens/                           planned         colours, type ramp, sizes, glyph geometries; the only place for literal colours
+  Tokens/                           exists          colours, accent, type ramp, sizes, font families; later glyph geometries. The only place for literal colours
   Controls/<Name>.axaml             planned         one ControlTheme per control, for Avalonia's and for ours
-  Fonts/                            planned         Selawik
+  Fonts/                            exists          Selawik 1.01: Selawik/ (Light, Regular, Semibold, Bold) and SelawikSemilight/
   Wp81Theme.cs                      exists          the class an app installs
 src/Cornflower/                     exists, no code the umbrella package
 src/Cornflower.Fonts.Noto/          planned         the optional fallback font package
-tests/Cornflower.Tests/             exists          Avalonia.Headless with Skia and xunit v3: harness and discovery tests
-samples/Cornflower.Sample/          planned (#9)    phone-sized app, one page per control
+tests/Cornflower.Tests/             exists          Avalonia.Headless with Skia and xunit v3: harness, discovery, spikes, fonts, tokens, repository guards
+samples/Cornflower.Sample/          planned (#9)    phone-sized desktop app, one page per control, to watch progress; not a gate
 samples/Cornflower.Sample.Android/  planned (#10)   the real-device target, from Tier 0
-tools/                              exists          reference capture (refapp), spec extraction (winrt-api), font metrics; later breakage, generators
+tools/                              exists          reference capture (refapp), spec extraction (winrt-api), font metrics, token generation (tokens), the guard's hash list; later breakage, generators
 docs/                               exists          process, roadmap, decisions, this file; later a folder per control
 ref/wp81/                           planned         committed reference captures from the emulator
 ```
@@ -198,8 +198,9 @@ every control is in [the roadmap](ROADMAP.md#controls).
 ## Applying the theme
 
 What exists: `Wp81Theme` is a `Styles` class, as `FluentTheme` is. It merges every file under
-`Tokens/` and `Controls/` that auto-discovery found at build time, in ordinal order. There are no
-such files yet.
+`Tokens/` and `Controls/` that auto-discovery found at build time, in ordinal order. `Tokens/`
+holds five files, loaded as `Accent`, `Colors`, `Fonts`, `Sizes`, `Typography`; none uses a
+`StaticResource` into another. There is no `Controls/` yet.
 
 ```xml
 <Application.Styles>
@@ -207,8 +208,10 @@ such files yet.
 </Application.Styles>
 ```
 
-Proposed: an `Accent` property on the theme, defaulting to `#3E65FF`
-([ADR 0002](decisions/0002-decisions-of-2026-11-08.md#fonts-and-colour)).
+The theme sets no `ThemeVariant`: it follows the app's. The samples request Dark, the phone's
+default ([ADR 0003](decisions/0003-decisions-on-the-tier-0-infrastructure.md#tokens-45)).
+
+Still proposed: an `Accent` property on the theme, as a shortcut for the resource below.
 
 - Each control's theme is a `ControlTheme` keyed by type. A `ControlTheme` replaces the previous
   one whole.
@@ -222,34 +225,52 @@ Proposed: an `Accent` property on the theme, defaulting to `#3E65FF`
 
 ## Dark, light and accent
 
-Proposed.
+What exists ([#19](https://github.com/wdcossey/CornflowerUI/issues/19)):
 
-- Dark and light are Avalonia's `ThemeVariant`. The phone's default is dark.
-- Tokens sit in `ThemeDictionaries` keyed `Dark` and `Light`.
-- The accent is a property on the theme that fills one colour resource. Brushes follow it through
-  `DynamicResource`. Avonic found that brushes follow their colour only when the dictionary is at
-  application level, which is where a theme's are.
-- The default accent is `#3E65FF`, the emulator's default `PhoneAccentBrush`, read by the
-  reference app on 2026-11-08 in both themes. The 20 named accents become resources. Their names
-  are the same in the 8.0 and 8.1 SDK design files; their values are still to be compared.
-- Following the device's accent through `PlatformSettings.GetColorValues().AccentColor1` is an
-  option.
+- Dark and light are Avalonia's `ThemeVariant`. `Tokens/Colors.axaml` holds the 8.1 SDK's
+  `Default` dictionary as `Dark` and its `Light` dictionary as `Light`: 319 keys each. Each
+  brush takes its colour from its own variant's dictionary through a `StaticResource`. A
+  `ThemeVariantScope` gets its own variant's brushes.
+- The theme follows the app's variant; it doesn't force Dark. The phone's default is dark, so the
+  samples and `Scene` request it.
+- The accent is the WinRT key `SystemColorControlAccentColor`, in `Tokens/Accent.axaml`,
+  defaulting to `#FF3E65FF`, the emulator's default `PhoneAccentBrush` (read on 2026-11-08 in both
+  themes, on three profiles). Every accent brush takes it through a `DynamicResource`, so an app
+  that defines the key in `Application.Resources` moves them all while it runs.
+- The 20 named accents are resources an app can pick from, keyed `CornflowerAccent<Name>Color`
+  (WinRT has no keys for them). Their values are the 8.1 SDK design files'. Compared with 8.0, 19
+  are identical and Cobalt differs (8.0 `#FF0050EF`, 8.1 `#FF0B6CF8`).
+
+Proposed:
+
+- An `Accent` property on the theme that sets `SystemColorControlAccentColor`.
+- Following the device's accent through `PlatformSettings.GetColorValues().AccentColor1`.
 - High contrast is later. Avalonia has no built-in high-contrast variant; a custom `ThemeVariant`
   is possible. The 8.1 theme resources have `HighContrastBlack` and `HighContrastWhite`.
 
 ## Fonts and icons
 
-Proposed, on the measurements in [ADR 0001](decisions/0001-what-faithful-means.md).
+On the measurements in [ADR 0001](decisions/0001-what-faithful-means.md). Text exists
+([#18](https://github.com/wdcossey/CornflowerUI/issues/18)); the rest is proposed.
 
-- **Text** is Selawik (OFL-1.1), bundled in the theme as `avares://` fonts. One resource per
-  weight, using the era's own key names (`PhoneFontFamilyNormal` and the Semilight, Light and
-  Semibold keys), holds the fallback chain. On Windows an app may point it at Segoe UI, which is
-  installed there; the library never ships it.
-- **Semilight** is addressed by its own family name, since its file reports `usWeightClass` 300.
-  Patched only if that fails ([#18](https://github.com/wdcossey/CornflowerUI/issues/18)).
-- **Line height** differs: Selawik's `hhea` line is 1200 units, Segoe UI's and Segoe WP's 1330;
-  their `OS/2` win metrics agree. Which metric Avalonia's text layout uses is unconfirmed; a test
-  settles it.
+- **Text** is Selawik 1.01 (OFL-1.1), bundled in the theme as `avares://` fonts, so the theme
+  package's licence is `Apache-2.0 AND OFL-1.1`. `Tokens/Fonts.axaml` holds the six 8.1 font
+  family keys (`PhoneFontFamilyNormal`, `PhoneFontFamilyLight`, `PhoneFontFamilySemiLight`,
+  `PhoneFontFamilySemiBold`, `ContentControlThemeFontFamily`, `PivotHeaderItemFontFamily`). 8.1
+  has no Bold key. On Windows an app may point a key at Segoe UI, which is installed there; the
+  library never ships it.
+- **Semilight** is addressed by its own family name, from a folder of its own,
+  `Fonts/SelawikSemilight/`, unpatched. In one collection with Light, Avalonia's
+  `Typeface.Normalize` sends "Selawik Semilight" to Light's 300 slot, since Semilight's file
+  reports `usWeightClass` 300. So `PhoneFontFamilyNormal` with `FontWeight="SemiLight"` draws
+  Light; no 8.1 template does that.
+- **Line height**: Avalonia uses the `hhea` line unless `OS/2` sets `USE_TYPO_METRICS`, which no
+  Selawik file does. Selawik's line is 1.200 em; the phone's Segoe WP line is 1.330 em, measured
+  in five dumps. Each text style and template where WinRT sets no `LineHeight` sets
+  `LineHeight` = 1.33 × `FontSize`, which gives the phone's line. The baseline then sits 0.025 em
+  above the phone's, a recorded deviation
+  ([ADR 0003](decisions/0003-decisions-on-the-tier-0-infrastructure.md#fonts-46)). It is set
+  per style, never as a global `TextBlock` rule.
 - **Other scripts**: Noto Sans, in the optional `Cornflower.Fonts.Noto` package. Selawik covers
   348 code points: Latin-1 and Latin Extended-A.
 - **Glyphs in templates** are our own paths, each a named geometry resource, matched to captures.
@@ -283,7 +304,7 @@ proposals are unproven.
 | Status bar and safe areas | `InsetsManager`, `SafeAreaPadding`, `DisplayEdgeToEdge` | The app's job, with an example. Avonic reached the same decision |
 | Orientation states | none | A pseudoclass the control sets from the top level's size |
 | Optical margin alignment on large titles | none | Measure the offset and apply it as a margin. A likely recorded deviation |
-| Character spacing | `LetterSpacing` | Convert: WinRT's unit is thousandths of an em; Avalonia's unit is unconfirmed |
+| Character spacing | `LetterSpacing` | Convert: WinRT's unit is thousandths of an em, Avalonia's is DIPs, so `LetterSpacing` = n × `FontSize` / 1000 ([spike 5](spikes/README.md#5-the-unit-of-textblockletterspacing)) |
 | Focus rectangles | `FocusAdorner` | Low priority on a touch phone. Set it deliberately, even if to nothing |
 | `VisualStateManager` | none | Pseudoclasses and nested selectors. See [the mapping rules](#mapping-rules-draft) |
 
@@ -309,7 +330,7 @@ None of it exists here yet. The files, from Avonic's repo, and what changes:
 | `tests/Avonic.Components.Tests/Performance/PerformanceMonitorTests.cs` | Proves the line's format, that it reports once a page is in, and that Avalonia's meter still has its three instruments | Copy unchanged |
 | `tools/real-window/drive.ps1` | Drives the real sample window with real input and saves a frame of every page | Copy for the desktop sample. The phone equivalent, the Android sample over ADB with captured frames, is new work |
 | `tools/breakage/run.js` | Breaks each behaviour in a fresh clone and checks a test goes red | Copy unchanged |
-| `tests/Avonic.Components.Tests/Scene.cs`, `TestClock.cs`, `Frames.cs` | A shown headless window closed when the test ends; a clock the test advances by hand; `PixelAt` on a captured frame | Copy ([#11](https://github.com/wdcossey/CornflowerUI/issues/11)). `TestClock` hooks Avonic's config class, so the tilt and transitions need the same hook in ours |
+| `tests/Avonic.Components.Tests/Scene.cs`, `TestClock.cs`, `Frames.cs` | A shown headless window closed when the test ends; a clock the test advances by hand; `PixelAt` on a captured frame | **Done** ([#11](https://github.com/wdcossey/CornflowerUI/issues/11)), with changes: `Scene` is the reference profile, 450 × 800 at 2.4, with the themes in the window's `Styles` and Dark by default; `TestClock` replaces one internal source behind `CornflowerClock`, refuses to nest or go back, and lands a frame 16 ms after it is asked for; `PixelAt` checks bounds and reads only RGBA and BGRA |
 
 The rules behind them, from Avonic's measurements: budget alternatives, not rules or time,
 because alternatives track cost and counts are exact; no metrics code in the library, because
@@ -319,13 +340,33 @@ Android sample is the first chance to put real numbers against the checkpoint.
 
 ## Testing
 
-What exists: `tests/Cornflower.Tests` runs Avalonia.Headless with Skia and xunit v3. Harness
-tests prove a headless window lays out and that a frame is real pixels; discovery tests run the
-auto-discovery on fixtures.
+What exists: `tests/Cornflower.Tests` runs Avalonia.Headless with Skia and xunit v3, on the
+harness from [#11](https://github.com/wdcossey/CornflowerUI/issues/11):
+
+- **`Scene`**: a shown headless window at the reference profile, a 450 × 800 view at render
+  scaling 2.4, so a frame is 1080 × 1920 like the emulator's. `SimpleTheme` then `Wp81Theme` go
+  in the window's `Styles` before the content is set. Dark unless the test asks for Light.
+  Another profile's size and scaling can be given for a second reading.
+- **`Frames.PixelAt`**: one pixel of a captured frame, in the frame's own pixels and byte order.
+- **`TestClock`**: replaces `CornflowerClock` for the test's life. Time moves only with `At(ms)`,
+  which runs each callback due on the way at its own time. A frame lands 16 ms after it is
+  requested.
+
+Also the discovery tests, the spikes, the font and token tests, and the repository guards.
+
+Decided ([ADR 0003](decisions/0003-decisions-on-the-tier-0-infrastructure.md#layout-and-time-in-tests-44)):
+
+- **Transitions are tested at their end value.** Avalonia 12's animation clock is internal, so
+  `Transitions` and `Animation` run on real time and `TestClock` can't drive them. A motion that
+  must match the phone frame by frame, such as the tilt, is a frame loop on `CornflowerClock`,
+  and its test reads it at any millisecond.
+- **Layout rounding is a recorded deviation.** Avalonia rounds a measured size up to the raw pixel
+  grid; the phone rounds to the nearest. On the reference profile, a size whose raw pixels have a
+  fraction under a half comes out one raw pixel (0.42 view px) wider. A control's comparison marks
+  each such size as a deliberate difference.
 
 Proposed:
 
-- Headless tests with real Skia frames, on the fixtures in [#11](https://github.com/wdcossey/CornflowerUI/issues/11).
 - Tests for Avalonia's own controls test the theme: that a state shows the measured colour and
   size, by pixel and by bounds. They don't re-test Avalonia's behaviour.
 - Tests for our controls, subclasses and behaviours assert the phone's behaviour, from the
@@ -389,7 +430,7 @@ in a nested style.
 | `FocusStates`: `Focused`, `PointerFocused` | `^:focus-visible`, `^:focus` | |
 | A state Avalonia's control doesn't raise | For a built-in: an attached behaviour that sets a pseudoclass, a part class, a subclass under rung 4, or a recorded gap, in that order. For ours: a pseudoclass named after the state, lower case | |
 | `Orientation`: `Portrait`, `Landscape` | A pseudoclass our control sets from the top level's size | Avalonia has no `:landscape` |
-| `VisualTransition From="A" To="B" GeneratedDuration="…"` | `Transitions` on the part, with that duration | 50 in 8.1. A WinRT transition runs between two named states only; an Avalonia transition runs on any change of the property. Record where that differs |
+| `VisualTransition From="A" To="B" GeneratedDuration="…"` | `Transitions` on the part, with that duration | 50 in 8.1. A WinRT transition runs between two named states only; an Avalonia transition runs on any change of the property. Record where that differs. Tested at its end value |
 
 Precedence, as Avonic measured it: a rule with a pseudoclass or class beats one without, then
 later beats earlier. A value set directly on an element in the template beats a plain style but
@@ -412,18 +453,19 @@ The hard part. These elements name an animation and the platform supplies the mo
 | `SplitOpenThemeAnimation`, `SplitCloseThemeAnimation` | — | 1, 1 | With ComboBox | |
 | `ContentTransitions="{TemplateBinding …}"` | | | No equivalent property | Record |
 
-A dash means the animation isn't in that file's count. Timings go through a clock hook that a
-test can replace, as Avonic's `TestClock` does, so a test asserts the timeline to the millisecond.
+A dash means the animation isn't in that file's count. A motion we must match frame by frame
+reads `CornflowerClock`, which `TestClock` replaces, so a test asserts its timeline to the
+millisecond. A theme transition built on Avalonia's `Transitions` is tested at its end value.
 
 ### Text
 
 | WinRT XAML | Avalonia | Note |
 |---|---|---|
 | `PhoneFontFamilyNormal` and the other font family keys | The font resource, holding the fallback chain | See [Fonts and icons](#fonts-and-icons) |
-| `FontWeight="SemiLight"` | The Semilight family by name | Selawik's Semilight file reports weight 300 |
-| `CharacterSpacing="n"` | `LetterSpacing` | WinRT's unit is thousandths of an em; Avalonia's is unconfirmed |
+| `FontWeight="SemiLight"` | `PhoneFontFamilySemiLight`, the Semilight family by name | Selawik's Semilight file reports weight 300. On the Normal family, SemiLight draws Light |
+| `CharacterSpacing="n"` | `LetterSpacing` = n × `FontSize` / 1000 | WinRT's unit is thousandths of an em; Avalonia's is DIPs ([spike 5](spikes/README.md#5-the-unit-of-textblockletterspacing)) |
 | `OpticalMarginAlignment="TrimSideBearings"` | No equivalent | Matters for Metro's large titles, which line up on the letter's edge. Measure the offset; likely a recorded deviation |
-| `TextLineBounds`, `LineStackingStrategy` | No equivalent | Avonic found Avalonia keeps a short line at the top where CSS splits the leading. Expect something similar; measure |
+| `TextLineBounds`, `LineStackingStrategy` | No equivalent | Where the style sets no `LineHeight`, ours sets 1.33 × `FontSize` (see [Fonts and icons](#fonts-and-icons)). Styles with their own `LineHeight` and `BaselineToBaseline` are measured with the type ramp |
 | A `Path` drawing a glyph in a template | A `PathIcon` with a named geometry resource of our own drawing | |
 | `SymbolIcon Symbol="Setting"` | Our icon control with the mapped Lucide name | |
 
@@ -494,7 +536,8 @@ These apply unchanged. Sources are in Avonic's
 
 **Headless tests**
 
-- Transitions run on real time. Set `Transitions = []` to test an end value.
+- Transitions run on real time: Avalonia 12's animation clock is internal. Set `Transitions = []`
+  to test an end value.
 - Hit tests read the last rendered scene, so render first.
 - A test app with no theme installed shows nothing that comes from one. Install the theme in the
   test, and remove it afterwards.

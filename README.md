@@ -40,4 +40,7 @@ or the AvaloniaUI team. Windows Phone is a trademark of Microsoft.
 
 ## Licence
 
-Apache License 2.0; see [LICENSE](LICENSE).
+Apache License 2.0; see [LICENSE](LICENSE). The Windows Phone 8.1 theme package bundles the
+Selawik fonts under the SIL Open Font License 1.1
+([`OFL.txt`](src/Cornflower.Themes.Wp81/Fonts/OFL.txt)), so its licence is
+`Apache-2.0 AND OFL-1.1`.

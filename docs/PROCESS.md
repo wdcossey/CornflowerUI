@@ -114,10 +114,12 @@ Not negotiable:
 - No literal colour in a theme outside `Tokens/`. No visual opinion in `Cornflower.Controls`.
 - No Microsoft font, template or SDK file. Every template is written new.
 
-The test fixtures a control's tests build on (a shown headless window closed when the test ends,
-a clock the test advances by hand, pixels from a captured frame) are a Tier 0 item
-([#11](https://github.com/wdcossey/CornflowerUI/issues/11)). What exists today is the headless
-harness with Skia frames.
+A control's tests build on the harness from
+[#11](https://github.com/wdcossey/CornflowerUI/issues/11): `Scene`, a shown headless window at
+the reference profile, closed when the test ends; `TestClock`, a clock the test advances by hand;
+and `Frames.PixelAt`, pixels from a captured frame. A theme transition is tested at its end
+value; only a motion that must match frame by frame is a timeline on `CornflowerClock`
+([ADR 0003](decisions/0003-decisions-on-the-tier-0-infrastructure.md)).
 
 ## 3. Compare
 

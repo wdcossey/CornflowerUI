@@ -4,6 +4,8 @@
     <PackageId>Cornflower.Themes.Wp81</PackageId>
     <Description>The Windows Phone 8.1 theme: ControlThemes for Avalonia's controls and Cornflower's, and the era's tokens.</Description>
     <IsPackable>true</IsPackable>
+    <!-- The bundled Selawik fonts are OFL-1.1 (ADR 0003). -->
+    <PackageLicenseExpression>Apache-2.0 AND OFL-1.1</PackageLicenseExpression>
   </PropertyGroup>
 
   <ItemGroup>
