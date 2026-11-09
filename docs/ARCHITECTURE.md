@@ -104,11 +104,12 @@ src/Cornflower.Themes.Wp81/         exists          era 1: tokens and ControlThe
   Wp81Theme.cs                      exists          the class an app installs
 src/Cornflower/                     exists, no code the umbrella package
 src/Cornflower.Fonts.Noto/          planned         the optional fallback font package
-tests/Cornflower.Tests/             exists          Avalonia.Headless with Skia and xunit v3: harness, discovery, spikes, fonts, tokens, repository guards
-samples/Cornflower.Sample/          planned (#9)    phone-sized desktop app, one page per control, to watch progress; not a gate
-samples/Cornflower.Sample.Android/  planned (#10)   the real-device target, from Tier 0
-tools/                              exists          reference capture (refapp), spec extraction (winrt-api), font metrics, token generation (tokens), the guard's hash list; later breakage, generators
-docs/                               exists          process, roadmap, decisions, this file; later a folder per control
+tests/Cornflower.Tests/             exists          Avalonia.Headless with Skia and xunit v3: harness, discovery, spikes, fonts, tokens, sample, performance, tools, completeness, repository guards
+samples/Cornflower.Sample/          exists          the shared sample app: one page for now, with the Debug performance line; a page per control comes with #9
+samples/Cornflower.Sample.Android/  exists          the real-device target, run by tools/android
+samples/Cornflower.Sample.Desktop/  planned (#9)    a thin desktop head over Cornflower.Sample, phone-sized, to watch progress; not a gate
+tools/                              exists          reference capture (refapp), spec extraction and the checklist (winrt-api), the device run (android), breakage, font metrics, token generation (tokens), the guard's hash list; later generators
+docs/                               exists          process, roadmap, decisions, performance, this file; later a folder per control
 ref/wp81/                           planned         committed reference captures from the emulator
 ```
 
@@ -218,8 +219,10 @@ Still proposed: an `Accent` property on the theme, as a shortcut for the resourc
 - **An unthemed control is a hole**: it gets no template at all, or Fluent's if that is also
   installed. During development, Avalonia's Simple theme sits underneath `Wp81Theme` in the
   sample and the tests, and a test lists every templated Avalonia control with no Wp81 theme
-  ([#13](https://github.com/wdcossey/CornflowerUI/issues/13)). Its count is the measure of
-  completeness. `Wp81Theme` itself includes no fallback; a shipped app chooses its own. What a
+  ([#13](https://github.com/wdcossey/CornflowerUI/issues/13)). A templated control is a public,
+  concrete `TemplatedControl` that `SimpleTheme` themes by its type, in Dark or Light, or one of
+  Cornflower's own, by its style key. The list is `tests/Cornflower.Tests/Completeness/Holes.txt`,
+  79 names at Avalonia 12.1.4, and their count is the measure of completeness. `Wp81Theme` itself includes no fallback; a shipped app chooses its own. What a
   control with no `ControlTheme` does is a Tier 0 spike
   ([#15](https://github.com/wdcossey/CornflowerUI/issues/15)).
 
@@ -301,7 +304,7 @@ proposals are unproven.
 | Picker flyouts with looping selectors | `DatePicker`, `TimePicker`, `DatePickerPresenter` | Theme Avalonia's, which already loop. Full-screen presentation to be measured; if Avalonia's presenter can't be placed full screen, the presenter becomes a part class, not the picker a subclass |
 | ComboBox's full-screen list | `ComboBox` opens its `PART_Popup` from the class | Theme for the inline form; a `ComboBox` subclass (rung 4) opens `ListPickerFlyout` for the full form. The item count that flips to full screen is class behaviour, to be read from the emulator ([#25](https://github.com/wdcossey/CornflowerUI/issues/25)) |
 | Hardware back button | `BackRequested` | The app's job; `NavigationPage` may already handle it. Documented |
-| Status bar and safe areas | `InsetsManager`, `SafeAreaPadding`, `DisplayEdgeToEdge` | The app's job, with an example. Avonic reached the same decision |
+| Status bar and safe areas | `InsetsManager`, `SafeAreaPadding`, `DisplayEdgeToEdge` | The app's job, with an example. Avonic reached the same decision. Avalonia 12's `TopLevel.AutoSafeAreaPadding` is on by default, and the Android sample relies on it |
 | Orientation states | none | A pseudoclass the control sets from the top level's size |
 | Optical margin alignment on large titles | none | Measure the offset and apply it as a margin. A likely recorded deviation |
 | Character spacing | `LetterSpacing` | Convert: WinRT's unit is thousandths of an em, Avalonia's is DIPs, so `LetterSpacing` = n × `FontSize` / 1000 ([spike 5](spikes/README.md#5-the-unit-of-textblockletterspacing)) |
@@ -317,8 +320,11 @@ Cornflower should need far fewer global rules, because a theme for a control's o
 belongs in its `ControlTheme`, which doesn't have that cost. The budget test carries over anyway,
 set low from the start, and the measurement is repeated on the Android device.
 
-Avonic's metrics collection carries over whole ([#12](https://github.com/wdcossey/CornflowerUI/issues/12)).
-None of it exists here yet. The files, from Avonic's repo, and what changes:
+Avonic's metrics collection carried over ([#12](https://github.com/wdcossey/CornflowerUI/issues/12)).
+What exists, the limits, the measurements, and what changed in the copy ("From Avonic") are in
+[`docs/performance`](performance/README.md). The table below is the plan it was copied by, kept
+for the Avonic paths; only `drive.ps1` is still to come, with the desktop sample
+([#9](https://github.com/wdcossey/CornflowerUI/issues/9)):
 
 | Avonic file | What it does | For Cornflower |
 |---|---|---|
@@ -352,7 +358,11 @@ harness from [#11](https://github.com/wdcossey/CornflowerUI/issues/11):
   which runs each callback due on the way at its own time. A frame lands 16 ms after it is
   requested.
 
-Also the discovery tests, the spikes, the font and token tests, and the repository guards.
+Also the discovery tests, the spikes, the font and token tests, the sample's tests, the style
+budget and its trace, the checklist generator's tests, the holes test, and the repository guards.
+The device run, once per batch, puts the sample on the Android phone over ADB and pulls frames
+back: [`tools/android/run.ps1`](../tools/android/README.md). Avonic's real-window driver found a
+bug 1,486 headless tests had missed.
 
 Decided ([ADR 0003](decisions/0003-decisions-on-the-tier-0-infrastructure.md#layout-and-time-in-tests-44)):
 
@@ -373,8 +383,6 @@ Proposed:
   measurement recorded in the plan.
 - Every discovered resource is built with the theme installed, since a mistyped
   `{StaticResource}` fails only on first lookup.
-- A real-device run per batch: the sample on Android over ADB, with frames pulled back. Avonic's
-  real-window driver found a bug 1,486 headless tests had missed.
 
 ## Mapping rules (draft)
 
@@ -431,6 +439,24 @@ in a nested style.
 | A state Avalonia's control doesn't raise | For a built-in: an attached behaviour that sets a pseudoclass, a part class, a subclass under rung 4, or a recorded gap, in that order. For ours: a pseudoclass named after the state, lower case | |
 | `Orientation`: `Portrait`, `Landscape` | A pseudoclass our control sets from the top level's size | Avalonia has no `:landscape` |
 | `VisualTransition From="A" To="B" GeneratedDuration="…"` | `Transitions` on the part, with that duration | 50 in 8.1. A WinRT transition runs between two named states only; an Avalonia transition runs on any change of the property. Record where that differs. Tested at its end value |
+
+**8.1 states no rule covers yet, on controls Avalonia has.** The checklist generator, run on all
+57 styled 8.1 controls on 2026-11-09, shows these as "no rule". The first control that has one
+decides it. The generator matches Avalonia's control by name, so a control Avalonia has under
+another name (PasswordBox, ListViewItem) is treated as one Avalonia lacks, and its states get the
+lower-case pseudoclass of the rule for ours above; its plan maps them by hand. `Portrait` and
+`Landscape` have the orientation rule above, but it names no pseudoclass yet, so the generator
+doesn't apply it:
+
+| State | Controls |
+|---|---|
+| `MouseOver` | CheckBox, RadioButton |
+| `TouchIndicator`, `NoIndicator`, `MouseIndicator` | ScrollBar, ScrollViewer |
+| `OnContent`, `OffContent` | ToggleSwitch |
+| `Full`, `InlineNormal`, `InlinePlaceholder`, `Highlighted`, `Opened`, `Closed` | ComboBox |
+| `Determinate`, `Updating`, `Paused`, `Error` | ProgressBar |
+| `Portrait`, `Landscape` | FlyoutPresenter |
+| `TopPortrait`, `BottomPortrait`, `LeftLandscape`, `RightLandscape`, `None` | MenuFlyoutPresenter |
 
 Precedence, as Avonic measured it: a rule with a pseudoclass or class beats one without, then
 later beats earlier. A value set directly on an element in the template beats a plain style but

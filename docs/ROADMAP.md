@@ -41,7 +41,9 @@ reproduce.
 **Completeness.** Avalonia has templated controls the phone never had. The measure of era 1's
 completeness is the count from the test that lists every templated Avalonia control without a
 Wp81 theme ([#13](https://github.com/wdcossey/CornflowerUI/issues/13);
-[ADR 0002](decisions/0002-decisions-of-2026-11-08.md#themes-and-scope)).
+[ADR 0002](decisions/0002-decisions-of-2026-11-08.md#themes-and-scope)): 79 at Avalonia 12.1.4,
+before any control (2026-11-09). Each control's PR deletes its own lines from
+`tests/Cornflower.Tests/Completeness/Holes.txt`.
 
 ## Tiers
 
@@ -165,9 +167,9 @@ Nothing in Tier 1 starts until this list is done.
 - [ ] Read from the emulator: the item count at which ComboBox goes full screen, and the
       ToggleSwitch drag threshold ([#25](https://github.com/wdcossey/CornflowerUI/issues/25)). Read so far: 10 items
       open the full-screen picker and 3 open inline; the count where it flips isn't pinned down.
-- [ ] The checklist generator: one control's spec from the `.winmd` and `generic.xaml`
-      ([#7](https://github.com/wdcossey/CornflowerUI/issues/7)). The `generic.xaml` half is still
-      a search recipe, not a tool.
+- [x] The checklist generator: one control's spec from the `.winmd` and `generic.xaml`
+      ([#7](https://github.com/wdcossey/CornflowerUI/issues/7)), as
+      `tools/winrt-api checklist <Type>` (2026-11-09). Run on all 57 styled 8.1 controls.
 - [x] ~~`tools/winjs-ref`~~ ([#8](https://github.com/wdcossey/CornflowerUI/issues/8)). Not needed: the shipped WinJS
       2.1 for Phone stylesheet was already pulled on 2026-11-07.
 - [ ] A side-by-side tool: two frames in one image.
@@ -178,14 +180,19 @@ Nothing in Tier 1 starts until this list is done.
 - [ ] The desktop sample: a phone-sized window, one auto-discovered page per control
       ([#9](https://github.com/wdcossey/CornflowerUI/issues/9)). A nice-to-have, to watch progress as Avonic's sample
       does. It doesn't hold up Tier 1.
-- [ ] The Android sample and a first device run on the Pixel 8
-      ([#10](https://github.com/wdcossey/CornflowerUI/issues/10)).
+- [x] The Android sample and a first device run on the Pixel 8
+      ([#10](https://github.com/wdcossey/CornflowerUI/issues/10)), with
+      [`tools/android/run.ps1`](../tools/android/README.md) (2026-11-09). Start times are in its
+      README and in [`docs/performance`](performance/README.md).
 - [x] The test harness: `Scene`, `Frames`, the clock hook and `TestClock`
       ([#11](https://github.com/wdcossey/CornflowerUI/issues/11)).
-- [ ] Metrics from Avonic: the style budget, `StyleTrace`, the census, the benchmark, the Debug
-      performance line, the breakage tool ([#12](https://github.com/wdcossey/CornflowerUI/issues/12)).
-- [ ] The test that lists every templated Avalonia control without a Wp81 theme
-      ([#13](https://github.com/wdcossey/CornflowerUI/issues/13)).
+- [x] Metrics from Avonic: the style budget, `StyleTrace`, the census, the benchmark, the Debug
+      performance line, the breakage tool ([#12](https://github.com/wdcossey/CornflowerUI/issues/12)),
+      in [`docs/performance`](performance/README.md) (2026-11-09). Avonic's real-window driver waits
+      for the desktop sample (#9).
+- [x] The test that lists every templated Avalonia control without a Wp81 theme
+      ([#13](https://github.com/wdcossey/CornflowerUI/issues/13)), with the list in
+      `tests/Cornflower.Tests/Completeness/Holes.txt` (2026-11-09): 79 holes.
 - [x] Spike: does swapping the theme at run time re-template every control?
       ([#14](https://github.com/wdcossey/CornflowerUI/issues/14))
 - [x] Spike: what does a control with no `ControlTheme` do?
