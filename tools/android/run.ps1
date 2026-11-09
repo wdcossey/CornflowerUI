@@ -24,7 +24,7 @@ param(
     [string]$Configuration = 'Release',
     [switch]$NoBuild,
     [int]$TimeoutSeconds = 60,
-    [int]$UnlockTimeoutSeconds = 30
+    [int]$UnlockTimeoutSeconds = 60
 )
 
 $ErrorActionPreference = 'Stop'

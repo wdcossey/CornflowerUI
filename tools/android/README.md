@@ -14,7 +14,7 @@ powershell -ExecutionPolicy Bypass -File tools\android\run.ps1 -NoBuild    # reu
    size and density.
 2. Builds `samples/Cornflower.Sample.Android` (Release by default), and installs the signed APK.
 3. Wakes the screen. A phone with a secure lock has to be unlocked by hand: the script says so and
-   waits (`-UnlockTimeoutSeconds`, 30 by default), then waits for the screen to be fully awake.
+   waits (`-UnlockTimeoutSeconds`, 60 by default), then waits for the screen to be fully awake.
 4. Goes to the home screen, stops the app, and starts it cold with `am start -W -S`, which reports
    the time Android measured from the intent to the activity's first frame (`TotalTime`). Going
    home first matters: a screen waking from doze can bring the app's last task back by itself,
@@ -41,7 +41,9 @@ The ADB path is taken from `ANDROID_HOME`, `ANDROID_SDK_ROOT`, `%LOCALAPPDATA%\A
 
 ## The phone
 
-A Pixel 8 (`shiba`) on the maintainer's desktop. It sits on a USB-C switch shared with a laptop,
+A Pixel 8 (`shiba`) on the maintainer's desktop. It keeps its secure lock, because it's signed in to
+the maintainer's Google account, so a run on a locked phone waits for a hand. It locks 30 s after
+the screen goes off, so runs close together don't each need an unlock. It sits on a USB-C switch shared with a laptop,
 so it may need switching over first; wireless debugging (Settings → Developer options → Wireless
 debugging, then `adb pair` and `adb connect`) avoids the switch. Over wireless, `adb devices` can list
 the phone twice (its mDNS name and its `ip:port`); the script wants one entry, so
