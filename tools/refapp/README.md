@@ -244,14 +244,17 @@ not yet the model: #22 fits them.
 
 ## The page's app bar (2026-11-09, device 11, #23)
 
-`20261109-2124-dev11` (`-Popups only -Only AppBar -Grab`): a `CommandBar` set as the page's
+`20261109-2124-dev11` and `20261109-2130-dev11` (`-Popups only -Only BottomAppBar -Grab`), the
+same to the pixel row: a `CommandBar` set as the page's
 `BottomAppBar`, with three primary commands (add; favorite, a checked toggle; delete, disabled)
 and two secondary ones, in four variants, dark and light, each with a screenshot.
 
 - **The shell draws it, not the page.** The `CommandBar` sits in a popup whose tree is dumped,
   but the dump is the same open or closed and doesn't match the pixels (its bar starts at 742.5,
   the drawn one at 737.08). Only the screenshots are the reference.
-- **`IsOpen` set as the bar is attached is ignored.** The specimen opens it 600 ms later.
+- **`IsOpen` set as the bar is attached is ignored.** The specimen opens it 400 ms after the
+  bar's `Loaded`, records an error if `Opened` never fires, and on close detaches the bar only
+  once it has `Closed`, since taking a popup away mid-animation has killed the app before.
 
 Read from the screenshots, in view pixels (raw ÷ 2.4):
 

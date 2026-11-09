@@ -49,6 +49,14 @@ namespace RefApp
                     button.Content = "open";
                     button.Click += (s, e) => spec.Open(button);
                 }
+                else
+                {
+                    // A host that isn't a button (the app bar's text) gets an open button of its own.
+                    var spec = p;
+                    var opener = new Button { Content = "open" };
+                    opener.Click += (s, e) => spec.Open(element);
+                    panel.Children.Add(opener);
+                }
 
                 panel.Children.Add(element);
             }
