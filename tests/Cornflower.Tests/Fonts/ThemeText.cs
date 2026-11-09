@@ -39,7 +39,7 @@ internal sealed class ThemeText : IDisposable
         _window.Styles.Add(new Wp81Theme());
         _window.Content = Block;
         _window.Show();
-        Frames.DrawFirstFrame(_window);
+        Dispatcher.UIThread.RunJobs();
 
         Assert.IsType<FontFamily>(Block.FontFamily);
         Assert.Contains("avares://Cornflower.Themes.Wp81/Fonts", Block.FontFamily.Key?.Source.OriginalString);
@@ -53,8 +53,6 @@ internal sealed class ThemeText : IDisposable
     /// <summary>The rendered frame's bytes.</summary>
     public byte[] Pixels()
     {
-        ManualRenderTimer.ForceTick();
-        Dispatcher.UIThread.RunJobs();
         using var frame = _window.CaptureRenderedFrame() ?? throw new InvalidOperationException("No frame");
         using var buffer = frame.Lock();
         var bytes = new byte[buffer.RowBytes * buffer.Size.Height];

@@ -65,7 +65,7 @@ internal sealed class Scene : IDisposable
         {
             Window.Content = content;
             Window.Show();
-            Frames.DrawFirstFrame(Window);
+            Dispatcher.UIThread.RunJobs();
         }
         catch
         {
@@ -74,14 +74,9 @@ internal sealed class Scene : IDisposable
         }
     }
 
-    /// <summary>
-    /// Renders the scene as it is now, with one render tick (<see cref="ManualRenderTimer"/>), which
-    /// also runs any frame callbacks due. The caller disposes the frame.
-    /// </summary>
+    /// <summary>Renders the scene as it is now. The caller disposes the frame.</summary>
     public WriteableBitmap Capture()
     {
-        Dispatcher.UIThread.RunJobs();
-        ManualRenderTimer.ForceTick();
         Dispatcher.UIThread.RunJobs();
         return Window.CaptureRenderedFrame() ?? throw new InvalidOperationException("The window rendered no frame.");
     }

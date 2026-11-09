@@ -8,7 +8,7 @@ namespace Cornflower.Tests;
 /// <summary>
 /// Headless application used by every <c>[AvaloniaFact]</c> test. Renders with Skia so tests
 /// can capture real frames to set beside the emulator's. Installs no theme: a test that needs
-/// one adds it. Frames are drawn only on <see cref="ManualRenderTimer.ForceTick"/>.
+/// one adds it. Frames are composed only on a forced render tick (<see cref="ManualRenderTimer"/>).
 /// </summary>
 public class TestApp : Application
 {

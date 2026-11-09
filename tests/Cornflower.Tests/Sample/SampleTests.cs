@@ -125,7 +125,7 @@ public class SampleTests
             using var scene = new Scene(view);
             for (var frame = 0; frame < 4; frame++)
             {
-                ManualRenderTimer.ForceTick();
+                AvaloniaHeadlessPlatform.ForceRenderTimerTick();
                 Dispatcher.UIThread.RunJobs();
             }
 
@@ -145,8 +145,8 @@ public class SampleTests
         MainView.Report = lines.Add;
         try
         {
-            // In and out of a shown Scene: Scene's constructor draws the first frame, which would
-            // run the page's frame requests before it could leave.
+            // In and out with no dispatcher work between, so no render pass (Scene's own RunJobs
+            // runs one) can run the page's frame requests before it leaves.
             using var scene = new Scene();
             var view = new MainView();
             scene.Window.Content = view;
@@ -155,7 +155,7 @@ public class SampleTests
             Assert.False(view.IsAttachedToVisualTree());
             for (var frame = 0; frame < 4; frame++)
             {
-                ManualRenderTimer.ForceTick();
+                AvaloniaHeadlessPlatform.ForceRenderTimerTick();
                 Dispatcher.UIThread.RunJobs();
             }
 

@@ -89,7 +89,7 @@ public class CornflowerClockTests
         Dispatcher.UIThread.RunJobs();
         Assert.False(ran);
 
-        ManualRenderTimer.ForceTick();
+        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
         Dispatcher.UIThread.RunJobs();
         Assert.True(ran);
     }
@@ -102,7 +102,7 @@ public class CornflowerClockTests
         var ran = false;
 
         RealClock.Instance.RequestFrame(content, () => ran = true).Dispose();
-        ManualRenderTimer.ForceTick();
+        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
         Dispatcher.UIThread.RunJobs();
 
         Assert.False(ran);
