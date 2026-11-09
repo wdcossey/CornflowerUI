@@ -10,7 +10,9 @@ param(
     [string]$Root = 'C:\cornflower\refapp',
     [int]$TimeoutMinutes = 40,
     [switch]$Demo,
-    [switch]$Grab
+    [switch]$Grab,
+    [switch]$Probe,
+    [ValidateSet('post', 'real')][string]$TouchMode = 'post'
 )
 
 $ErrorActionPreference = 'Continue'
@@ -47,6 +49,35 @@ if ($Demo) {
     exit 0
 }
 
+# A probe lays its page out, then writes the touches it wants as gestures.txt and ready.txt. Pull them, and play
+# them on the emulator's display with vm\touch.ps1. The app writes done.txt once the last touch has settled.
+if ($Probe) {
+    Status 'probing: waiting for the app to write ready.txt'
+    $ready = $false
+    for ($i = 0; $i -lt 40 -and -not $ready; $i++) {
+        Start-Sleep -Seconds 3
+        $ready = ((& $ise dir "deviceindex:$Device" $ProductId 2>&1) -join "`n") -match 'ready\.txt'
+    }
+
+    if (-not $ready) {
+        Status 'failed: the probe wrote no ready.txt in 2 minutes'
+        exit 1
+    }
+
+    $in = Join-Path $Root 'probe-in'
+    Remove-Item $in -Recurse -Force -ErrorAction SilentlyContinue
+    New-Item -ItemType Directory -Force $in | Out-Null
+    & $ise ts "deviceindex:$Device" $ProductId $in 2>&1 | Add-Content -Path $log
+    # More than one emulator can be running, one per profile: touch the one this device is, by its window title.
+    $name = (& $deploy /EnumerateDevices 2>&1 | Where-Object { $_ -match "^\s*$Device\s+(.+?)\s*$" } | ForEach-Object { $Matches[1] } | Select-Object -First 1)
+    Status "probing: playing the touches on '$name'"
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $Root 'vm\touch.ps1') -Gestures (Join-Path $in 'IsolatedStore\gestures.txt') -Log (Join-Path $Root 'touch.log') -Title $name -Mode $TouchMode
+    if ($LASTEXITCODE -ne 0) {
+        Status "failed: touch.ps1 exit $LASTEXITCODE; see touch.log"
+        exit 1
+    }
+}
+
 $grabber = $null
 $stopGrab = Join-Path $Root 'grab.stop'
 if ($Grab) {
@@ -72,7 +103,7 @@ while ((Get-Date) -lt $deadline) {
 
     $pngs = ([regex]::Matches($listing, '\.png')).Count
     if ($pngs -ne $lastPngs) { $lastPngs = $pngs; $lastChange = Get-Date }
-    elseif (((Get-Date) - $lastChange).TotalMinutes -ge 3) { $stalled = $true; break }
+    elseif (-not $Probe -and ((Get-Date) - $lastChange).TotalMinutes -ge 3) { $stalled = $true; break }
     Status ('running: {0} PNGs so far after {1:N0} s' -f $pngs, ((Get-Date) - $started).TotalSeconds)
 }
 

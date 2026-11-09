@@ -10,7 +10,8 @@ namespace RefApp
     /// One setting per line: <c>only=&lt;regex&gt;</c> keeps the specimens and popups whose name matches;
     /// <c>popups=only</c> or <c>popups=also</c> adds the popups, which a run leaves out by default;
     /// <c>demo</c> shows the demo page instead of running the suite; <c>hold=&lt;ms&gt;</c> holds each popup open,
-    /// full window, for the screen grabs (run.ps1 -Grab).
+    /// full window, for the screen grabs (run.ps1 -Grab); <c>probe=&lt;name&gt;</c> runs one <see cref="Probe"/> instead
+    /// of the suite (run.ps1 -Probe).
     /// </summary>
     internal sealed class Options
     {
@@ -28,6 +29,9 @@ namespace RefApp
 
         /// <summary>How long each popup stays open after it is dumped, for vm\grab-loop.ps1 to grab the screen. 0: no hold.</summary>
         public int HoldMs;
+
+        /// <summary>The <see cref="Probe"/> to run instead of the suite, or null.</summary>
+        public string Probe;
 
         public bool Matches(string name) =>
             string.IsNullOrEmpty(Only) || Regex.IsMatch(name, Only, RegexOptions.IgnoreCase);
@@ -52,6 +56,10 @@ namespace RefApp
                     else if (line.StartsWith("hold=", StringComparison.Ordinal))
                     {
                         options.HoldMs = int.Parse(line.Substring(5), System.Globalization.CultureInfo.InvariantCulture);
+                    }
+                    else if (line.StartsWith("probe=", StringComparison.Ordinal))
+                    {
+                        options.Probe = line.Substring(6);
                     }
                     else if (line == "demo")
                     {

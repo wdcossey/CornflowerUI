@@ -98,8 +98,11 @@ namespace RefApp
                 Close = (host, h) => ((TimePickerFlyout)h).Hide(),
             });
 
-            list.Add(Combo("open-3-items", 3));
-            list.Add(Combo("open-10-items", 10));
+            // Every count from 3, which opens inline, to 10, which opens the full-screen picker: where it flips (#25).
+            for (var count = 3; count <= 10; count++)
+            {
+                list.Add(Combo("open-" + count + "-items", count));
+            }
 
             return list;
         }
