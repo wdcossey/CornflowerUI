@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
+using Windows.UI.Xaml.Media;
 
 namespace RefApp
 {
@@ -98,6 +99,13 @@ namespace RefApp
                 Close = (host, h) => ((TimePickerFlyout)h).Hide(),
             });
 
+            // The page's app bar (#23): compact and minimal, closed and open. The phone draws it outside the page, so
+            // only -Grab sees its pixels.
+            list.Add(BottomAppBar("compact", AppBarClosedDisplayMode.Compact, false));
+            list.Add(BottomAppBar("compact-open", AppBarClosedDisplayMode.Compact, true));
+            list.Add(BottomAppBar("minimal", AppBarClosedDisplayMode.Minimal, false));
+            list.Add(BottomAppBar("minimal-open", AppBarClosedDisplayMode.Minimal, true));
+
             // Every count from 3, which opens inline, to 10, which opens the full-screen picker: where it flips (#25).
             for (var count = 3; count <= 10; count++)
             {
@@ -173,6 +181,115 @@ namespace RefApp
                 },
                 Close = (host, h) => ((ListPickerFlyout)h).Hide(),
             };
+        }
+
+        /// <summary>What <see cref="BottomAppBar"/> opened, for its Close.</summary>
+        private sealed class AppBarHandle
+        {
+            public Page Page;
+            public CommandBar Bar;
+            public DispatcherTimer OpenTimer;
+            public bool WantOpen;
+            public bool Opened;
+        }
+
+        /// <summary>
+        /// A CommandBar as the page's BottomAppBar, with three primary commands (one disabled, one a checked toggle) and
+        /// two secondary ones, set on the page that holds the stage and taken off again on close. The shell draws it,
+        /// so only -Grab sees its pixels.
+        /// </summary>
+        private static PopupSpecimen BottomAppBar(string variant, AppBarClosedDisplayMode mode, bool open)
+        {
+            return new PopupSpecimen
+            {
+                Name = "BottomAppBar",
+                Variant = variant,
+                SettleMs = open ? 2200 : 1500,
+                MakeHost = () => new TextBlock { Text = "page with an app bar", Margin = new Thickness(0, 12, 0, 0) },
+                Open = host =>
+                {
+                    var bar = new CommandBar { ClosedDisplayMode = mode };
+                    bar.PrimaryCommands.Add(new AppBarButton { Label = "add", Icon = new SymbolIcon(Symbol.Add) });
+                    bar.PrimaryCommands.Add(new AppBarToggleButton { Label = "favorite", Icon = new SymbolIcon(Symbol.Favorite), IsChecked = true });
+                    bar.PrimaryCommands.Add(new AppBarButton { Label = "delete", Icon = new SymbolIcon(Symbol.Delete), IsEnabled = false });
+                    bar.SecondaryCommands.Add(new AppBarButton { Label = "first menu item" });
+                    bar.SecondaryCommands.Add(new AppBarButton { Label = "second menu item" });
+                    bar.RequestedTheme = ThemeOf(host);
+                    var h = new AppBarHandle { Page = CurrentPage(), Bar = bar, WantOpen = open };
+                    bar.Opened += (s, e) => h.Opened = true;
+                    h.Page.BottomAppBar = bar;
+                    if (open)
+                    {
+                        // Set as the bar is attached, IsOpen is ignored (2026-11-09): open it once the bar has loaded.
+                        h.OpenTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };
+                        h.OpenTimer.Tick += (s, e) =>
+                        {
+                            h.OpenTimer.Stop();
+                            bar.IsOpen = true;
+                        };
+                        bar.Loaded += (s, e) => h.OpenTimer.Start();
+                    }
+
+                    return h;
+                },
+                Close = (host, handle) =>
+                {
+                    var h = (AppBarHandle)handle;
+                    if (h == null)
+                    {
+                        return;
+                    }
+
+                    if (h.OpenTimer != null)
+                    {
+                        h.OpenTimer.Stop();
+                    }
+
+                    // Never take a popup away mid-animation (see the README): close the bar, and detach it once closed.
+                    if (h.Bar.IsOpen)
+                    {
+                        h.Bar.Closed += (s, e) => h.Page.BottomAppBar = null;
+                        h.Bar.IsOpen = false;
+                    }
+                    else
+                    {
+                        h.Page.BottomAppBar = null;
+                    }
+
+                    if (h.WantOpen && !h.Opened)
+                    {
+                        throw new InvalidOperationException("the app bar never opened");
+                    }
+                },
+            };
+        }
+
+        /// <summary>The theme the stage asked for: the first RequestedTheme set above the host.</summary>
+        private static ElementTheme ThemeOf(FrameworkElement host)
+        {
+            for (DependencyObject e = host; e != null; e = VisualTreeHelper.GetParent(e))
+            {
+                var f = e as FrameworkElement;
+                if (f != null && f.RequestedTheme != ElementTheme.Default)
+                {
+                    return f.RequestedTheme;
+                }
+            }
+
+            return ElementTheme.Default;
+        }
+
+        /// <summary>The page the window's frame shows: the app's only page, MainPage.</summary>
+        private static Page CurrentPage()
+        {
+            var frame = Window.Current.Content as Frame;
+            var page = frame != null ? frame.Content as Page : null;
+            if (page == null)
+            {
+                throw new InvalidOperationException("the window's content is not a Frame showing a Page");
+            }
+
+            return page;
         }
 
         private static PopupSpecimen Combo(string variant, int count)

@@ -71,8 +71,9 @@ the signed-in desktop. Run from an SSH session, `ISETool` starts a hidden second
   `RenderTargetBitmap` and writes the PNG and JSON. It writes `index.json` and then `done.txt` last.
 - **`Popups.cs`** holds the popups: Flyout (top and full), MenuFlyout, ContentDialog (default and
   full size), ListPickerFlyout (single and multiple), PickerFlyout, DatePickerFlyout,
-  TimePickerFlyout, and ComboBox open with every count of items from 3 to 10: up to 5 open
-  inline, 6 or more open the full-screen picker (below).
+  TimePickerFlyout, ComboBox open with every count of items from 3 to 10 (up to 5 open
+  inline, 6 or more open the full-screen picker; below), and the page's app bar, compact and
+  minimal, closed and open (below).
   **`Suite.Popups.cs`** opens each from a button or the control on a stage, gives each open popup
   the requested theme, renders the stage, and dumps every open popup's tree, in window
   coordinates, to `<theme>__<name>__<variant>__popup<n>.json`. It then closes the popup and waits
@@ -134,8 +135,6 @@ TimePicker 2, AppBarButton 12, AppBarToggleButton 36, ListViewItem 84, ListView 
   template root. Their states are on inner parts, such as the date picker's flyout button and
   the list's items, and the suite doesn't walk those yet. The list items are covered by the
   separate ListViewItem specimen. The Slider's template really has only Normal and Disabled.
-- **The page's app bar.** It isn't captured yet. The full-screen pickers and ContentDialog each
-  bring a CommandBar in a popup of their own; its tree is dumped and `-Grab` shows its pixels.
 - **Other profiles.** Devices 10, 11 and 12 have run (below). Run `-Device 13` for qHD 5", and so on.
 
 ## Runs by profile (2026-11-08)
@@ -242,6 +241,32 @@ translating 112 down with a `GlobalOffsetY` of −112 against it. The press reac
 about 45 ms (three frames). On release nothing moves for about 180 ms, then the tilt eases back
 to rest by about 345 ms. Dragged after the press, the tilt follows the finger. These are readings,
 not yet the model: #22 fits them.
+
+## The page's app bar (2026-11-09, device 11, #23)
+
+`20261109-2124-dev11` and `20261109-2130-dev11` (`-Popups only -Only BottomAppBar -Grab`), the
+same to the pixel row: a `CommandBar` set as the page's
+`BottomAppBar`, with three primary commands (add; favorite, a checked toggle; delete, disabled)
+and two secondary ones, in four variants, dark and light, each with a screenshot.
+
+- **The shell draws it, not the page.** The `CommandBar` sits in a popup whose tree is dumped,
+  but the dump is the same open or closed and doesn't match the pixels (its bar starts at 742.5,
+  the drawn one at 737.08). Only the screenshots are the reference.
+- **`IsOpen` set as the bar is attached is ignored.** The specimen opens it 400 ms after the
+  bar's `Loaded`, records an error if `Opened` never fires, and on close detaches the bar only
+  once it has `Closed`, since taking a popup away mid-animation has killed the app before.
+
+Read from the screenshots, in view pixels (raw ÷ 2.4):
+
+| Variant | Bar's top | Bar's height | Shows |
+|---|---|---|---|
+| Compact, closed | 737.08 | 62.92 | the three buttons' circles, no labels; the ellipsis at the top right |
+| Minimal, closed | 773.75 | 26.25 | the ellipsis only |
+| Compact or minimal, open | 514.58 | 285.42 | the circles with labels below, then the secondary commands as a list in large text |
+
+The bar is `#FF1F1F1F` dark and `#FFDDDDDD` light, as the pickers' bars are. The ellipsis's dots
+start 25 raw px (10.4 view px) below the bar's top in every variant. The checked toggle is a
+filled circle; the disabled one is grey, its label too.
 
 ## Popup pixels
 
