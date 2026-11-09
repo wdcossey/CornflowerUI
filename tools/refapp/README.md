@@ -21,7 +21,7 @@ powershell -ExecutionPolicy Bypass -File tools\refapp\run.ps1 -Popups only      
 powershell -ExecutionPolicy Bypass -File tools\refapp\run.ps1 -Only 'CheckBox|Radio'             # just these specimens
 powershell -ExecutionPolicy Bypass -File tools\refapp\run.ps1 -Popups only -Grab               # the popups, with a screenshot of each, in about 4 minutes
 powershell -ExecutionPolicy Bypass -File tools\refapp\run.ps1 -Demo                            # the demo page, left open in the emulator
-powershell -ExecutionPolicy Bypass -File tools\refapp\run.ps1 -Probe tilt -TouchMode real        # one probe, with real touches (see Probes)
+powershell -ExecutionPolicy Bypass -File tools\refapp\run.ps1 -Probe tilt                        # one probe, with real touches (see Probes)
 ```
 
 Results go to `R:\cornflower-reference\refapp\<yyyyMMdd-HHmm>-dev<n>\`: one PNG and one JSON per
@@ -173,7 +173,7 @@ inline ones report "no popup open", which is expected.
 
 ## Probes
 
-Behaviour that only real input shows. `run.ps1 -Probe <name> -TouchMode real` deploys the app with
+Behaviour that only real input shows. `run.ps1 -Probe <name>` deploys the app with
 one probe from `app\Probe.cs` instead of the suite. The app lays a control out on a dark page,
 writes the touches it wants as `gestures.txt` (in view pixels, window coordinates) and then
 `ready.txt`. `vm\session.ps1` pulls them and `vm\touch.ps1` plays them on the emulator's display
@@ -181,9 +181,9 @@ with the mouse, which the emulator turns into touches. The app logs every pointe
 state change and watched value to `probe.txt`, in milliseconds, and writes `done.txt` when the
 last touch has settled. `touch.log` says where each step landed on the VM's screen.
 
-- **Use `-TouchMode real`.** It moves the VM's real cursor, so the emulator has to be in front and
-  the VM's mouse left alone during the run. The default, `post`, posts mouse messages to the
-  display window; the emulator ignores them (2026-11-09).
+- **Touches move the VM's real cursor** (`-TouchMode real`, the default), so the emulator has to
+  be in front and the VM's mouse left alone during the run. `-TouchMode post` posts mouse
+  messages to the display window instead; the emulator ignored them (2026-11-09).
 - **One emulator at a time is safest.** `touch.ps1` picks the emulator by its XDE process's
   `/displayName`, because every emulator window is titled "XDE".
 - **Resolution:** at the zoom that fits the VM's 1440-high screen, one screen pixel is 0.83 view
@@ -198,15 +198,17 @@ tilt's `PlaneProjection` moves every 15 ms in the log.
 
 ### ToggleSwitch: tap or drag (2026-11-09, device 11, #25)
 
-Four runs, `20261109-2105-dev11`, `-2108`, `-2112` and `-2115`, 95 touches, each from Off,
-pressing the knob and moving right. In view pixels on the reference profile:
+Five runs, `20261109-2105-dev11`, `-2108`, `-2112`, `-2115` and `-2128`, 127 touches, each from
+Off, pressing the knob and moving right. In the last, `touch.ps1` kept each step to its planned
+time within a few milliseconds; before, its steps ran late, but the app logs the times it got,
+and those are what is quoted. In view pixels on the reference profile:
 
 - **Pressing goes straight to `Dragging`**: the Thumb's `DragStarted` fires on the press, and the
   knob's `KnobTranslateTransform.X` follows the finger one for one from the first move. There is
   no distance before the knob moves.
 - **A release is a tap, and toggles, when the press moved less than about 18 view px and lasted
-  less than about 1,020 ms.** Moved 17.47: tap; 18.33: not. Lasted 1,001 and 1,022 ms: tap;
-  1,021 (with 12.5 px moved), 1,033 and 1,060: not. The two limits act on their own: a still press
+  less than about 1,020 ms.** Moved 17.47: tap; 18.33: not, in two runs. Lasted 993, 1,001
+  and 1,022 ms: tap; 1,020, 1,021, 1,033 and 1,060: not. The two limits act on their own: a still press
   of 1,124 ms doesn't toggle, nor does a quick 20 px drag of 548 ms.
 - **Otherwise the knob's position decides**: released at 28.32 it goes back Off, at 29.18 it goes
   On. The knob travels 56.5 (the template's `On` state), so the line is its halfway point, 28.25,

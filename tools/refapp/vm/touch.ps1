@@ -113,9 +113,19 @@ $sx = $width / $viewW
 $sy = $height / $viewH
 Log ("display window at {0},{1}, {2} x {3}; view {4} x {5}; {6:0.####} x {7:0.####} window px per view px" -f $left, $top, $width, $height, $viewW, $viewH, $sx, $sy)
 
+# Each step runs at its own time from the start, so the time the steps take doesn't add up; the log is kept in
+# memory and written at the end, for the same reason.
+$steps = New-Object System.Collections.Generic.List[string]
+if ($Mode -eq 'real') { [XdeMouse]::Front([IntPtr]$window); Start-Sleep -Milliseconds 300 }
+$clock = [Diagnostics.Stopwatch]::StartNew()
+$at = 0.0
 foreach ($line in $lines[1..($lines.Count - 1)]) {
     $parts = $line -split ' '
-    if ($parts[0] -eq 'wait') { Start-Sleep -Milliseconds ([int]$parts[1]); continue }
+    if ($parts[0] -eq 'wait') { $at += [double]$parts[1]; continue }
+    while ($clock.Elapsed.TotalMilliseconds -lt $at) {
+        if ($at - $clock.Elapsed.TotalMilliseconds -gt 3) { Start-Sleep -Milliseconds 1 }
+    }
+
     $x = [int][Math]::Round([double]::Parse($parts[1], $inv) * $sx)
     $y = [int][Math]::Round([double]::Parse($parts[2], $inv) * $sy)
     if ($Mode -eq 'post') {
@@ -126,13 +136,14 @@ foreach ($line in $lines[1..($lines.Count - 1)]) {
         }
     }
     else {
-        if ($parts[0] -eq 'down') { [XdeMouse]::Front([IntPtr]$window); Start-Sleep -Milliseconds 100 }
+        if ($parts[0] -eq 'down') { [XdeMouse]::Front([IntPtr]$window) }
         [XdeMouse]::RealMove($left + $x, $top + $y)
         if ($parts[0] -eq 'down') { [XdeMouse]::RealDown() }
         elseif ($parts[0] -eq 'up') { [XdeMouse]::RealUp() }
     }
 
-    Log "$line -> $x,$y"
+    $steps.Add(('{0,8:0.0} ms (planned {1,6:0}) {2} -> {3},{4}' -f $clock.Elapsed.TotalMilliseconds, $at, $line, $x, $y))
 }
 
+Add-Content $Log $steps
 Log 'done'

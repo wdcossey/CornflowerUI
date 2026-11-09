@@ -71,7 +71,7 @@ namespace RefApp
             host.HorizontalAlignment = HorizontalAlignment.Stretch;
             host.VerticalAlignment = VerticalAlignment.Stretch;
             host.Children.Add(page);
-            await Settle();
+            await Settle(page);
 
             var knob = Find(toggle, "SwitchKnob");
             var knobTransform = knob != null ? knob.RenderTransform as TranslateTransform : null;
@@ -144,7 +144,7 @@ namespace RefApp
             host.HorizontalAlignment = HorizontalAlignment.Stretch;
             host.VerticalAlignment = VerticalAlignment.Stretch;
             host.Children.Add(page);
-            await Settle();
+            await Settle(page);
 
             var root = VisualTreeHelper.GetChildrenCount(button) > 0 ? VisualTreeHelper.GetChild(button, 0) as FrameworkElement : null;
             if (root == null)
@@ -186,7 +186,7 @@ namespace RefApp
             _gestures.AppendLine("down " + Num(x) + " " + Num(y));
             _gestures.AppendLine("wait 600");
             _gestures.AppendLine("up " + Num(x) + " " + Num(y));
-            _gestures.AppendLine("wait 1200");
+            _gestures.AppendLine("wait 2000");
         }
 
         private static string Describe(Projection projection)
@@ -242,7 +242,7 @@ namespace RefApp
 
             _gestures.AppendLine("wait " + Math.Max(0, totalMs - 100 - steps * 10));
             _gestures.AppendLine("up " + Num(x + dx) + " " + Num(y));
-            _gestures.AppendLine("wait 1200");
+            _gestures.AppendLine("wait 2000");
         }
 
         /// <summary>A touch at (x, y) that moves by (dx, dy) one view pixel at a time, 30 ms apart, holds, and lifts.</summary>
@@ -260,7 +260,7 @@ namespace RefApp
 
             _gestures.AppendLine("wait 300");
             _gestures.AppendLine("up " + Num(x + dx) + " " + Num(y + dy));
-            _gestures.AppendLine("wait 1200");
+            _gestures.AppendLine("wait 2000");
         }
 
         /// <summary>Logs the pointer events and every visual state change of the control's template.</summary>
@@ -304,7 +304,7 @@ namespace RefApp
                 await Task.Delay(200);
             }
 
-            if (_released == _expected)
+            if (_released >= _expected)
             {
                 await Finish("touches " + _released);
             }
@@ -336,15 +336,12 @@ namespace RefApp
             await Write("ready.txt", "touches " + _expected);
 
             // A run whose touches never arrive still ends, with the log.
-            var deadline = Task.Delay(TimeSpan.FromMinutes(5));
-            await deadline;
-            if (_released < _expected)
-            {
-                await Finish("timed out after " + _released + " of " + _expected + " touches");
-            }
+            await Task.WhenAny(_done.Task, Task.Delay(TimeSpan.FromMinutes(5)));
+            await Finish("timed out after " + _released + " of " + _expected + " touches");
         }
 
         private bool _finished;
+        private readonly TaskCompletionSource<bool> _done = new TaskCompletionSource<bool>();
 
         private async Task Finish(string summary)
         {
@@ -354,6 +351,7 @@ namespace RefApp
             }
 
             _finished = true;
+            _done.TrySetResult(true);
             await Write("probe.txt", _log.ToString());
             await Write("done.txt", summary);
         }
@@ -363,9 +361,37 @@ namespace RefApp
             _log.Append(_clock.Elapsed.TotalMilliseconds.ToString("0.0", CultureInfo.InvariantCulture)).Append('\t').Append(what).Append('\t').Append(details).Append('\n');
         }
 
-        private static async Task Settle()
+        /// <summary>Waits until the page has laid out and every control on it has its template, up to 10 s, then 500 ms more.</summary>
+        private static async Task Settle(FrameworkElement page)
         {
-            await Task.Delay(1500);
+            for (var waited = 0; waited < 10000; waited += 100)
+            {
+                page.UpdateLayout();
+                var control = Find<Control>(page);
+                if (page.ActualWidth > 0 && control != null && VisualTreeHelper.GetChildrenCount(control) > 0)
+                {
+                    break;
+                }
+
+                await Task.Delay(100);
+            }
+
+            await Task.Delay(500);
+        }
+
+        private static T Find<T>(DependencyObject root) where T : class
+        {
+            for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+            {
+                var child = VisualTreeHelper.GetChild(root, i);
+                var found = child as T ?? Find<T>(child);
+                if (found != null)
+                {
+                    return found;
+                }
+            }
+
+            return null;
         }
 
         private static FrameworkElement Find(DependencyObject root, string name)

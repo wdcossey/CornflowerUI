@@ -24,9 +24,10 @@
   open in the emulator, for screenshots by hand. It captures nothing.
   -Probe <name> runs one of the app's probes (app\Probe.cs) instead of the suite: the app lays a control out and
   writes the touches it wants, vm\touch.ps1 plays them on the emulator's display with the mouse, and the app's
-  log of what the control did comes back as probe.txt, beside touch.log. Probes: toggleswitch.
-  -TouchMode post (the default) posts the mouse messages to the emulator's display window; real moves the
-  VM's real cursor, which needs the emulator in front.
+  log of what the control did comes back as probe.txt, beside touch.log. Probes: toggleswitch, tilt.
+  -TouchMode real (the default) moves the VM's real cursor, which needs the emulator in front and the VM's
+  mouse left alone; post posts the mouse messages to the emulator's display window, which the emulator
+  ignored when tried (2026-11-09).
   -Grab holds each popup open for 5 s while vm\grab-loop.ps1 grabs the emulator's window, and
   writes <id>__screen.png beside each popup's dumps. Use it with -Popups only, with the
   emulator's zoom at 100%, so the window is 1080 x 1920, one pixel per phone pixel.
@@ -41,7 +42,7 @@ param(
     [switch]$Demo,
     [switch]$Grab,
     [string]$Probe = '',
-    [ValidateSet('post', 'real')][string]$TouchMode = 'post',
+    [ValidateSet('post', 'real')][string]$TouchMode = 'real',
     [string]$HostAlias = 'cornflower-ref',
     [string]$Out = 'R:\cornflower-reference\refapp',
     [int]$TimeoutMinutes = 40
@@ -138,6 +139,9 @@ if ($status -notmatch '^done') {
         $partial = Join-Path $Out ("{0}-dev{1}-partial" -f (Get-Date -Format 'yyyyMMdd-HHmm'), $Device)
         New-Item -ItemType Directory -Force $partial | Out-Null
         Copy-Scp @("${HostAlias}:C:/cornflower/refapp/out", "${HostAlias}:C:/cornflower/refapp/session.log", $partial)
+        if ($Probe) {
+            try { Copy-Scp @("${HostAlias}:C:/cornflower/refapp/touch.log", $partial) } catch { Write-Host '  no touch.log' }
+        }
         Write-Host "  partial results in $partial"
     }
 
