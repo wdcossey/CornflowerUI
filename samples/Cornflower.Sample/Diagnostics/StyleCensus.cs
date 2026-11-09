@@ -12,10 +12,20 @@ public static class StyleCensus
     /// <summary>The rules in <paramref name="root"/>, and the alternatives between their commas.</summary>
     public static (int Rules, int Alternatives) Count(IStyle root)
     {
-        var rules = 0;
-        var alternatives = 0;
+        var rules = Rules(root);
+        return (rules.Count, rules.Sum(rule => SplitAlternatives(rule.ToString()).Count));
+    }
+
+    /// <summary>
+    /// The global rules in <paramref name="root"/>: what Avalonia checks against every element. A rule's
+    /// <c>ToString()</c> is its full selector; a selector alone prints a nested rule's parent as ^, which
+    /// hides its commas.
+    /// </summary>
+    public static IReadOnlyList<Style> Rules(IStyle root)
+    {
+        var rules = new List<Style>();
         Visit(root);
-        return (rules, alternatives);
+        return rules;
 
         void Visit(IStyle style)
         {
@@ -29,9 +39,7 @@ public static class StyleCensus
             // What Avalonia skips: a rule with neither is only there to hold its children.
             if (style is Style { Selector: not null } rule && (rule.Setters.Count > 0 || rule.Animations.Count > 0))
             {
-                rules++;
-                // The rule's, because a selector alone prints a nested rule's parent as ^, which hides its commas.
-                alternatives += SplitAlternatives(rule.ToString()).Count;
+                rules.Add(rule);
             }
 
             foreach (var child in style.Children)

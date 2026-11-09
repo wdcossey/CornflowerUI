@@ -93,10 +93,12 @@ repository**. They live outside it, in `R:\cornflower-reference\` on the maintai
    `node tools/guard/hash-reference.js <reference folder>` whenever more files are pulled.
 7. **Add files, don't register them.** A control's theme file is found by auto-discovery; a PR
    for one control touches no shared file, except to delete its own lines from
-   `tests/Cornflower.Tests/Completeness/Holes.txt`, which `HolesTests` requires.
+   `tests/Cornflower.Tests/Completeness/Holes.txt`, which `HolesTests` requires, and to raise a
+   style budget limit (rule 8).
 8. **Style budget.** `StyleBudgetTests` fails when `Wp81Theme`'s global rules pass their limits. A
-   PR that needs more raises a limit on purpose and says so, with the new total; past the
-   checkpoint, measure on the phone first (`docs/performance/README.md`).
+   PR that needs more, a control's included, raises the limit in `StyleBudgetTests` on purpose and
+   says so in its description, with the new total; past the checkpoint, measure on the phone first
+   (`docs/performance/README.md`). The README's table catches up at the roll-up.
 9. **This file is ground truth.** Update it in the PR that makes a statement here true.
 
 ## Attribution & licence

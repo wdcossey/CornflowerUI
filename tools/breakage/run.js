@@ -43,13 +43,31 @@ const findProject = () => {
 const project = given || findProject();
 
 const breakages = require(path.resolve(list));
-const TIMEOUT = 10 * 60 * 1000;
+const TIMEOUT = Number(process.env.BREAKAGE_TIMEOUT_MS) || 10 * 60 * 1000;
+
+// A timeout kills only `dotnet`, not the test host it started, which would keep the clone's binaries locked and make every
+// later break NO BUILD. So kill what's left that runs from the clone.
+const killStrays = () => {
+    const where = path.resolve(clone);
+    try {
+        if (process.platform === 'win32') {
+            const quoted = where.replace(/'/g, "''");
+            execSync(`powershell -NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { $_.ProcessId -ne ${process.pid} -and ($_.ExecutablePath -like '${quoted}*' -or $_.CommandLine -like '*${quoted}*') } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"`, { stdio: 'ignore' });
+        } else {
+            execSync(`pkill -f -- '${where.replace(/'/g, "'\\''")}'`, { stdio: 'ignore' });
+        }
+    } catch {
+        // Nothing left to kill.
+    }
+};
 
 const run = (command) => {
     try {
         return { ok: true, text: execSync(command, { cwd: clone, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 1 << 28, timeout: TIMEOUT }) };
     } catch (error) {
-        return { ok: false, timedOut: error.code === 'ETIMEDOUT', text: `${error.stdout || ''}${error.stderr || ''}` };
+        const timedOut = error.code === 'ETIMEDOUT';
+        if (timedOut) killStrays();
+        return { ok: false, timedOut, text: `${error.stdout || ''}${error.stderr || ''}` };
     }
 };
 

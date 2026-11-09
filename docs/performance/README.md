@@ -29,14 +29,20 @@ its global rules should be few. That is why the limits below are far lower than 
 | Alternatives that look at every ancestor of a common element | 0 | 0 |
 
 The common elements are `TextBlock`, `Border`, `Panel`, `StackPanel`, `Grid`, `DockPanel`, `Image`,
-`Button`, `ScrollViewer` and `ContentPresenter`. A descendant combinator stops being an ancestor
+`Button`, `ScrollViewer` and `ContentPresenter`. Each is counted alone: the trace listens only while
+the element joins the tree, so its template's parts, styled later in layout, aren't counted against
+it, and it keeps only checks of the theme's global rules, as Avalonia reports a `ControlTheme`'s
+own checks through the same activity. The trace refuses to run with Avalonia's diagnostics off,
+as they are when `CORNFLOWER_BENCHMARK` is set, since it would see nothing and every budget would
+pass. A descendant combinator stops being an ancestor
 walk when one of Cornflower's own controls follows it (`Pivot PivotItem > TextBlock`), as those are
 rare; Avalonia's types don't stop it, because Cornflower themes `Button` and `TextBlock` directly.
 
 **When a control goes over,** the failure lists the largest rules. First see whether the rule can
-move into the control's `ControlTheme`, or the commas can go. If not, raise the limit in that PR
-and say so in its description, with the new total. The limits are meant to be raised; the point is
-that it's a decision.
+move into the control's `ControlTheme`, or the commas can go. If not, raise the limit in
+`StyleBudgetTests` in that PR, a control's included (`CLAUDE.md`, rules 7 and 8), and say so in
+its description, with the new total. The table above catches up at the roll-up. The limits are
+meant to be raised; the point is that it's a decision.
 
 **100 alternatives is a checkpoint,** about 3 µs per element at Avonic's rate. A test stops the
 limit going past it. When the theme gets there, stop and run the benchmark on the Pixel 8 before
@@ -68,20 +74,23 @@ The first row is before any control: what the tokens and fonts cost, with no glo
 The sample shows a line along the bottom of its page, once it has been laid out the first time:
 
 ```
-theme: 451 ms, 91 elements, 0 rules (0), layout 1.6, render 20.9
+theme: 475 ms, 91 elements, 1 rules (1), layout 1.5, render 18.9
 ```
 
 That one is from a headless test, in Debug, on the desktop PC (`PerformanceMonitorTests`): the
 page is the first a fresh app opens, so its time includes the cold start. It hasn't been read in a
 real window or on the phone yet.
 
-That's the time to open the page, from before it's made, the elements in it, the global rules and
-their alternatives (the application's `Styles` and the top level's), and Avalonia's own layout and
-render times over that time. A Release build doesn't have it. **Nothing is added to the library,**
+That's the time to open the page, from before it's made, the elements in it, the global rules it
+is checked against and their alternatives (in the application's `Styles`, and the page's and each
+logical ancestor's: the one here is the page's own `TextBlock.section`), and Avalonia's own layout
+and render times over that time. Layout always comes before the line is read, even with a frame in
+flight, as layout doesn't wait for a render tick (a test holds it). A Release build doesn't have it. **Nothing is added to the library,**
 because Avalonia has this built in, behind a switch that's off by default:
 
 - `AppContext.SetSwitch("Avalonia.Diagnostics.Diagnostic.IsEnabled", true)`, before Avalonia
-  starts. The Android head sets it in its `Application`'s static constructor, in Debug only.
+  starts. Each head sets it, in Debug only: the Android head in its `Application`'s static
+  constructor, the tests in `TestApp`. Without it the line says so instead of showing zeros.
 - Meter `Avalonia.Diagnostic.Meter`: `avalonia.ui.measure.time`, `.arrange.time`, `.render.time`,
   and others.
 - Activity source `Avalonia.Diagnostic.Source`: `Avalonia.AttachingStyle`, with the selector and
@@ -101,8 +110,10 @@ node tools/breakage/run.js <temp folder> <list.js> <results.txt> "<test filter>"
 ```
 
 The list and the meaning of each result are in the script's header. It finds the clone's one
-`*.Tests.csproj` under `tests/` unless one is named. It has been run on this work: 14 breaks of
-the census, the trace, the budget, `Scene`'s themes and the monitor, all caught.
+`*.Tests.csproj` under `tests/` unless one is named. A run that times out (10 minutes, or
+`BREAKAGE_TIMEOUT_MS`) has whatever it left running from the clone killed, so a hung test host
+can't lock the next build. It has been run on this work: 20 breaks of the census, the trace, the
+budget, `Scene`'s themes and the monitor, all caught, and one hung test, timed out and cleaned up.
 
 ## Known limits
 
@@ -124,7 +135,11 @@ Copied from Avonic's `v2` branch. What changed:
   `Wp81Theme`'s rules are counted, not Simple's underneath.
 - The ancestor-walk check stops at Cornflower's own control types, by name, read from
   `Cornflower.Controls`, where Avonic stopped at its `Avonic` prefix.
-- The line counts the top level's `Styles` as well as the application's.
+- The trace counts only the element's own checks of the theme's global rules, and refuses to run
+  with the diagnostics off; Avonic's counted every check while the element was added and laid out.
+- The line counts the `Styles` of the page and its logical ancestors as well as the application's,
+  and says when the diagnostics are off.
+- The breakage tool kills what a timed-out run leaves behind.
 - The benchmark measures `Wp81Theme` against no theme, and counts themed controls through the holes
   list.
 - `tools/breakage/run.js` finds the test project itself, so another library can copy it unchanged.

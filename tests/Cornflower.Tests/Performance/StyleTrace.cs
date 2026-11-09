@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Styling;
@@ -36,42 +35,42 @@ internal static class StyleTrace
         .Select(type => type.Name)
         .ToHashSet(StringComparer.Ordinal);
 
-    // Avalonia reads the switch once, so it has to be set before Avalonia starts. The benchmark leaves it off, as an app has it.
-    [ModuleInitializer]
-    internal static void Enable()
-    {
-        if (Environment.GetEnvironmentVariable(StyleCostBenchmark.Variable) is null)
-        {
-            PerformanceMonitor.EnableDiagnostics();
-        }
-    }
-
     /// <summary>
-    /// The checks for one element, attached to a window that's already open with
-    /// <paramref name="themes"/> as its only <c>Styles</c>, so nothing else is counted.
+    /// The checks of <paramref name="themes"/>' global rules against one element, attached to a window
+    /// that's already open with <paramref name="themes"/> as its only <c>Styles</c>. Only the element's
+    /// own: it's styled as it joins the tree, and its template's parts later, in layout, after the
+    /// listening stops. A <c>ControlTheme</c>'s checks, which Avalonia reports through the same
+    /// activity, aren't global, and aren't counted.
     /// </summary>
     public static IReadOnlyList<Check> ChecksFor(Control element, params IStyle[] themes)
     {
+        if (!AppContext.TryGetSwitch(PerformanceMonitor.DiagnosticsSwitch, out var enabled) || !enabled)
+        {
+            throw new InvalidOperationException(
+                $"Avalonia's diagnostics are off, so the trace would see nothing and every budget would pass. Is {StyleCostBenchmark.Variable} set? The benchmark runs on its own.");
+        }
+
         using var scene = new Scene(new Panel(), themes: themes);
         var host = (Panel)scene.Window.Content!;
+        var global = themes.SelectMany(StyleCensus.Rules).ToHashSet<object>(ReferenceEqualityComparer.Instance);
         var checks = new List<Check>();
-        using var listener = new ActivityListener
+        using (var listener = new ActivityListener
         {
             ShouldListenTo = source => source.Name == Source,
             Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData,
             ActivityStopped = activity =>
             {
-                if (activity.OperationName == AttachingStyle)
+                if (activity.OperationName == AttachingStyle && activity.GetTagItem("Style") is Style rule && global.Contains(rule))
                 {
-                    checks.Add(new Check(
-                        activity.GetTagItem("Style")?.ToString() ?? string.Empty,
-                        activity.GetTagItem("SelectorResult")?.ToString() ?? string.Empty));
+                    checks.Add(new Check(rule.ToString(), activity.GetTagItem("SelectorResult")?.ToString() ?? string.Empty));
                 }
             },
-        };
-        ActivitySource.AddActivityListener(listener);
+        })
+        {
+            ActivitySource.AddActivityListener(listener);
+            host.Children.Add(element);
+        }
 
-        host.Children.Add(element);
         Dispatcher.UIThread.RunJobs();
         return checks;
     }
@@ -134,7 +133,7 @@ internal static class StyleTrace
 
         var after = parts[(space + 1)..];
         var subject = after[(LastOutsideBrackets(after, '>') + 1)..];
-        return !subject.Contains('#', StringComparison.Ordinal)
+        return LastOutsideBrackets(subject, '#') < 0
             && !after.Split('>').Any(part => ours.Contains(TypeName(part)));
     }
 

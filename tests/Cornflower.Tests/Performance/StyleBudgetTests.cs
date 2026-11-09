@@ -1,6 +1,8 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
+using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Templates;
 using Avalonia.Headless.XUnit;
 using Avalonia.Styling;
 using Cornflower.Sample.Diagnostics;
@@ -148,6 +150,39 @@ public class StyleBudgetTests
         return rule;
     }
 
+    // A Button's own checks, not its template's parts', and not its ControlTheme's, which aren't global.
+    [AvaloniaFact]
+    public void Only_The_Elements_Own_Checks_Against_Global_Rules_Count()
+    {
+        var pointerOver = new Style(x => x!.Nesting().Class(":pointerover"));
+        pointerOver.Setters.Add(new Setter(Visual.OpacityProperty, 0.5));
+        var buttonTheme = new ControlTheme(typeof(Button)) { Children = { pointerOver } };
+        buttonTheme.Setters.Add(new Setter(TemplatedControl.TemplateProperty, new FuncControlTemplate<Button>((_, _) =>
+            new Border { Child = new Panel { Children = { new ContentPresenter { Name = "PART_ContentPresenter" } } } })));
+        var theme = new Styles { Rule(x => x.Class("foo")) };
+        theme.Resources[typeof(Button)] = buttonTheme;
+
+        var checks = StyleTrace.ChecksFor(new Button(), theme);
+
+        Assert.Equal([".foo"], checks.Select(c => c.Selector));
+    }
+
+    // CORNFLOWER_BENCHMARK leaves the diagnostics off, and then the trace sees nothing: every budget would pass.
+    [AvaloniaFact]
+    public void The_Trace_Refuses_To_Run_With_Avalonias_Diagnostics_Off()
+    {
+        AppContext.SetSwitch(PerformanceMonitor.DiagnosticsSwitch, false);
+        try
+        {
+            var refused = Assert.Throws<InvalidOperationException>(() => StyleTrace.ChecksFor(new TextBlock(), new Wp81Theme()));
+            Assert.Contains(StyleCostBenchmark.Variable, refused.Message, StringComparison.Ordinal);
+        }
+        finally
+        {
+            AppContext.SetSwitch(PerformanceMonitor.DiagnosticsSwitch, true);
+        }
+    }
+
     [AvaloniaFact]
     public void A_Rule_That_Cannot_Match_Is_Still_Counted()
     {
@@ -250,6 +285,7 @@ public class StyleBudgetTests
     [InlineData("A > TextBlock:not(B C)", false)]
     [InlineData("A[Tag=x y]", false)]
     [InlineData("A TextBlock[Tag=x > y]", true)]
+    [InlineData("A TextBlock[Tag=#x]", true)]
     public void A_Descendant_Combinator_At_The_End_Walks_Ancestors(string alternative, bool walks)
     {
         Assert.Equal(walks, StyleTrace.WalksAncestors(alternative, OursForTest));

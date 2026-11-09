@@ -26,8 +26,17 @@ public sealed class PerformanceMonitor : IDisposable
     private double _render;
     private long _started;
 
-    /// <summary>Avalonia reads the switch once, so call this before it starts.</summary>
-    public static void EnableDiagnostics() => AppContext.SetSwitch("Avalonia.Diagnostics.Diagnostic.IsEnabled", true);
+    /// <summary>The switch that turns on Avalonia's diagnostics, off by default.</summary>
+    public const string DiagnosticsSwitch = "Avalonia.Diagnostics.Diagnostic.IsEnabled";
+
+    /// <summary>
+    /// Avalonia reads the switch once, so call this before it starts: each head of the sample does, in
+    /// Debug. Without it the meter is silent, and the line says so rather than show zeros.
+    /// </summary>
+    public static void EnableDiagnostics() => AppContext.SetSwitch(DiagnosticsSwitch, true);
+
+    /// <summary>Whether the switch is on.</summary>
+    public static bool DiagnosticsEnabled => AppContext.TryGetSwitch(DiagnosticsSwitch, out var enabled) && enabled;
 
     public PerformanceMonitor()
     {
@@ -71,44 +80,59 @@ public sealed class PerformanceMonitor : IDisposable
     }
 
     /// <summary>
-    /// Call this once the page is in. <paramref name="report"/> gets the line after it's been laid out, unless it's gone by
-    /// then.
+    /// Call this once the page is in. <paramref name="report"/> gets the line after it's been laid
+    /// out, unless it's gone by then: layout runs at a higher dispatcher priority than the read, and
+    /// doesn't wait for a render tick, even with a frame in flight (held by
+    /// <c>PerformanceMonitorTests.The_Line_Is_Read_After_Layout_Even_With_A_Frame_In_Flight</c>).
     /// </summary>
     public void Report(string title, Control page, Action<string> report)
     {
         var started = _started;
-        Dispatcher.UIThread.Post(
-            () =>
+        Dispatcher.UIThread.Post(Read, DispatcherPriority.Background);
+
+        void Read()
+        {
+            if (TopLevel.GetTopLevel(page) is null)
             {
-                if (TopLevel.GetTopLevel(page) is not { } top)
-                {
-                    return;
-                }
+                return;
+            }
 
-                var elapsed = Stopwatch.GetElapsedTime(started);
-                var (rules, alternatives) = Census(top);
-                double layout;
-                double render;
-                lock (_gate)
-                {
-                    layout = _layout;
-                    render = _render;
-                }
+            if (!DiagnosticsEnabled)
+            {
+                report($"{title}: Avalonia's diagnostics are off. Call PerformanceMonitor.EnableDiagnostics() before Avalonia starts.");
+                return;
+            }
 
-                report(Format(title, elapsed.TotalMilliseconds, page.GetVisualDescendants().Count() + 1, rules, alternatives, layout, render));
-            },
-            DispatcherPriority.Background);
+            var elapsed = Stopwatch.GetElapsedTime(started);
+            var (rules, alternatives) = Census(page);
+            double layout;
+            double render;
+            lock (_gate)
+            {
+                layout = _layout;
+                render = _render;
+            }
+
+            report(Format(title, elapsed.TotalMilliseconds, page.GetVisualDescendants().Count() + 1, rules, alternatives, layout, render));
+        }
     }
 
     /// <summary>
-    /// The global rules a page is checked against from its themes: the application's and its top
-    /// level's. The sample puts its themes in the application; the tests' <c>Scene</c>, in its window.
+    /// The global rules <paramref name="page"/> is checked against: the application's, and those in
+    /// the <c>Styles</c> of the page and each of its logical ancestors, its top level among them.
+    /// Rules lower down cost only their own part of the page, and aren't counted.
     /// </summary>
-    public static (int Rules, int Alternatives) Census(TopLevel top)
+    public static (int Rules, int Alternatives) Census(StyledElement page)
     {
-        var (appRules, appAlternatives) = Application.Current is { } current ? StyleCensus.Count(current.Styles) : (0, 0);
-        var (ownRules, ownAlternatives) = StyleCensus.Count(top.Styles);
-        return (appRules + ownRules, appAlternatives + ownAlternatives);
+        var (rules, alternatives) = Application.Current is { } app ? StyleCensus.Count(app.Styles) : (0, 0);
+        for (var element = page; element is not null; element = element.Parent)
+        {
+            var (own, ownAlternatives) = StyleCensus.Count(element.Styles);
+            rules += own;
+            alternatives += ownAlternatives;
+        }
+
+        return (rules, alternatives);
     }
 
     /// <summary>The line.</summary>

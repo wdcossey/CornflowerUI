@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Cornflower.Sample;
@@ -140,6 +141,52 @@ public class PerformanceMonitorTests
 #endif
     }
 
+    // Frame callbacks wait for a render tick while a frame is in flight; layout doesn't, so the line
+    // never leaves it out. If this goes red, Report has to wait for the page's layout itself.
+    [AvaloniaFact]
+    public void The_Line_Is_Read_After_Layout_Even_With_A_Frame_In_Flight()
+    {
+        using var monitor = new PerformanceMonitor();
+        var host = new Border { Background = Brushes.Red };
+        using var scene = new Scene(host);
+        host.Background = Brushes.Blue;
+        Dispatcher.UIThread.RunJobs(); // A frame in flight: committed, not yet composed.
+        var page = new StackPanel { Children = { new TextBlock { Text = "x" } } };
+        bool? laidOut = null;
+        var frameRan = false;
+
+        monitor.Begin();
+        host.Child = page;
+        monitor.Report("a page", page, _ => laidOut = page.IsArrangeValid);
+        scene.Window.RequestAnimationFrame(_ => frameRan = true);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.False(frameRan); // Still in flight.
+        Assert.True(laidOut);
+    }
+
+    [AvaloniaFact]
+    public void Without_Avalonias_Diagnostics_The_Line_Says_So()
+    {
+        using var monitor = new PerformanceMonitor();
+        var page = new Panel();
+        using var scene = new Scene(page);
+        string? line = null;
+        AppContext.SetSwitch(PerformanceMonitor.DiagnosticsSwitch, false);
+        try
+        {
+            monitor.Begin();
+            monitor.Report("a page", page, text => line = text);
+            Dispatcher.UIThread.RunJobs();
+        }
+        finally
+        {
+            AppContext.SetSwitch(PerformanceMonitor.DiagnosticsSwitch, true);
+        }
+
+        Assert.Equal("a page: Avalonia's diagnostics are off. Call PerformanceMonitor.EnableDiagnostics() before Avalonia starts.", line);
+    }
+
     // Large enough that what Avalonia itself reports meanwhile can't change the leading digits.
     [AvaloniaFact]
     public void Measure_And_Arrange_Are_Layout_And_Render_Is_Separate()
@@ -176,17 +223,23 @@ public class PerformanceMonitorTests
         Assert.DoesNotContain("9000", line!, StringComparison.Ordinal);
     }
 
-    // The window's styles, as in a Scene, and the application's, as in the sample.
+    // The application's, as in the sample; the window's, as in a Scene; and the page's own, as in
+    // the sample's MainView. Not a rule below the page, which costs only its own part.
     [AvaloniaFact]
-    public void It_Counts_The_Theme_Rules_Of_The_Window_And_The_Application()
+    public void It_Counts_The_Rules_Of_The_Application_The_Window_And_The_Page()
     {
-        var windowRule = new Style(x => Selectors.Or(x.OfType<Image>(), x.OfType<Grid>()));
-        windowRule.Setters.Add(new Setter(Visual.OpacityProperty, 0.5));
-        var appRule = new Style(x => x.OfType<Border>());
-        appRule.Setters.Add(new Setter(Visual.OpacityProperty, 0.5));
+        static Style Rule(Func<Selector?, Selector> selector)
+        {
+            var rule = new Style(selector);
+            rule.Setters.Add(new Setter(Visual.OpacityProperty, 0.5));
+            return rule;
+        }
+
+        var appRule = Rule(x => x.OfType<Border>());
         using var monitor = new PerformanceMonitor();
-        var page = new Panel();
-        using var scene = new Scene(page, themes: [new Wp81Theme(), new Styles { windowRule }]);
+        var below = new Panel { Styles = { Rule(x => x.OfType<Canvas>()) } };
+        var page = new Panel { Styles = { Rule(x => x.OfType<TextBox>()) }, Children = { below } };
+        using var scene = new Scene(page, themes: [new Wp81Theme(), new Styles { Rule(x => Selectors.Or(x.OfType<Image>(), x.OfType<Grid>())) }]);
         Application.Current!.Styles.Add(appRule);
         string? line = null;
         try
@@ -200,6 +253,6 @@ public class PerformanceMonitorTests
             Application.Current.Styles.Remove(appRule);
         }
 
-        Assert.Contains("2 rules (3)", line!, StringComparison.Ordinal);
+        Assert.Contains("3 rules (4)", line!, StringComparison.Ordinal);
     }
 }
