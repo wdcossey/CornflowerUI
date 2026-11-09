@@ -26,4 +26,4 @@ The emulator's capture beside ours, through URLs pinned to the commit. Name the 
 - [ ] No declared property without a working implementation and a test
 - [ ] No hex colours in a theme outside `Tokens/`; no visual opinion in `Cornflower.Controls`
 - [ ] No Microsoft font, template or other SDK file added
-- [ ] Only this control's files touched (theme files are auto-discovered)
+- [ ] Only this control's files touched (theme files are auto-discovered), and its lines, if it has any, deleted from `Completeness/Holes.txt`
