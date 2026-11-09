@@ -22,6 +22,12 @@
   -Popups also or -Popups only adds the popups (flyouts, dialogs, pickers), which are left out by default.
   -Demo deploys the app with its demo page (a button per popup, and dark or light) and leaves it
   open in the emulator, for screenshots by hand. It captures nothing.
+  -Probe <name> runs one of the app's probes (app\Probe.cs) instead of the suite: the app lays a control out and
+  writes the touches it wants, vm\touch.ps1 plays them on the emulator's display with the mouse, and the app's
+  log of what the control did comes back as probe.txt, beside touch.log. Probes: toggleswitch, tilt.
+  -TouchMode real (the default) moves the VM's real cursor, which needs the emulator in front and the VM's
+  mouse left alone; post posts the mouse messages to the emulator's display window, which the emulator
+  ignored when tried (2026-11-09).
   -Grab holds each popup open for 5 s while vm\grab-loop.ps1 grabs the emulator's window, and
   writes <id>__screen.png beside each popup's dumps. Use it with -Popups only, with the
   emulator's zoom at 100%, so the window is 1080 x 1920, one pixel per phone pixel.
@@ -35,6 +41,8 @@ param(
     [ValidateSet('', 'also', 'only')][string]$Popups = '',
     [switch]$Demo,
     [switch]$Grab,
+    [string]$Probe = '',
+    [ValidateSet('post', 'real')][string]$TouchMode = 'real',
     [string]$HostAlias = 'cornflower-ref',
     [string]$Out = 'R:\cornflower-reference\refapp',
     [int]$TimeoutMinutes = 40
@@ -80,6 +88,7 @@ if ($Only) { $lines += "only=$Only" }
 if ($Popups) { $lines += "popups=$Popups" }
 if ($Demo) { $lines += 'demo' }
 if ($Grab) { $lines += 'hold=5000' }
+if ($Probe) { $lines += "probe=$Probe" }
 if ($lines) { Set-Content -Path $options -Value $lines -Encoding ASCII } else { Remove-Item $options -ErrorAction SilentlyContinue }
 try {
     Copy-Scp @((Join-Path $here 'app'), (Join-Path $here 'vm'), "${HostAlias}:C:/cornflower/refapp/")
@@ -98,7 +107,7 @@ if (-not ($build -match '^built ')) {
 $build | Select-Object -Last 3 | ForEach-Object { Write-Host "  $_" }
 
 Write-Host "3/5 starting the session task for device $Device"
-$taskArgs = "-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File $remote\vm\session.ps1 -Device $Device -ProductId $productId -Root $remote -TimeoutMinutes $TimeoutMinutes$(if ($Demo) { ' -Demo' })$(if ($Grab) { ' -Grab' })"
+$taskArgs = "-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File $remote\vm\session.ps1 -Device $Device -ProductId $productId -Root $remote -TimeoutMinutes $TimeoutMinutes$(if ($Demo) { ' -Demo' })$(if ($Grab) { ' -Grab' })$(if ($Probe) { " -Probe -TouchMode $TouchMode" })"
 Remote @"
 `$a = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument '$taskArgs'
 `$p = New-ScheduledTaskPrincipal -UserId `$env:USERNAME -LogonType Interactive -RunLevel Highest
@@ -130,6 +139,9 @@ if ($status -notmatch '^done') {
         $partial = Join-Path $Out ("{0}-dev{1}-partial" -f (Get-Date -Format 'yyyyMMdd-HHmm'), $Device)
         New-Item -ItemType Directory -Force $partial | Out-Null
         Copy-Scp @("${HostAlias}:C:/cornflower/refapp/out", "${HostAlias}:C:/cornflower/refapp/session.log", $partial)
+        if ($Probe) {
+            try { Copy-Scp @("${HostAlias}:C:/cornflower/refapp/touch.log", $partial) } catch { Write-Host '  no touch.log' }
+        }
         Write-Host "  partial results in $partial"
     }
 
@@ -145,6 +157,13 @@ Copy-Scp @("${HostAlias}:C:/cornflower/refapp/out", "${HostAlias}:C:/cornflower/
 $store = Join-Path $dest 'out\IsolatedStore'
 Get-ChildItem $store | Move-Item -Destination $dest
 Remove-Item (Join-Path $dest 'out') -Recurse -Force
+
+if ($Probe) {
+    Copy-Scp @("${HostAlias}:C:/cornflower/refapp/touch.log", $dest)
+    Write-Host "  probe $Probe`: $(Get-Content (Join-Path $dest 'done.txt'))"
+    Write-Host "  log in $(Join-Path $dest 'probe.txt')"
+    return
+}
 
 if ($Grab) {
     # Each held popup gets the last distinct frame grabbed inside its hold, the steady frame, grabbed after the previous popup closed.

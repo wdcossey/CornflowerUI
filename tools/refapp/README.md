@@ -21,6 +21,7 @@ powershell -ExecutionPolicy Bypass -File tools\refapp\run.ps1 -Popups only      
 powershell -ExecutionPolicy Bypass -File tools\refapp\run.ps1 -Only 'CheckBox|Radio'             # just these specimens
 powershell -ExecutionPolicy Bypass -File tools\refapp\run.ps1 -Popups only -Grab               # the popups, with a screenshot of each, in about 4 minutes
 powershell -ExecutionPolicy Bypass -File tools\refapp\run.ps1 -Demo                            # the demo page, left open in the emulator
+powershell -ExecutionPolicy Bypass -File tools\refapp\run.ps1 -Probe tilt                        # one probe, with real touches (see Probes)
 ```
 
 Results go to `R:\cornflower-reference\refapp\<yyyyMMdd-HHmm>-dev<n>\`: one PNG and one JSON per
@@ -70,7 +71,8 @@ the signed-in desktop. Run from an SSH session, `ISETool` starts a hidden second
   `RenderTargetBitmap` and writes the PNG and JSON. It writes `index.json` and then `done.txt` last.
 - **`Popups.cs`** holds the popups: Flyout (top and full), MenuFlyout, ContentDialog (default and
   full size), ListPickerFlyout (single and multiple), PickerFlyout, DatePickerFlyout,
-  TimePickerFlyout, and ComboBox open with 3 items (inline) and 10 (the full-screen picker).
+  TimePickerFlyout, and ComboBox open with every count of items from 3 to 10: up to 5 open
+  inline, 6 or more open the full-screen picker (below).
   **`Suite.Popups.cs`** opens each from a button or the control on a stage, gives each open popup
   the requested theme, renders the stage, and dumps every open popup's tree, in window
   coordinates, to `<theme>__<name>__<variant>__popup<n>.json`. It then closes the popup and waits
@@ -158,10 +160,88 @@ popups, in the order `GetOpenPopups` returns them, with their window bounds in l
 | Flyout, full | FlyoutPresenter | 0, 0, 450 × 800 | same |
 | MenuFlyout | a full-window Rectangle, then MenuFlyoutPresenter | menu at 0, 85, 450 × 193.33 | `#FF000000` / `#FFFFFFFF` |
 | ContentDialog, both | a CommandBar, the ContentDialog, a `#99000000` Rectangle | 0, 0, 450 × 800 | `#FF1F1F1F` / `#FFDDDDDD` |
-| ListPickerFlyout, PickerFlyout, DatePickerFlyout, TimePickerFlyout, ComboBox with 10 items | the presenter, then a CommandBar | 0, 0, 450 × 800 | `#FF1F1F1F` / `#FFDDDDDD` |
-| ComboBox with 3 items | none: it opens inline, in the control | | |
+| ListPickerFlyout, PickerFlyout, DatePickerFlyout, TimePickerFlyout, ComboBox with 6 to 10 items | the presenter, then a CommandBar | 0, 0, 450 × 800 | `#FF1F1F1F` / `#FFDDDDDD` |
+| ComboBox with 3 to 5 items | none: it opens inline, in the control | | |
 
-The ComboBox with 10 items opens a `ListPickerFlyoutPresenter`: the full-screen picker.
+A ComboBox with 6 items or more opens a `ListPickerFlyoutPresenter`: the full-screen picker.
+
+**Where ComboBox flips to full screen** (2026-11-09, #25): 5 items open inline and 6 open the
+full-screen picker, in dark and light, on the reference profile (device 11, `20261109-2039-dev11`)
+and on the 720p one (device 10, `20261109-2041-dev10`). The two profiles differ in view size
+(450 × 800 and 400 × 711) and scale, so the count, not the room on screen, decides it. The
+inline ones report "no popup open", which is expected.
+
+## Probes
+
+Behaviour that only real input shows. `run.ps1 -Probe <name>` deploys the app with
+one probe from `app\Probe.cs` instead of the suite. The app lays a control out on a dark page,
+writes the touches it wants as `gestures.txt` (in view pixels, window coordinates) and then
+`ready.txt`. `vm\session.ps1` pulls them and `vm\touch.ps1` plays them on the emulator's display
+with the mouse, which the emulator turns into touches. The app logs every pointer event, visual
+state change and watched value to `probe.txt`, in milliseconds, and writes `done.txt` when the
+last touch has settled. `touch.log` says where each step landed on the VM's screen.
+
+- **Touches move the VM's real cursor** (`-TouchMode real`, the default), so the emulator has to
+  be in front and the VM's mouse left alone during the run. `-TouchMode post` posts mouse
+  messages to the display window instead; the emulator ignored them (2026-11-09).
+- **One emulator at a time is safest.** `touch.ps1` picks the emulator by its XDE process's
+  `/displayName`, because every emulator window is titled "XDE".
+- **Resolution:** at the zoom that fits the VM's 1440-high screen, one screen pixel is 0.83 view
+  pixels on the reference profile, so a probe can't place a touch finer than that. The app logs
+  the positions it got.
+- **Moves arrive in bursts about 100 ms apart.** The emulator delivers the mouse's moves to the
+  phone in batches, so a probe reads a position, not a speed. Press and release times are kept.
+
+Probes: `toggleswitch` (#25) and `tilt` (#22). Each frame's value is read on the UI thread in
+`CompositionTarget.Rendering`. That reads the animated values of the theme animations too: the
+tilt's `PlaneProjection` moves every 15 ms in the log.
+
+### ToggleSwitch: tap or drag (2026-11-09, device 11, #25)
+
+Five runs, `20261109-2105-dev11`, `-2108`, `-2112`, `-2115` and `-2128`, 127 touches, each from
+Off, pressing the knob and moving right. In the last, `touch.ps1` kept each step to its planned
+time within a few milliseconds; before, its steps ran late, but the app logs the times it got,
+and those are what is quoted. In view pixels on the reference profile:
+
+- **Pressing goes straight to `Dragging`**: the Thumb's `DragStarted` fires on the press, and the
+  knob's `KnobTranslateTransform.X` follows the finger one for one from the first move. There is
+  no distance before the knob moves.
+- **A release is a tap, and toggles, when the press moved less than about 18 view px and lasted
+  less than about 1,020 ms.** Moved 17.47: tap; 18.33: not, in two runs. Lasted 993, 1,001
+  and 1,022 ms: tap; 1,020, 1,021, 1,033 and 1,060: not. The two limits act on their own: a still press
+  of 1,124 ms doesn't toggle, nor does a quick 20 px drag of 548 ms.
+- **Otherwise the knob's position decides**: released at 28.32 it goes back Off, at 29.18 it goes
+  On. The knob travels 56.5 (the template's `On` state), so the line is its halfway point, 28.25,
+  as near as a 0.83 px step can tell.
+- **After a tap**, `ToggleStates` goes `Dragging` > `Off` at once, and `Off` > `On` about 380 ms
+  later. After a drag, `Dragging` > `On` or `Off` comes about 380 ms after the release. That is
+  the knob's slide into place.
+- The probe hasn't been run on another profile, so whether the 18 px is in view pixels or a
+  physical distance is open.
+
+### Tilt: first readings (2026-11-09, device 11, for #22)
+
+`20261109-2118-dev11`: a Button 300 × 120 view px, pressed and held for 600 ms at its centre, at
+each corner and at the middle of each edge, 12 px in, then pressed at the centre and dragged 200
+px down. The template root's `PlaneProjection`, read every frame:
+
+| Pressed at (in the button) | `RotationX` | `RotationY` | `GlobalOffsetZ` |
+|---|---|---|---|
+| centre, 150, 60 | −0.38 | 0 | −24.45 |
+| top middle, 150, 11.7 | −7.44 | 0 | −14.17 |
+| bottom middle, 150, 108.3 | 6.79 | 0 | −15.12 |
+| left middle, 11.7, 60 | −0.51 | 8.27 | −12.23 |
+| right middle, 288.3, 60 | −0.51 | −8.27 | −12.23 |
+| top left, 11.7, 11.7 | −7.65 | 8.30 | −1.80 |
+| top right, 288.3, 11.7 | −7.65 | −8.30 | −1.80 |
+| bottom left, 11.7, 108.3 | 6.71 | 8.28 | −3.19 |
+| bottom right, 288.3, 108.3 | 6.71 | −8.28 | −3.19 |
+
+`CenterOfRotation` is 0.5, 0.5, 0 throughout, and the root also gets a `CompositeTransform`
+translating 112 down with a `GlobalOffsetY` of −112 against it. The press reaches its values in
+about 45 ms (three frames). On release nothing moves for about 180 ms, then the tilt eases back
+to rest by about 345 ms. Dragged after the press, the tilt follows the finger. These are readings,
+not yet the model: #22 fits them.
 
 ## Popup pixels
 

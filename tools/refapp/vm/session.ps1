@@ -10,7 +10,9 @@ param(
     [string]$Root = 'C:\cornflower\refapp',
     [int]$TimeoutMinutes = 40,
     [switch]$Demo,
-    [switch]$Grab
+    [switch]$Grab,
+    [switch]$Probe,
+    [ValidateSet('post', 'real')][string]$TouchMode = 'real'
 )
 
 $ErrorActionPreference = 'Continue'
@@ -47,6 +49,52 @@ if ($Demo) {
     exit 0
 }
 
+# A probe lays its page out, then writes the touches it wants as gestures.txt and ready.txt. Pull them, and play
+# them on the emulator's display with vm\touch.ps1. The app writes done.txt once the last touch has settled.
+$out = Join-Path $Root 'out'
+function Pull {
+    Remove-Item $out -Recurse -Force -ErrorAction SilentlyContinue
+    New-Item -ItemType Directory -Force $out | Out-Null
+    & $ise ts "deviceindex:$Device" $ProductId $out 2>&1 | Add-Content -Path $log
+}
+
+if ($Probe) {
+    # A probe that can't run (an unknown name, a template without the part) writes done.txt and no ready.txt.
+    Status 'probing: waiting for the app to write ready.txt'
+    $listing = ''
+    for ($i = 0; $i -lt 40 -and $listing -notmatch '(ready|done)\.txt'; $i++) {
+        Start-Sleep -Seconds 3
+        $listing = (& $ise dir "deviceindex:$Device" $ProductId 2>&1) -join "`n"
+    }
+
+    if ($listing -notmatch 'ready\.txt') {
+        Pull
+        $why = Get-Content (Join-Path $out 'IsolatedStore\done.txt') -ErrorAction SilentlyContinue
+        Status "failed: the probe didn't start: $(if ($why) { $why } else { 'no ready.txt in 2 minutes' }); partial results pulled"
+        exit 1
+    }
+
+    $in = Join-Path $Root 'probe-in'
+    Remove-Item $in -Recurse -Force -ErrorAction SilentlyContinue
+    New-Item -ItemType Directory -Force $in | Out-Null
+    & $ise ts "deviceindex:$Device" $ProductId $in 2>&1 | Add-Content -Path $log
+    # More than one emulator can be running, one per profile: touch the one this device is, by its window title.
+    $name = (& $deploy /EnumerateDevices 2>&1 | Where-Object { $_ -match "^\s*$Device\s+(.+?)\s*$" } | ForEach-Object { $Matches[1] } | Select-Object -First 1)
+    if (-not $name) {
+        Status "failed: AppDeployCmd /EnumerateDevices names no device $Device"
+        exit 1
+    }
+
+    Status "probing: playing the touches on '$name'"
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $Root 'vm\touch.ps1') -Gestures (Join-Path $in 'IsolatedStore\gestures.txt') -Log (Join-Path $Root 'touch.log') -Title $name -Mode $TouchMode
+    if ($LASTEXITCODE -ne 0) {
+        $code = $LASTEXITCODE
+        Pull
+        Status "failed: touch.ps1 exit $code; see touch.log; partial results pulled"
+        exit 1
+    }
+}
+
 $grabber = $null
 $stopGrab = Join-Path $Root 'grab.stop'
 if ($Grab) {
@@ -72,7 +120,8 @@ while ((Get-Date) -lt $deadline) {
 
     $pngs = ([regex]::Matches($listing, '\.png')).Count
     if ($pngs -ne $lastPngs) { $lastPngs = $pngs; $lastChange = Get-Date }
-    elseif (((Get-Date) - $lastChange).TotalMinutes -ge 3) { $stalled = $true; break }
+    elseif (-not $Probe -and ((Get-Date) - $lastChange).TotalMinutes -ge 3) { $stalled = $true; break }
+    elseif ($Probe -and ((Get-Date) - $started).TotalMinutes -ge 8) { $stalled = $true; break }
     Status ('running: {0} PNGs so far after {1:N0} s' -f $pngs, ((Get-Date) - $started).TotalSeconds)
 }
 
@@ -81,15 +130,12 @@ if ($grabber) {
     $grabber.WaitForExit(30000) | Out-Null
 }
 
-$out = Join-Path $Root 'out'
-Remove-Item $out -Recurse -Force -ErrorAction SilentlyContinue
-New-Item -ItemType Directory -Force $out | Out-Null
 Status "pulling the app's local folder"
-& $ise ts "deviceindex:$Device" $ProductId $out 2>&1 | Add-Content -Path $log
+Pull
 
 # A run that stalls or runs out of time still leaves what it wrote, including progress.txt, the last item started.
 if (-not $done) {
-    $why = if ($stalled) { "no new PNG for 3 minutes at $lastPngs" } else { "no done.txt after $TimeoutMinutes minutes" }
+    $why = if ($stalled -and $Probe) { 'the probe wrote no done.txt in 8 minutes' } elseif ($stalled) { "no new PNG for 3 minutes at $lastPngs" } else { "no done.txt after $TimeoutMinutes minutes" }
     $last = Get-Content (Join-Path $out 'IsolatedStore\progress.txt') -ErrorAction SilentlyContinue
     Status "failed: $why; last started: $last; partial results pulled"
     exit 1
