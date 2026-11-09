@@ -182,8 +182,8 @@ Nothing in Tier 1 starts until this list is done.
       does. It doesn't hold up Tier 1.
 - [x] The Android sample and a first device run on the Pixel 8
       ([#10](https://github.com/wdcossey/CornflowerUI/issues/10)), with
-      [`tools/android/run.ps1`](../tools/android/README.md) (2026-11-09). A cold start took 644 ms
-      in Release and 994 ms in Debug.
+      [`tools/android/run.ps1`](../tools/android/README.md) (2026-11-09). Start times are in its
+      README and in [`docs/performance`](performance/README.md).
 - [x] The test harness: `Scene`, `Frames`, the clock hook and `TestClock`
       ([#11](https://github.com/wdcossey/CornflowerUI/issues/11)).
 - [x] Metrics from Avonic: the style budget, `StyleTrace`, the census, the benchmark, the Debug

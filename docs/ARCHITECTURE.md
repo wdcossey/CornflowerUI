@@ -105,7 +105,7 @@ src/Cornflower.Themes.Wp81/         exists          era 1: tokens and ControlThe
 src/Cornflower/                     exists, no code the umbrella package
 src/Cornflower.Fonts.Noto/          planned         the optional fallback font package
 tests/Cornflower.Tests/             exists          Avalonia.Headless with Skia and xunit v3: harness, discovery, spikes, fonts, tokens, sample, performance, tools, completeness, repository guards
-samples/Cornflower.Sample/          exists          the shared sample app: one auto-discovered page per control, the Debug performance line
+samples/Cornflower.Sample/          exists          the shared sample app: one page for now, with the Debug performance line; a page per control comes with #9
 samples/Cornflower.Sample.Android/  exists          the real-device target, run by tools/android
 samples/Cornflower.Sample.Desktop/  planned (#9)    a thin desktop head over Cornflower.Sample, phone-sized, to watch progress; not a gate
 tools/                              exists          reference capture (refapp), spec extraction and the checklist (winrt-api), the device run (android), breakage, font metrics, token generation (tokens), the guard's hash list; later generators
@@ -220,9 +220,9 @@ Still proposed: an `Accent` property on the theme, as a shortcut for the resourc
   installed. During development, Avalonia's Simple theme sits underneath `Wp81Theme` in the
   sample and the tests, and a test lists every templated Avalonia control with no Wp81 theme
   ([#13](https://github.com/wdcossey/CornflowerUI/issues/13)). A templated control is a public,
-  concrete `TemplatedControl` that `SimpleTheme` themes by its type, in Dark and Light, or one of
+  concrete `TemplatedControl` that `SimpleTheme` themes by its type, in Dark or Light, or one of
   Cornflower's own, by its style key. The list is `tests/Cornflower.Tests/Completeness/Holes.txt`,
-  79 lines at Avalonia 12.1.4, and its count is the measure of completeness. `Wp81Theme` itself includes no fallback; a shipped app chooses its own. What a
+  79 names at Avalonia 12.1.4, and their count is the measure of completeness. `Wp81Theme` itself includes no fallback; a shipped app chooses its own. What a
   control with no `ControlTheme` does is a Tier 0 spike
   ([#15](https://github.com/wdcossey/CornflowerUI/issues/15)).
 
@@ -321,9 +321,10 @@ belongs in its `ControlTheme`, which doesn't have that cost. The budget test car
 set low from the start, and the measurement is repeated on the Android device.
 
 Avonic's metrics collection carried over ([#12](https://github.com/wdcossey/CornflowerUI/issues/12)).
-What exists, the limits and the measurements are in [`docs/performance`](performance/README.md).
-The table below is what was copied from Avonic's repo and what changed; only `drive.ps1` is still
-to come, with the desktop sample ([#9](https://github.com/wdcossey/CornflowerUI/issues/9)):
+What exists, the limits, the measurements, and what changed in the copy ("From Avonic") are in
+[`docs/performance`](performance/README.md). The table below is the plan it was copied by, kept
+for the Avonic paths; only `drive.ps1` is still to come, with the desktop sample
+([#9](https://github.com/wdcossey/CornflowerUI/issues/9)):
 
 | Avonic file | What it does | For Cornflower |
 |---|---|---|
@@ -359,6 +360,9 @@ harness from [#11](https://github.com/wdcossey/CornflowerUI/issues/11):
 
 Also the discovery tests, the spikes, the font and token tests, the sample's tests, the style
 budget and its trace, the checklist generator's tests, the holes test, and the repository guards.
+The device run, once per batch, puts the sample on the Android phone over ADB and pulls frames
+back: [`tools/android/run.ps1`](../tools/android/README.md). Avonic's real-window driver found a
+bug 1,486 headless tests had missed.
 
 Decided ([ADR 0003](decisions/0003-decisions-on-the-tier-0-infrastructure.md#layout-and-time-in-tests-44)):
 
@@ -379,9 +383,6 @@ Proposed:
   measurement recorded in the plan.
 - Every discovered resource is built with the theme installed, since a mistyped
   `{StaticResource}` fails only on first lookup.
-- A real-device run per batch: the sample on Android over ADB, with frames pulled back, by
-  [`tools/android/run.ps1`](../tools/android/README.md). Avonic's real-window driver found a bug
-  1,486 headless tests had missed.
 
 ## Mapping rules (draft)
 
@@ -439,8 +440,13 @@ in a nested style.
 | `Orientation`: `Portrait`, `Landscape` | A pseudoclass our control sets from the top level's size | Avalonia has no `:landscape` |
 | `VisualTransition From="A" To="B" GeneratedDuration="…"` | `Transitions` on the part, with that duration | 50 in 8.1. A WinRT transition runs between two named states only; an Avalonia transition runs on any change of the property. Record where that differs. Tested at its end value |
 
-**8.1 states no rule covers yet.** The checklist generator, run on all 57 styled 8.1 controls on
-2026-11-09, found these, and shows each as "no rule". The first control that has one decides it:
+**8.1 states no rule covers yet, on controls Avalonia has.** The checklist generator, run on all
+57 styled 8.1 controls on 2026-11-09, shows these as "no rule". The first control that has one
+decides it. The generator matches Avalonia's control by name, so a control Avalonia has under
+another name (PasswordBox, ListViewItem) is treated as one Avalonia lacks, and its states get the
+lower-case pseudoclass of the rule for ours above; its plan maps them by hand. `Portrait` and
+`Landscape` have the orientation rule above, but it names no pseudoclass yet, so the generator
+doesn't apply it:
 
 | State | Controls |
 |---|---|
