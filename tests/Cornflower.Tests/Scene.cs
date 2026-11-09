@@ -45,12 +45,14 @@ internal sealed class Scene : IDisposable
     /// <param name="width">The view's width: another profile's, for a second reading.</param>
     /// <param name="height">The view's height: another profile's, for a second reading.</param>
     /// <param name="scaling">Raw pixels per view pixel: another profile's, for a second reading.</param>
+    /// <param name="themes">The window's <c>Styles</c>, in order: <c>SimpleTheme</c> then <c>Wp81Theme</c> unless given.</param>
     public Scene(
         Control? content = null,
         ThemeVariant? variant = null,
         double width = ReferenceWidth,
         double height = ReferenceHeight,
-        double scaling = ReferenceScaling)
+        double scaling = ReferenceScaling,
+        IEnumerable<IStyle>? themes = null)
     {
         Window = new Window
         {
@@ -58,8 +60,7 @@ internal sealed class Scene : IDisposable
             Height = height,
             RequestedThemeVariant = variant ?? ThemeVariant.Dark,
         };
-        Window.Styles.Add(new SimpleTheme());
-        Window.Styles.Add(new Wp81Theme());
+        Window.Styles.AddRange(themes ?? [new SimpleTheme(), new Wp81Theme()]);
         Window.SetRenderScaling(scaling);
         try
         {
