@@ -137,6 +137,30 @@ public class SampleTests
         }
     }
 
+    [AvaloniaFact]
+    public void A_Page_That_Leaves_Before_Its_Frame_Reports_Nothing()
+    {
+        var lines = new List<string>();
+        var previous = MainView.Report;
+        MainView.Report = lines.Add;
+        try
+        {
+            using var scene = new Scene(new MainView());
+            scene.Window.Content = null;
+            for (var frame = 0; frame < 4; frame++)
+            {
+                AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+                Dispatcher.UIThread.RunJobs();
+            }
+
+            Assert.Empty(lines);
+        }
+        finally
+        {
+            MainView.Report = previous;
+        }
+    }
+
     // The swatches and the ramp's lines are made in code, outside the XAML name scope.
     private static T Named<T>(MainView view, string name) where T : Control =>
         view.GetLogicalDescendants().OfType<T>().Single(c => c.Name == name);

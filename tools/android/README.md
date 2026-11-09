@@ -14,13 +14,14 @@ powershell -ExecutionPolicy Bypass -File tools\android\run.ps1 -NoBuild    # reu
    size and density.
 2. Builds `samples/Cornflower.Sample.Android` (Release by default), and installs the signed APK.
 3. Wakes the screen. A phone with a secure lock has to be unlocked by hand: the script says so and
-   waits (`-TimeoutSeconds`, 60 by default), then waits for the screen to be fully awake.
+   waits (`-UnlockTimeoutSeconds`, 30 by default), then waits for the screen to be fully awake.
 4. Goes to the home screen, stops the app, and starts it cold with `am start -W -S`, which reports
    the time Android measured from the intent to the activity's first frame (`TotalTime`). Going
    home first matters: a screen waking from doze can bring the app's last task back by itself,
    and then `am start` only delivers to it and times nothing. If Android doesn't report a `COLD`
    start, the script warns and records no time.
-5. Waits for the page's `CORNFLOWER ready` line in logcat (the `DOTNET` tag). The page writes it
+5. Waits for the page's `CORNFLOWER ready` line in logcat (the `DOTNET` tag; `-TimeoutSeconds`, 60
+   by default). The page writes it
    after its first drawn frame, with the render scaling, the view's size in view pixels and raw
    pixels, and the safe area.
 6. Saves the screen with `screencap` on the phone and pulls it, so the PNG's bytes aren't
@@ -42,7 +43,12 @@ The ADB path is taken from `ANDROID_HOME`, `ANDROID_SDK_ROOT`, `%LOCALAPPDATA%\A
 
 A Pixel 8 (`shiba`) on the maintainer's desktop. It sits on a USB-C switch shared with a laptop,
 so it may need switching over first; wireless debugging (Settings → Developer options → Wireless
-debugging, then `adb pair` and `adb connect`) avoids the switch.
+debugging, then `adb pair` and `adb connect`) avoids the switch. Over wireless, `adb devices` can list
+the phone twice (its mDNS name and its `ip:port`); the script wants one entry, so
+`adb disconnect` one of them.
+
+`-Configuration Debug` works too: the Android project embeds its assemblies in the APK in every
+configuration, so an APK installed with `adb install` starts without Fast Deployment.
 
 Read by the first runs, 2026-11-09, Android 17 (API 37):
 

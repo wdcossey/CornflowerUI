@@ -23,7 +23,8 @@ param(
     [ValidateSet('Release', 'Debug')]
     [string]$Configuration = 'Release',
     [switch]$NoBuild,
-    [int]$TimeoutSeconds = 60
+    [int]$TimeoutSeconds = 60,
+    [int]$UnlockTimeoutSeconds = 30
 )
 
 $ErrorActionPreference = 'Stop'
@@ -58,6 +59,20 @@ function Adb {
 
 function Step([string]$text) { Write-Host "-- $text" }
 
+# Without a BOM, which Set-Content -Encoding utf8 adds in PowerShell 5.1 and JSON readers reject.
+function Write-Utf8([string]$path, [string]$text) {
+    [IO.File]::WriteAllText($path, $text, (New-Object Text.UTF8Encoding $false))
+}
+
+# Any failure from here on keeps the phone's log next to the run, if the run's folder exists yet.
+trap {
+    if ($Out -and (Test-Path $Out)) {
+        try { Write-Utf8 (Join-Path $Out 'logcat.txt') (Adb logcat -d) } catch { }
+        Write-Host "   Log kept in $Out\logcat.txt"
+    }
+    break
+}
+
 # 1. One phone.
 $devices = @((Adb devices) -split "`r?`n" | Where-Object { $_ -match "^\S+\s+device$" })
 if ($devices.Count -ne 1) {
@@ -83,7 +98,7 @@ if (-not $NoBuild) {
     & dotnet build $Project -c $Configuration -nologo -v q
     if ($LASTEXITCODE -ne 0) { throw "dotnet build failed ($LASTEXITCODE)." }
 }
-$apk = Get-ChildItem (Join-Path $Repo "samples\Cornflower.Sample.Android\bin\$Configuration") -Recurse -Filter "$Package-Signed.apk" |
+$apk = Get-ChildItem (Join-Path $Repo "samples\Cornflower.Sample.Android\bin\$Configuration") -Recurse -Filter "$Package-Signed.apk" -ErrorAction SilentlyContinue |
     Sort-Object LastWriteTime -Descending | Select-Object -First 1
 if (-not $apk) { throw "No $Package-Signed.apk under bin\$Configuration. Build first, or drop -NoBuild." }
 
@@ -94,16 +109,16 @@ Adb install -r $apk.FullName | Out-Null
 # 4. Awake and unlocked. A secure lock needs a hand; wait for it.
 Adb shell input keyevent KEYCODE_WAKEUP | Out-Null
 Adb shell wm dismiss-keyguard | Out-Null
-$deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+$deadline = (Get-Date).AddSeconds($UnlockTimeoutSeconds)
 $asked = $false
 while ((Adb shell dumpsys window) -match 'isKeyguardShowing=true') {
-    if ((Get-Date) -gt $deadline) { throw "The phone is still locked after $TimeoutSeconds s." }
-    if (-not $asked) { Write-Host "   Unlock the phone; waiting up to $TimeoutSeconds s."; $asked = $true }
+    if ((Get-Date) -gt $deadline) { throw "The phone is still locked after $UnlockTimeoutSeconds s." }
+    if (-not $asked) { Write-Host "   Unlock the phone; waiting up to $UnlockTimeoutSeconds s."; $asked = $true }
     Start-Sleep -Seconds 1
 }
 # A screen still waking from doze can bring the last task back on its own, under the launch.
 while ((Adb shell dumpsys power) -notmatch 'mWakefulness=Awake') {
-    if ((Get-Date) -gt $deadline) { throw "The screen is still not awake after $TimeoutSeconds s." }
+    if ((Get-Date) -gt $deadline) { throw "The screen is still not awake after $UnlockTimeoutSeconds s." }
     Start-Sleep -Seconds 1
 }
 
@@ -115,6 +130,8 @@ Adb shell am force-stop $Package | Out-Null
 Start-Sleep -Seconds 1
 Adb logcat -c | Out-Null
 $start = Adb shell am start -W -S -n $Activity
+# am exits 0 even when it can't start the activity; it says so in its output.
+if ($start -match '(?m)^Error' -or $start -notmatch 'Status:\s*ok') { throw "am start failed:`n$start" }
 $totalTime = if ($start -match 'TotalTime:\s*(\d+)') { [int]$Matches[1] } else { $null }
 $launchState = if ($start -match 'LaunchState:\s*(\w+)') { $Matches[1] } else { $null }
 if ($launchState -ne 'COLD' -or -not $totalTime) {
@@ -129,10 +146,7 @@ $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
 while (-not $ready) {
     $line = (Adb logcat -d -s DOTNET:I) -split "`r?`n" | Where-Object { $_ -match [regex]::Escape($ReadyMarker) } | Select-Object -First 1
     if ($line) { $ready = $line; break }
-    if ((Get-Date) -gt $deadline) {
-        Adb logcat -d | Set-Content -Encoding utf8 (Join-Path $Out 'logcat.txt')
-        throw "No '$ReadyMarker' line within $TimeoutSeconds s. See $Out\logcat.txt."
-    }
+    if ((Get-Date) -gt $deadline) { throw "No '$ReadyMarker' line within $TimeoutSeconds s." }
     Start-Sleep -Milliseconds 500
 }
 $facts = $ready.Substring($ready.IndexOf($ReadyMarker) + $ReadyMarker.Length).Trim()
@@ -146,7 +160,7 @@ Adb shell screencap -p $remote | Out-Null
 Adb pull $remote (Join-Path $Out 'frame.png') | Out-Null
 Adb shell rm $remote | Out-Null
 
-Adb logcat -d | Set-Content -Encoding utf8 (Join-Path $Out 'logcat.txt')
+Write-Utf8 (Join-Path $Out 'logcat.txt') (Adb logcat -d)
 
 $run = [ordered]@{
     when          = (Get-Date).ToString('o')
@@ -162,7 +176,7 @@ $run = [ordered]@{
     totalTimeMs   = $totalTime
     ready         = $facts
 }
-$run | ConvertTo-Json | Set-Content -Encoding utf8 (Join-Path $Out 'run.json')
+Write-Utf8 (Join-Path $Out 'run.json') ($run | ConvertTo-Json)
 
 Step "Start: $launchState, $totalTime ms (am start -W TotalTime)"
 Step "Wrote $Out"

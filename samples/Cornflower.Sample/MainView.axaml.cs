@@ -146,6 +146,10 @@ public partial class MainView : UserControl
 
     private void ReportReady()
     {
+        // The frame requests can't be cancelled; a page that has left its window says nothing.
+        if (_top is null)
+            return;
+
         UpdateFacts();
         Report($"{ReadyMarker} {DeviceFacts}");
     }
