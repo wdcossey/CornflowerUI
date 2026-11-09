@@ -6,4 +6,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RollForward>LatestMajor</RollForward>
   </PropertyGroup>
+  <ItemGroup>
+    <!-- The Avalonia column of a checklist: Avalonia's controls, read by reflection. -->
+    <PackageReference Include="Avalonia" />
+    <InternalsVisibleTo Include="Cornflower.Tests" />
+  </ItemGroup>
 </Project>

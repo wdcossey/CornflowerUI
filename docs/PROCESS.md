@@ -48,9 +48,16 @@ doesn't edit the tables in `CLAUDE.md` or [`ROADMAP.md`](ROADMAP.md); see
 decisions and omissions are written out.
 
 1. **The checklist.** Paste the control's generated checklist. Every row is ticked, or has a
-   one-line reason it is left out (`not applicable: Windows tiles`). An unexplained gap is a
-   planning failure. *The checklist generator is a Tier 0 item ([#7](https://github.com/wdcossey/CornflowerUI/issues/7));
-   until it lands, the checklist is written by hand from the two files below, and the plan says so.*
+   one-line reason it is left out (`not applicable: Windows tiles`), and its Action filled in. An
+   unexplained gap is a planning failure. It's generated from the two files below:
+
+   ```
+   dotnet run --project tools/winrt-api -- checklist Button <Windows.winmd> <design folder>
+   ```
+
+   where the design folder holds `generic.xaml` and `themeresources.xaml`. A control outside
+   `Windows.UI.Xaml.Controls` and `.Primitives` is named in full. Its Avalonia column is
+   mechanical (the mapping rules are a draft), so each row is checked, not trusted.
 2. **The behaviours**, each with its evidence: a capture, a template line, or a measurement. One
    test each.
 3. **The visual states** and the resource keys that drive each one, from the template.
@@ -66,7 +73,7 @@ outside the repo ([ADR 0002](decisions/0002-decisions-of-2026-11-08.md#reference
 
 | File | Gives |
 |---|---|
-| `Windows.winmd` | The API: properties, events, methods, and the template parts and visual states a control declares |
+| `Windows.winmd` | The API: properties (and which are dependency properties), events and methods. Not the template parts or visual states: WinRT metadata doesn't carry them |
 | `generic.xaml` (with `themeresources.xaml`) | The template: setters, parts, visual state groups and states, the resources each state uses, the theme animations |
 
 The checklist is generated from both.
