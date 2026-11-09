@@ -191,7 +191,7 @@ last touch has settled. `touch.log` says where each step landed on the VM's scre
 - **Moves arrive in bursts about 100 ms apart.** The emulator delivers the mouse's moves to the
   phone in batches, so a probe reads a position, not a speed. Press and release times are kept.
 
-Probes: `toggleswitch` (#25) and `tilt` (#22). Each frame's value is read on the UI thread in
+Probes: `toggleswitch` (#25), `tilt` and `tiltgrid` (#22). Each frame's value is read on the UI thread in
 `CompositionTarget.Rendering`. That reads the animated values of the theme animations too: the
 tilt's `PlaneProjection` moves every 15 ms in the log.
 
@@ -240,7 +240,50 @@ px down. The template root's `PlaneProjection`, read every frame:
 translating 112 down with a `GlobalOffsetY` of −112 against it. The press reaches its values in
 about 45 ms (three frames). On release nothing moves for about 180 ms, then the tilt eases back
 to rest by about 345 ms. Dragged after the press, the tilt follows the finger. These are readings,
-not yet the model: #22 fits them.
+not yet the model: #22 fits them (next section).
+
+### Tilt: the model (2026-11-09, device 11, for #22)
+
+`20261109-2307-dev11` (`-Probe tiltgrid`): four Buttons on one page, A 120 × 60, B 300 × 120,
+C 412 × 80 and D 200 × 200 view px, at 19 px in from the left and 120, 210, 360 and 470 px down.
+Each was pressed and held still for 500 ms at a 5 × 5 grid of points, at 5%, 25%, 50%, 75% and
+95% across and down: 100 presses. With `dx`, `dy` the press point's offset from the button's
+centre as a fraction of its width and height (−0.5 to 0.5):
+
+| Value | Rule | Fit |
+|---|---|---|
+| `RotationY` | −g(`dx`): a press left of centre tilts positive | over the four sizes, rms 0.05° |
+| `RotationX` | g(`dy`): a press above centre tilts negative | |
+| g(d) | 17.19° × d × (1 + 0.08 \|d\|); 17.19° is 0.3 rad | |
+| `GlobalOffsetZ` | −25 × (1 − (\|`RotationX`\| + \|`RotationY`\|) / 17.19°) | worst residual 0.016 over 100 presses |
+| `CenterOfRotation` | 0.5, 0.5, 0 | always |
+| `RenderTransform` | a `CompositeTransform` translating by 0.8 × (the screen's centre − the button's centre), with `GlobalOffsetX` and `GlobalOffsetY` the opposite | exact for all four buttons and the first run's |
+
+- **Size doesn't matter.** The angles depend on the fractions `dx` and `dy`, not on pixels: a
+  press 25% from the centre gives 4.33° to 4.45° on all four buttons. Each axis is independent:
+  a corner press gives the same `RotationY` as a press at the middle of that side.
+- **The depth is the angles' complement.** The constants are the Silverlight toolkit
+  TiltEffect's, a 0.3 rad greatest angle and a 25 px greatest depth, and its rule: a centre
+  press sinks fully and tilts nothing, and a corner press tilts fully and hardly sinks. The
+  angles run a little above the toolkit's straight line, by the 0.08 term.
+- **Where the button is on screen adds a little.** Measured by pressing points on opposite sides
+  of the centre, the angles carry a bias that grows with the button's distance from the screen's
+  centre, as if the press were a little further from it:
+
+  | Button (centre, view px) | `RotationX` bias | `RotationY` bias |
+  |---|---|---|
+  | A (79, 150), far up and left | −0.83° | +0.25° |
+  | B (169, 270) | −0.35° | +0.07° |
+  | C (225, 400), at the screen's centre | 0.00° | 0.00° |
+  | D (119, 570), below and left | +0.28° | +0.18° |
+
+  It is under 1° everywhere measured, and goes with the perspective translation above. Not yet
+  modelled.
+- **Timing.** The press is a jump: the first frame after the press already shows 96% to 100% of
+  the held values (99% on average, at 30 to 40 ms, the first frame the emulator draws). On release
+  the values hold for about 180 ms, then ease back to rest over about 195 ms: a sine ease-out fits
+  1,199 frames with an rms of 0.03 of the full value (quadratic 0.036, linear 0.037, cubic 0.059).
+  Every press was within 1% of rest by 335 to 372 ms.
 
 ## The page's app bar (2026-11-09, device 11, #23)
 
