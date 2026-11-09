@@ -78,8 +78,17 @@ theme: 475 ms, 91 elements, 1 rules (1), layout 1.5, render 18.9
 ```
 
 That one is from a headless test, in Debug, on the desktop PC (`PerformanceMonitorTests`): the
-page is the first a fresh app opens, so its time includes the cold start. It hasn't been read in a
-real window or on the phone yet.
+page is the first a fresh app opens, so its time includes the cold start. On the Pixel 8, the same
+page in a Debug build, started cold by `tools/android/run.ps1 -Configuration Debug` on 2026-11-09
+(`am start -W` total 994 ms):
+
+```
+theme: 472 ms, 91 elements, 1 rules (1), layout 186.5, render 23.8
+```
+
+Layout is about 120 times the desktop's headless figure. That's a Debug build, JIT-compiled on
+first use, so it measures first-run cost more than the theme; a Release reading needs a Release
+build of the line, which the sample doesn't have. It hasn't been read in a real desktop window.
 
 That's the time to open the page, from before it's made, the elements in it, the global rules it
 is checked against and their alternatives (in the application's `Styles`, and the page's and each
@@ -121,8 +130,8 @@ budget, `Scene`'s themes and the monitor, all caught, and one hung test, timed o
   sample's line is how to spot those.
 - **`render` can read low,** if a page opens within a frame of the last one, because its own render
   pass hasn't happened yet.
-- **Nothing has been measured on a phone.** The benchmark runs headless on a desktop; the line has
-  not yet been read on the Pixel 8.
+- **One reading on a phone, in Debug.** The benchmark runs headless on a desktop; the line has
+  been read once on the Pixel 8, in a Debug build (above), which says little about Release.
 - **`ItemsControl`, virtualising and scrolling** haven't been measured. These are all times to
   attach.
 
