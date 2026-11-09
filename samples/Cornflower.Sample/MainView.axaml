@@ -1,0 +1,51 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Cornflower.Sample.MainView"
+             Background="{DynamicResource ApplicationPageBackgroundThemeBrush}"
+             Foreground="{DynamicResource PhoneForegroundBrush}"
+             FontFamily="{DynamicResource PhoneFontFamilyNormal}"
+             FontSize="{DynamicResource TextStyleLargeFontSize}">
+  <!--
+    What the theme has today: its tokens and fonts, read through their WinRT keys. No control is
+    themed yet, so this page uses only panels, borders and text. Pages per control come with them.
+    The view's padding follows the device's safe area (TopLevel.AutoSafeAreaPadding, on by default).
+  -->
+  <UserControl.Styles>
+    <Style Selector="TextBlock.section">
+      <Setter Property="FontFamily" Value="{DynamicResource PhoneFontFamilySemiLight}" />
+      <Setter Property="FontSize" Value="{DynamicResource TextStyleExtraLargePlusFontSize}" />
+      <Setter Property="Margin" Value="0,18,0,6" />
+    </Style>
+  </UserControl.Styles>
+
+  <ScrollViewer>
+    <StackPanel Margin="19,12,19,24" Spacing="6">
+      <TextBlock Text="CORNFLOWER" FontFamily="{DynamicResource PhoneFontFamilySemiBold}"
+                 FontSize="{DynamicResource TextStyleMediumFontSize}" />
+      <TextBlock x:Name="PageTitle" Text="theme" Margin="-2,0,0,12"
+                 FontFamily="{DynamicResource PhoneFontFamilySemiLight}"
+                 FontSize="{DynamicResource PivotHeaderItemFontSize}" />
+
+      <TextBlock Text="accent" Classes="section" />
+      <StackPanel Orientation="Horizontal" Spacing="12">
+        <Border x:Name="AccentSwatch" Width="96" Height="96" Background="{DynamicResource PhoneAccentBrush}" />
+        <TextBlock Text="SystemColorControlAccentColor" VerticalAlignment="Bottom"
+                   FontSize="{DynamicResource TextStyleMediumFontSize}" />
+      </StackPanel>
+
+      <TextBlock Text="named accents" Classes="section" />
+      <WrapPanel x:Name="NamedAccents" />
+
+      <TextBlock Text="type ramp" Classes="section" />
+      <StackPanel x:Name="TypeRamp" />
+
+      <TextBlock Text="font families" Classes="section" />
+      <StackPanel x:Name="FontFamilies" />
+
+      <TextBlock Text="device" Classes="section" />
+      <TextBlock x:Name="DeviceFactsText" TextWrapping="Wrap"
+                 Foreground="{DynamicResource PhoneMidBrush}"
+                 FontSize="{DynamicResource TextStyleMediumFontSize}" />
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

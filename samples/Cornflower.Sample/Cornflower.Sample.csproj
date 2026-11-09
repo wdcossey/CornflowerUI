@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The sample's app and pages, shared by every head: Cornflower.Sample.Android now, a desktop
+       head later (#9). The heads hold only their platform's entry point. -->
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <!-- Underneath Wp81Theme while controls are still unthemed (ADR 0002, "Themes and scope"). -->
+    <PackageReference Include="Avalonia.Themes.Simple" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Cornflower.Themes.Wp81\Cornflower.Themes.Wp81.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Cornflower.Tests" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,12 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:wp81="using:Cornflower.Themes.Wp81"
+             x:Class="Cornflower.Sample.App"
+             RequestedThemeVariant="Dark">
+  <!-- Dark, the phone's default. The theme follows the app's variant (ADR 0003). -->
+  <Application.Styles>
+    <!-- Simple first, so Wp81Theme's ControlThemes win where it has them. -->
+    <SimpleTheme />
+    <wp81:Wp81Theme />
+  </Application.Styles>
+</Application>

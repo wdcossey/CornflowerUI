@@ -35,3 +35,30 @@ jobs:
         with:
           name: test-results
           path: TestResults
+
+  # The Android sample, in a job of its own (ADR 0002): it needs the android workload, which the
+  # main job doesn't. Build only; the device run is tools/android/run.ps1, on the maintainer's phone.
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      # .NET for Android 10 supports JDK 17 and 21.
+      - uses: actions/setup-java@v6
+        with:
+          distribution: microsoft
+          java-version: 21
+
+      - name: Install the android workload
+        run: dotnet workload install android
+
+      # The runner's Android SDK may lack the platform the workload targets; this fetches what is missing.
+      - name: Install the Android SDK parts the build needs
+        run: dotnet build samples/Cornflower.Sample.Android -t:InstallAndroidDependencies -f net10.0-android -p:AndroidSdkDirectory="$ANDROID_HOME" -p:AcceptAndroidSDKLicenses=true
+
+      - name: Build the Android sample
+        run: dotnet build samples/Cornflower.Sample.Android --configuration Release -p:AndroidSdkDirectory="$ANDROID_HOME"
