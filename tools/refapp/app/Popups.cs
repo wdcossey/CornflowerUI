@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
+using Windows.UI.Xaml.Media;
 
 namespace RefApp
 {
@@ -98,6 +99,13 @@ namespace RefApp
                 Close = (host, h) => ((TimePickerFlyout)h).Hide(),
             });
 
+            // The page's app bar (#23): compact and minimal, closed and open. The phone draws it outside the page, so
+            // only -Grab sees its pixels.
+            list.Add(AppBar("compact", AppBarClosedDisplayMode.Compact, false));
+            list.Add(AppBar("compact-open", AppBarClosedDisplayMode.Compact, true));
+            list.Add(AppBar("minimal", AppBarClosedDisplayMode.Minimal, false));
+            list.Add(AppBar("minimal-open", AppBarClosedDisplayMode.Minimal, true));
+
             // Every count from 3, which opens inline, to 10, which opens the full-screen picker: where it flips (#25).
             for (var count = 3; count <= 10; count++)
             {
@@ -173,6 +181,73 @@ namespace RefApp
                 },
                 Close = (host, h) => ((ListPickerFlyout)h).Hide(),
             };
+        }
+
+        /// <summary>
+        /// A CommandBar as the page's BottomAppBar, with three primary commands (one disabled, one a toggle) and two
+        /// secondary ones, set on the page that holds the stage and taken off again on close.
+        /// </summary>
+        private static PopupSpecimen AppBar(string variant, AppBarClosedDisplayMode mode, bool open)
+        {
+            return new PopupSpecimen
+            {
+                Name = "AppBar",
+                Variant = variant,
+                SettleMs = open ? 2200 : 1500,
+                MakeHost = () => new TextBlock { Text = "page with an app bar", Margin = new Thickness(0, 12, 0, 0) },
+                Open = host =>
+                {
+                    var bar = new CommandBar { ClosedDisplayMode = mode };
+                    bar.PrimaryCommands.Add(new AppBarButton { Label = "add", Icon = new SymbolIcon(Symbol.Add) });
+                    bar.PrimaryCommands.Add(new AppBarToggleButton { Label = "favorite", Icon = new SymbolIcon(Symbol.Favorite), IsChecked = true });
+                    bar.PrimaryCommands.Add(new AppBarButton { Label = "delete", Icon = new SymbolIcon(Symbol.Delete), IsEnabled = false });
+                    bar.SecondaryCommands.Add(new AppBarButton { Label = "first menu item" });
+                    bar.SecondaryCommands.Add(new AppBarButton { Label = "second menu item" });
+                    bar.RequestedTheme = ThemeOf(host);
+                    var page = PageOf(host);
+                    page.BottomAppBar = bar;
+                    if (open)
+                    {
+                        // Set as the bar is attached, IsOpen is ignored (2026-11-09): open it once it is up.
+                        var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(600) };
+                        timer.Tick += (s, e) =>
+                        {
+                            timer.Stop();
+                            bar.IsOpen = true;
+                        };
+                        timer.Start();
+                    }
+
+                    return bar;
+                },
+                Close = (host, h) =>
+                {
+                    var bar = (CommandBar)h;
+                    bar.IsOpen = false;
+                    PageOf(host).BottomAppBar = null;
+                },
+            };
+        }
+
+        /// <summary>The theme the stage asked for: the first RequestedTheme set above the host.</summary>
+        private static ElementTheme ThemeOf(FrameworkElement host)
+        {
+            for (DependencyObject e = host; e != null; e = VisualTreeHelper.GetParent(e))
+            {
+                var f = e as FrameworkElement;
+                if (f != null && f.RequestedTheme != ElementTheme.Default)
+                {
+                    return f.RequestedTheme;
+                }
+            }
+
+            return ElementTheme.Default;
+        }
+
+        private static Page PageOf(FrameworkElement host)
+        {
+            var frame = Window.Current.Content as Frame;
+            return frame != null ? frame.Content as Page : null;
         }
 
         private static PopupSpecimen Combo(string variant, int count)
