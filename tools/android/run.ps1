@@ -46,9 +46,12 @@ function Find-Adb {
 
 $Adb = Find-Adb
 
-# Runs adb and returns its output as one string; throws if adb fails.
+# Runs adb and returns its output as one string; throws if adb fails. adb writes some status to
+# stderr (pull's "1 file pulled"), which PowerShell 5.1 turns into an error record under 'Stop', so
+# the exit code alone decides.
 function Adb {
-    $output = & $Adb @args 2>&1 | Out-String
+    $ErrorActionPreference = 'Continue'
+    $output = & $Adb @args 2>&1 | ForEach-Object { "$_" } | Out-String
     if ($LASTEXITCODE -ne 0) { throw "adb $($args -join ' ') failed ($LASTEXITCODE): $output" }
     return $output
 }
@@ -98,14 +101,27 @@ while ((Adb shell dumpsys window) -match 'isKeyguardShowing=true') {
     if (-not $asked) { Write-Host "   Unlock the phone; waiting up to $TimeoutSeconds s."; $asked = $true }
     Start-Sleep -Seconds 1
 }
+# A screen still waking from doze can bring the last task back on its own, under the launch.
+while ((Adb shell dumpsys power) -notmatch 'mWakefulness=Awake') {
+    if ((Get-Date) -gt $deadline) { throw "The screen is still not awake after $TimeoutSeconds s." }
+    Start-Sleep -Seconds 1
+}
 
-# 5. Start it cold, and let Android time it.
+# 5. Start it cold, from the home screen, and let Android time it. -S stops the app first; going
+#    home first means no task of the app's is on top for the system to resume instead.
 Step 'Starting the sample'
+Adb shell input keyevent KEYCODE_HOME | Out-Null
 Adb shell am force-stop $Package | Out-Null
+Start-Sleep -Seconds 1
 Adb logcat -c | Out-Null
-$start = Adb shell am start -W -n $Activity
+$start = Adb shell am start -W -S -n $Activity
 $totalTime = if ($start -match 'TotalTime:\s*(\d+)') { [int]$Matches[1] } else { $null }
 $launchState = if ($start -match 'LaunchState:\s*(\w+)') { $Matches[1] } else { $null }
+if ($launchState -ne 'COLD' -or -not $totalTime) {
+    # Not a cold start Android timed (the activity was already on top, say): no time to record.
+    Write-Warning "am start -W did not time a cold start (LaunchState $launchState, TotalTime $totalTime):`n$start"
+    $totalTime = $null
+}
 
 # 6. Wait for the page to say it has drawn.
 $ready = $null

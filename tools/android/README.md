@@ -14,9 +14,12 @@ powershell -ExecutionPolicy Bypass -File tools\android\run.ps1 -NoBuild    # reu
    size and density.
 2. Builds `samples/Cornflower.Sample.Android` (Release by default), and installs the signed APK.
 3. Wakes the screen. A phone with a secure lock has to be unlocked by hand: the script says so and
-   waits (`-TimeoutSeconds`, 60 by default).
-4. Stops the app and starts it cold with `am start -W`, which reports the time Android measured
-   from the intent to the activity's first frame (`TotalTime`).
+   waits (`-TimeoutSeconds`, 60 by default), then waits for the screen to be fully awake.
+4. Goes to the home screen, stops the app, and starts it cold with `am start -W -S`, which reports
+   the time Android measured from the intent to the activity's first frame (`TotalTime`). Going
+   home first matters: a screen waking from doze can bring the app's last task back by itself,
+   and then `am start` only delivers to it and times nothing. If Android doesn't report a `COLD`
+   start, the script warns and records no time.
 5. Waits for the page's `CORNFLOWER ready` line in logcat (the `DOTNET` tag). The page writes it
    after its first drawn frame, with the render scaling, the view's size in view pixels and raw
    pixels, and the safe area.
@@ -48,7 +51,7 @@ Read by the first runs, 2026-11-09, Android 17 (API 37):
 | Screen | 1080 × 2400 at density 420 |
 | Render scaling | **2.625**, so the view is **411.43 × 914.29** view pixels |
 | Safe area | 50.29 at the top (the status bar); 24 at the bottom with the gesture bar showing, 0 on the lock screen |
-| Cold start, `am start -W` `TotalTime` | 1171 ms on the first start after install, 610 ms on the next |
+| Cold start, `am start -W` `TotalTime` | 1171 ms on the first start after install, 610 ms on the next; 644 ms by `run.ps1` |
 | APK, Release | 37,961,165 bytes |
 
 The reference profile is 450 × 800 at 2.4 (ADR 0001), so the phone's view is 38.57 view pixels
