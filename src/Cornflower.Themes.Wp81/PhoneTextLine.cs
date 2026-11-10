@@ -73,12 +73,6 @@ internal static class PhoneTextLine
         // Another source of a value this sets (the app's, a derived theme's) takes over, or gives it back.
         TextBlock.PaddingProperty.Changed.AddClassHandler<TextBlock>((b, _) => UpdatePadding(b));
         TextBlock.LetterSpacingProperty.Changed.AddClassHandler<TextBlock>((b, _) => UpdateLetterSpacing(b));
-        StyledElement.ThemeProperty.Changed.AddClassHandler<TextBlock>((b, _) =>
-        {
-            UpdateLineHeight(b);
-            UpdateLetterSpacing(b);
-            UpdatePadding(b);
-        });
         TextBlock.FontFamilyProperty.Changed.AddClassHandler<TextBlock>((b, _) => UpdatePadding(b));
         TextBlock.FontWeightProperty.Changed.AddClassHandler<TextBlock>((b, _) => UpdatePadding(b));
         TextBlock.FontStyleProperty.Changed.AddClassHandler<TextBlock>((b, _) => UpdatePadding(b));
@@ -161,7 +155,8 @@ internal static class PhoneTextLine
     /// <summary>
     /// Sets <paramref name="value"/> at style priority, unless something else sets the property: the app, an app's
     /// style, or a <c>ControlTheme</c> based on a text style. An immediate value at style priority would beat a
-    /// <c>ControlTheme</c>'s setters, so this one gives way to any value it finds, and is put back when that goes.
+    /// <c>ControlTheme</c>'s setters, so this one gives way to any value it finds, and is put back when that goes. A new
+    /// <c>Theme</c> needs no handler of its own (A_Value_A_Derived_ControlTheme_Sets_Wins_Over_The_Styles holds it).
     /// </summary>
     private static void Put<T>(TextBlock block, Slot slot, StyledProperty<T> property, T value)
     {
