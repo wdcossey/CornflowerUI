@@ -230,11 +230,10 @@ Tier 1.
       `LucideIcon`. 161 of WinRT's 193 `Symbol` values have a Lucide icon
       (`tools/lucide/symbols.tsv`).
 - [x] The tilt behaviour, measured and tested ([#22](https://github.com/wdcossey/CornflowerUI/issues/22)),
-      on 2026-11-10 (#65): `Tilt.IsEnabled`, fitted to #60's 100 grid presses within 0.019°, the
-      screen-position bias included. Open: whether the eye distance scales with the screen, the
-      fitted eye (1,055 view px) against PlaneProjection's measured camera (1000), and a press at
-      the very edge, which clicks on the phone and must click here too
-      ([ADR 0005](decisions/0005-decisions-of-2026-11-09-and-10.md#the-tilt)).
+      on 2026-11-10 (#65): `Tilt.IsEnabled` and `Tilt.IsTarget`, within 0.026° of #60's 100 grid
+      presses and 0.021° of the 720p grid, the screen-position bias included, with PlaneProjection's
+      measured camera. A press at the very edge clicks, as on the phone, once a template marks its
+      tilted part ([ADR 0005](decisions/0005-decisions-of-2026-11-09-and-10.md#the-tilt)).
 
 ## What "done" means for Button
 
