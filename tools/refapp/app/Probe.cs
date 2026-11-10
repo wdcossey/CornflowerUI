@@ -50,6 +50,9 @@ namespace RefApp
                 case "tilt":
                     await probe.Tilt(host);
                     break;
+                case "tiltgrid":
+                    await probe.TiltGrid(host);
+                    break;
                 default:
                     await probe.Write("done.txt", "unknown probe " + name);
                     break;
@@ -179,14 +182,77 @@ namespace RefApp
             await Ready();
         }
 
+        /// <summary>
+        /// The tilt's dependence on the press point and the button's size (#22): four buttons of different sizes on
+        /// one page, each pressed and held still at a 5 x 5 grid of points (5%, 25%, 50%, 75% and 95% across and
+        /// down). The log names the button on each pointer event and logs every button's projection and transform
+        /// every frame, so each press's settled values and timing can be read per point.
+        /// </summary>
+        private async Task TiltGrid(Grid host)
+        {
+            var sizes = new[]
+            {
+                new { Name = "A", W = 120.0, H = 60.0, X = 19.0, Y = 120.0 },
+                new { Name = "B", W = 300.0, H = 120.0, X = 19.0, Y = 210.0 },
+                new { Name = "C", W = 412.0, H = 80.0, X = 19.0, Y = 360.0 },
+                new { Name = "D", W = 200.0, H = 200.0, X = 19.0, Y = 470.0 },
+            };
+            var page = new Grid { RequestedTheme = ElementTheme.Dark, Background = new SolidColorBrush(Colors.Black) };
+            var buttons = new List<Button>();
+            foreach (var size in sizes)
+            {
+                var button = new Button { Name = size.Name, Content = "tilt " + size.Name, Width = size.W, Height = size.H, MinWidth = 0, MinHeight = 0, Margin = new Thickness(size.X, size.Y, 0, 0), HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top };
+                page.Children.Add(button);
+                buttons.Add(button);
+            }
+
+            host.HorizontalAlignment = HorizontalAlignment.Stretch;
+            host.VerticalAlignment = VerticalAlignment.Stretch;
+            host.Children.Add(page);
+            await Settle(page);
+
+            var fractions = new[] { 0.05, 0.25, 0.5, 0.75, 0.95 };
+            foreach (var button in buttons)
+            {
+                var root = VisualTreeHelper.GetChildrenCount(button) > 0 ? VisualTreeHelper.GetChild(button, 0) as FrameworkElement : null;
+                if (root == null)
+                {
+                    await Write("done.txt", "button " + button.Name + " has no template root");
+                    return;
+                }
+
+                var b = button.TransformToVisual(null).TransformBounds(new Rect(0, 0, button.ActualWidth, button.ActualHeight));
+                Log("layout", "button " + button.Name + " " + Num(b.X) + " " + Num(b.Y) + " " + Num(b.Width) + " " + Num(b.Height) + " root " + root.GetType().Name);
+                Watch(button);
+                var name = button.Name;
+                WatchValue("projection " + name, () => Describe(root.Projection));
+                WatchValue("transform " + name, () => Describe(root.RenderTransform));
+                foreach (var fy in fractions)
+                {
+                    foreach (var fx in fractions)
+                    {
+                        Hold(b.X + b.Width * fx, b.Y + b.Height * fy, 500, 1200);
+                    }
+                }
+            }
+
+            await Ready();
+        }
+
         /// <summary>A touch held still at (x, y) for 600 ms.</summary>
         private void Hold(double x, double y)
         {
+            Hold(x, y, 600, 2000);
+        }
+
+        /// <summary>A touch held still at (x, y) for holdMs, then a pause of gapMs before the next.</summary>
+        private void Hold(double x, double y, int holdMs, int gapMs)
+        {
             _expected++;
             _gestures.AppendLine("down " + Num(x) + " " + Num(y));
-            _gestures.AppendLine("wait 600");
+            _gestures.AppendLine("wait " + holdMs);
             _gestures.AppendLine("up " + Num(x) + " " + Num(y));
-            _gestures.AppendLine("wait 2000");
+            _gestures.AppendLine("wait " + gapMs);
         }
 
         private static string Describe(Projection projection)
@@ -279,7 +345,7 @@ namespace RefApp
                     foreach (var group in VisualStateManager.GetVisualStateGroups(root))
                     {
                         var g = group;
-                        g.CurrentStateChanged += (s, e) => Log("state", g.Name + " " + (e.OldState != null ? e.OldState.Name : "-") + " > " + (e.NewState != null ? e.NewState.Name : "-"));
+                        g.CurrentStateChanged += (s, e) => Log("state", (control.Name.Length > 0 ? control.Name + " " : "") + g.Name + " " + (e.OldState != null ? e.OldState.Name : "-") + " > " + (e.NewState != null ? e.NewState.Name : "-"));
                     }
                 }
             }
@@ -289,7 +355,8 @@ namespace RefApp
         {
             var inWindow = e.GetCurrentPoint(null).Position;
             var inControl = e.GetCurrentPoint(control).Position;
-            Log(what, Num(inWindow.X) + " " + Num(inWindow.Y) + " in-control " + Num(inControl.X) + " " + Num(inControl.Y) + " " + e.Pointer.PointerDeviceType + (e.Handled ? " handled" : ""));
+            var name = control is FrameworkElement ? ((FrameworkElement)control).Name : "";
+            Log(what, (name.Length > 0 ? name + " " : "") + Num(inWindow.X) + " " + Num(inWindow.Y) + " in-control " + Num(inControl.X) + " " + Num(inControl.Y) + " " + e.Pointer.PointerDeviceType + (e.Handled ? " handled" : ""));
         }
 
         private async void Released(UIElement control, PointerRoutedEventArgs e)

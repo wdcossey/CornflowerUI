@@ -24,7 +24,7 @@
   open in the emulator, for screenshots by hand. It captures nothing.
   -Probe <name> runs one of the app's probes (app\Probe.cs) instead of the suite: the app lays a control out and
   writes the touches it wants, vm\touch.ps1 plays them on the emulator's display with the mouse, and the app's
-  log of what the control did comes back as probe.txt, beside touch.log. Probes: toggleswitch, tilt.
+  log of what the control did comes back as probe.txt, beside touch.log. Probes: toggleswitch, tilt, tiltgrid.
   -TouchMode real (the default) moves the VM's real cursor, which needs the emulator in front and the VM's
   mouse left alone; post posts the mouse messages to the emulator's display window, which the emulator
   ignored when tried (2026-11-09).
