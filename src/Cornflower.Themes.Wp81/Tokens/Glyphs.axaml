@@ -1,0 +1,39 @@
+<!--
+  The glyphs the Windows Phone 8.1 templates draw, as Cornflower's own geometry.
+
+  Each was drawn from measurements of the reference app's captures on the reference profile (device 11,
+  2.4 raw pixels per view pixel), not from the SDK: no Microsoft path data is in this file. A filled outline was
+  measured edge by edge: each edge's crossing of every pixel row, read to a hundredth of a pixel from the
+  anti-aliased coverage, fitted with a straight line, and the lines intersected to give the corners. A dot was
+  measured by its area and its centroid. Coordinates are view pixels, from the glyph's own top left.
+
+  8.1 has few glyphs. Its TextBox has no clear button, and its ComboBox, DatePicker and TimePicker no arrow. The
+  indeterminate square, the RadioButton's dot, the ProgressRing's and ProgressBar's dots and the AppBarButton's
+  ring are Rectangles and Ellipses in the templates, sized there or by tokens in Sizes.axaml, so they are not here.
+  tests/Cornflower.Tests/Glyphs holds each glyph to the capture it was measured from.
+-->
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- The tick: a filled outline, a short arm and a long one, 18.31 × 17.08. Drawn by CheckBox's CheckGlyph
+       (18.5 × 17 in the template, arranged 18.33 × 17.08), by ListViewItem's and GridViewItem's CheckGlyph in
+       list multi-select at the same size, and stretched to 17 × 14.5 as their SelectedGlyph in grid
+       multi-select. Measured from refapp 20261108-1443-dev11, dark__CheckBox__checked__CheckStates.Checked.png,
+       glyph box at raw (55, 77), 44 × 41; the same in light. -->
+  <StreamGeometry x:Key="Wp81.Glyph.CheckMark">M15.9,0 L18.31,2.41 L7.7,17.08 L0,8.07 L2.41,5.78 L7.7,11.23 Z</StreamGeometry>
+
+  <!-- The selected item's earmark: the top right half of a square, cut corner to corner. ListViewItem's and
+       GridViewItem's SelectedEarmark in grid multi-select, 34 × 34 in the template (arranged 34.17), at the
+       item's top right inside its 2.5 border. Measured from refapp 20261108-1443-dev11,
+       dark__ListViewItem__selected__MultiSelectStates.GridMultiSelect.png, raw (947, 35), 82 × 82. -->
+  <StreamGeometry x:Key="Wp81.Glyph.SelectedEarmark">M0,0 H34.17 V34.17 Z</StreamGeometry>
+
+  <!-- The app bar's ellipsis: three dots 4.64 across, 8.93 apart, 22.5 × 4.64. The shell draws it on the page's
+       app bar and on the pickers' bars, not a template: its dots' tops are 10.49 below the bar's top and the
+       last dot's right is 20.59 from the bar's right. Measured from refapp 20261109-2130-dev11,
+       dark__BottomAppBar__minimal__popup__screen.png, dots centred at raw (982.13, 1887.75), (1003.57, 1887.75)
+       and (1025.01, 1887.75), 97.6 raw px² each; the same in light, in 20261109-2124-dev11's
+       dark__AppBar__minimal, and on the DatePickerFlyout's bar in 20261108-2254-dev11, 88 raw px higher. -->
+  <StreamGeometry x:Key="Wp81.Glyph.AppBarEllipsis">M0,2.32 A2.32,2.32 0 1 1 4.64,2.32 A2.32,2.32 0 1 1 0,2.32 Z M8.93,2.32 A2.32,2.32 0 1 1 13.57,2.32 A2.32,2.32 0 1 1 8.93,2.32 Z M17.86,2.32 A2.32,2.32 0 1 1 22.5,2.32 A2.32,2.32 0 1 1 17.86,2.32 Z</StreamGeometry>
+
+</ResourceDictionary>
