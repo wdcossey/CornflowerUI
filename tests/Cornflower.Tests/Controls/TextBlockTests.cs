@@ -390,8 +390,6 @@ public class TextBlockTests
         }
     }
 
-    public static TheoryData<string, string> HookCases() => [.. Hooks().Select(h => (h.Style, h.Key))];
-
     /// <summary>Another value of the same kind, for a key to be overridden with.</summary>
     private static object Other(object value) => value switch
     {
@@ -403,24 +401,34 @@ public class TextBlockTests
         _ => throw new NotSupportedException(value.GetType().Name),
     };
 
-    // An extension pack puts its values in a window's Resources: here, in a window wider than the phone.
+    // An extension pack puts its values in a window's Resources: here, in a window wider than the phone. Each key
+    // the style reads, in turn, and then taken out again.
     [AvaloniaTheory]
-    [MemberData(nameof(HookCases))]
-    public void A_Key_In_A_Wider_Windows_Resources_Changes_The_Style(string style, string key)
+    [MemberData(nameof(TextStyleReadings.Keys), MemberType = typeof(TextStyleReadings))]
+    public void A_Key_In_A_Wider_Windows_Resources_Changes_The_Style(string style)
     {
-        var property = Hooks().Single(h => h.Style == style && h.Key == key).Property;
         var block = new TextBlock { Text = Specimen };
         using var scene = new Scene(block, width: 1280, height: 800, scaling: 1);
         block.Theme = (ControlTheme)scene.Window.FindResource(style)!;
         Dispatcher.UIThread.RunJobs();
-        var before = block.GetValue(property)!;
 
-        var other = Other(scene.Window.FindResource(key)!);
-        scene.Window.Resources[key] = other;
-        Dispatcher.UIThread.RunJobs();
+        var hooks = Hooks().Where(h => h.Style == style).ToList();
+        Assert.InRange(hooks.Count, 3, 10);
+        foreach (var (_, property, key) in hooks)
+        {
+            var before = block.GetValue(property)!;
+            Assert.True(scene.Window.TryFindResource(key, scene.Window.ActualThemeVariant, out var current), $"{key} not found");
+            var other = Other(current!);
 
-        Assert.Equal(other, block.GetValue(property));
-        Assert.NotEqual(before, block.GetValue(property));
+            scene.Window.Resources[key] = other;
+            Dispatcher.UIThread.RunJobs();
+            Assert.Equal(other, block.GetValue(property));
+            Assert.NotEqual(before, block.GetValue(property));
+
+            scene.Window.Resources.Remove(key);
+            Dispatcher.UIThread.RunJobs();
+            Assert.Equal(before, block.GetValue(property));
+        }
     }
 
     [AvaloniaFact]
