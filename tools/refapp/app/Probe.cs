@@ -50,6 +50,9 @@ namespace RefApp
                 case "tilt":
                     await probe.Tilt(host);
                     break;
+                case "tiltedge":
+                    await probe.TiltEdge(host);
+                    break;
                 case "tiltgrid":
                     await probe.TiltGrid(host);
                     break;
@@ -171,7 +174,8 @@ namespace RefApp
         /// The tilt's dependence on the press point and the button's size (#22): four buttons of different sizes on
         /// one page, each pressed and held still at a 5 x 5 grid of points (5%, 25%, 50%, 75% and 95% across and
         /// down). The log names the button on each pointer event and logs every button's projection and transform
-        /// every frame, so each press's settled values and timing can be read per point.
+        /// every frame, so each press's settled values and timing can be read per point. Laid out for the reference
+        /// profile's 450 x 800 view; on a narrower one, C is the view's width less the margins, so that it fits.
         /// </summary>
         private async Task TiltGrid(Grid host)
         {
@@ -179,7 +183,7 @@ namespace RefApp
             {
                 new { Name = "A", W = 120.0, H = 60.0, X = 19.0, Y = 120.0 },
                 new { Name = "B", W = 300.0, H = 120.0, X = 19.0, Y = 210.0 },
-                new { Name = "C", W = 412.0, H = 80.0, X = 19.0, Y = 360.0 },
+                new { Name = "C", W = Math.Min(412.0, Window.Current.Bounds.Width - 38), H = 80.0, X = 19.0, Y = 360.0 },
                 new { Name = "D", W = 200.0, H = 200.0, X = 19.0, Y = 470.0 },
             };
             var buttons = sizes.Select(size => new Button { Name = size.Name, Content = "tilt " + size.Name, Width = size.W, Height = size.H, MinWidth = 0, MinHeight = 0, Margin = new Thickness(size.X, size.Y, 0, 0), HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top }).ToArray();
@@ -268,6 +272,37 @@ namespace RefApp
         {
             _plannedMs += ms;
             _gestures.AppendLine("wait " + Num(ms));
+        }
+
+        /// <summary>
+        /// Whether a tap near a Button's edge clicks (for #22): a Button 300 x 120 view pixels, tapped (150 ms) at the
+        /// middle of each edge, 1, 2 and 3 px inside it, three times each. The log has each press's position in the
+        /// button, as the phone got it, and each Click.
+        /// </summary>
+        private async Task TiltEdge(Grid host)
+        {
+            var button = new Button { Content = "edge", Width = 300, Height = 120, MinWidth = 0, MinHeight = 0, Margin = new Thickness(75, 200, 0, 0), HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top };
+            await Page(host, button);
+            var watched = await WatchTilt(button);
+            if (watched == null)
+            {
+                return;
+            }
+
+            var b = watched.Value;
+            button.Click += (s, e) => Log("click", "");
+            for (var round = 0; round < 3; round++)
+            {
+                foreach (var inset in new[] { 1.0, 2.0, 3.0 })
+                {
+                    Hold(b.X + b.Width / 2, b.Y + inset, 150, 1000);
+                    Hold(b.X + b.Width / 2, b.Bottom - inset, 150, 1000);
+                    Hold(b.X + inset, b.Y + b.Height / 2, 150, 1000);
+                    Hold(b.Right - inset, b.Y + b.Height / 2, 150, 1000);
+                }
+            }
+
+            await Ready();
         }
 
         /// <summary>A touch held still at (x, y) for 600 ms.</summary>
