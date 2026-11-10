@@ -54,7 +54,7 @@ namespace RefApp
                     await probe.TiltGrid(host);
                     break;
                 default:
-                    await probe.Write("done.txt", "unknown probe " + name);
+                    await probe.Finish("unknown probe " + name);
                     break;
             }
         }
@@ -76,7 +76,7 @@ namespace RefApp
             var thumb = Find(toggle, "SwitchThumb") as Windows.UI.Xaml.Controls.Primitives.Thumb;
             if (knob == null)
             {
-                await Write("done.txt", "no SwitchKnob in the ToggleSwitch's template");
+                await Finish("no SwitchKnob in the ToggleSwitch's template");
                 return;
             }
 
@@ -138,11 +138,13 @@ namespace RefApp
         {
             var button = new Button { Content = "tilt", Width = 300, Height = 120, Margin = new Thickness(75, 200, 0, 0), HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top };
             await Page(host, button);
-            var b = await WatchTilt(button);
-            if (b == Rect.Empty)
+            var watched = await WatchTilt(button);
+            if (watched == null)
             {
                 return;
             }
+
+            var b = watched.Value;
 
             button.Click += (s, e) => Log("click", "");
 
@@ -183,22 +185,17 @@ namespace RefApp
             var buttons = sizes.Select(size => new Button { Name = size.Name, Content = "tilt " + size.Name, Width = size.W, Height = size.H, MinWidth = 0, MinHeight = 0, Margin = new Thickness(size.X, size.Y, 0, 0), HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top }).ToArray();
             await Page(host, buttons);
 
-            // The layout is the reference profile's, a 450 x 800 view: on a smaller one the presses would miss.
-            var window = Window.Current.Bounds;
+            // The layout is the reference profile's, a 450 x 800 view: on a smaller one Ready stops the run, as presses would miss.
             var fractions = new[] { 0.05, 0.25, 0.5, 0.75, 0.95 };
             foreach (var button in buttons)
             {
-                var b = await WatchTilt(button);
-                if (b == Rect.Empty)
+                var watched = await WatchTilt(button);
+                if (watched == null)
                 {
                     return;
                 }
 
-                if (b.Right > window.Width || b.Bottom > window.Height)
-                {
-                    await Write("done.txt", "button " + button.Name + " ends at " + Num(b.Right) + ", " + Num(b.Bottom) + ", outside the " + Num(window.Width) + " x " + Num(window.Height) + " view: tiltgrid is laid out for 450 x 800 (device 11)");
-                    return;
-                }
+                var b = watched.Value;
 
                 foreach (var fy in fractions)
                 {
@@ -229,17 +226,17 @@ namespace RefApp
 
         /// <summary>
         /// Logs a button's bounds, its pointer events and states, and its template root's projection and transform every
-        /// frame, named by the button's Name if it has one. Returns the bounds in the window, or <see cref="Rect.Empty"/>,
-        /// with done.txt written, when the button has no template root.
+        /// frame, named by the button's Name if it has one. Returns the bounds in the window, or null, with the run
+        /// finished, when the button has no template root.
         /// </summary>
-        private async Task<Rect> WatchTilt(Button button)
+        private async Task<Rect?> WatchTilt(Button button)
         {
             var tag = Tag(button);
             var root = VisualTreeHelper.GetChildrenCount(button) > 0 ? VisualTreeHelper.GetChild(button, 0) as FrameworkElement : null;
             if (root == null)
             {
-                await Write("done.txt", "button " + tag + "has no template root");
-                return Rect.Empty;
+                await Finish("button " + tag + "has no template root");
+                return null;
             }
 
             var b = button.TransformToVisual(null).TransformBounds(new Rect(0, 0, button.ActualWidth, button.ActualHeight));
@@ -248,6 +245,29 @@ namespace RefApp
             WatchValue(("projection " + tag).TrimEnd(), () => Describe(root.Projection));
             WatchValue(("transform " + tag).TrimEnd(), () => Describe(root.RenderTransform));
             return b;
+        }
+
+        private double _plannedMs;
+        private int _steps;
+        private string _outside;
+
+        /// <summary>A gesture step at a point in view pixels, in window coordinates. The first one outside the view is kept, and stops the run in <see cref="Ready"/>.</summary>
+        private void Step(string verb, double x, double y)
+        {
+            var b = Window.Current.Bounds;
+            if (_outside == null && (x < 0 || y < 0 || x > b.Width || y > b.Height))
+            {
+                _outside = verb + " at " + Num(x) + ", " + Num(y) + " is outside the " + Num(b.Width) + " x " + Num(b.Height) + " view";
+            }
+
+            _steps++;
+            _gestures.AppendLine(verb + " " + Num(x) + " " + Num(y));
+        }
+
+        private void Wait(double ms)
+        {
+            _plannedMs += ms;
+            _gestures.AppendLine("wait " + Num(ms));
         }
 
         /// <summary>A touch held still at (x, y) for 600 ms.</summary>
@@ -260,10 +280,10 @@ namespace RefApp
         private void Hold(double x, double y, int holdMs, int gapMs)
         {
             _expected++;
-            _gestures.AppendLine("down " + Num(x) + " " + Num(y));
-            _gestures.AppendLine("wait " + holdMs);
-            _gestures.AppendLine("up " + Num(x) + " " + Num(y));
-            _gestures.AppendLine("wait " + gapMs);
+            Step("down", x, y);
+            Wait(holdMs);
+            Step("up", x, y);
+            Wait(gapMs);
         }
 
         private static string Describe(Projection projection)
@@ -308,36 +328,36 @@ namespace RefApp
         private void Timed(double x, double y, double dx, int totalMs)
         {
             _expected++;
-            _gestures.AppendLine("down " + Num(x) + " " + Num(y));
-            _gestures.AppendLine("wait 100");
+            Step("down", x, y);
+            Wait(100);
             var steps = (int)Math.Ceiling(dx);
             for (var i = 1; i <= steps; i++)
             {
-                _gestures.AppendLine("move " + Num(x + dx * i / steps) + " " + Num(y));
-                _gestures.AppendLine("wait 10");
+                Step("move", x + dx * i / steps, y);
+                Wait(10);
             }
 
-            _gestures.AppendLine("wait " + Math.Max(0, totalMs - 100 - steps * 10));
-            _gestures.AppendLine("up " + Num(x + dx) + " " + Num(y));
-            _gestures.AppendLine("wait 2000");
+            Wait(Math.Max(0, totalMs - 100 - steps * 10));
+            Step("up", x + dx, y);
+            Wait(2000);
         }
 
         /// <summary>A touch at (x, y) that moves by (dx, dy) one view pixel at a time, 30 ms apart, holds, and lifts.</summary>
         private void Touch(double x, double y, double dx, double dy)
         {
             _expected++;
-            _gestures.AppendLine("down " + Num(x) + " " + Num(y));
-            _gestures.AppendLine("wait 150");
+            Step("down", x, y);
+            Wait(150);
             var steps = (int)Math.Ceiling(Math.Max(Math.Abs(dx), Math.Abs(dy)));
             for (var i = 1; i <= steps; i++)
             {
-                _gestures.AppendLine("move " + Num(x + dx * i / steps) + " " + Num(y + dy * i / steps));
-                _gestures.AppendLine("wait 30");
+                Step("move", x + dx * i / steps, y + dy * i / steps);
+                Wait(30);
             }
 
-            _gestures.AppendLine("wait 300");
-            _gestures.AppendLine("up " + Num(x + dx) + " " + Num(y + dy));
-            _gestures.AppendLine("wait 2000");
+            Wait(300);
+            Step("up", x + dx, y + dy);
+            Wait(2000);
         }
 
         /// <summary>Logs the pointer events and every visual state change of the control's template.</summary>
@@ -425,6 +445,12 @@ namespace RefApp
 
         private async Task Ready()
         {
+            if (_outside != null)
+            {
+                await Finish("the probe doesn't fit this view: " + _outside);
+                return;
+            }
+
             var display = Windows.Graphics.Display.DisplayInformation.GetForCurrentView();
             var b = Window.Current.Bounds;
             await Write("gestures.txt", "view " + Num(b.Width) + " " + Num(b.Height) + "\n" + _gestures);
@@ -432,10 +458,10 @@ namespace RefApp
             Log("ready", "touches " + _expected + " raw-per-view " + Num(display.RawPixelsPerViewPixel));
             await Write("ready.txt", "touches " + _expected);
 
-            // A run whose touches never arrive still ends, with the log: after the touches' planned time and 3 minutes
-            // more for the VM to pull gestures.txt and start playing, and never before 5 minutes.
-            var planned = _gestures.ToString().Split('\n').Where(l => l.StartsWith("wait ", StringComparison.Ordinal)).Sum(l => double.Parse(l.Substring(5), CultureInfo.InvariantCulture));
-            await Task.WhenAny(_done.Task, Task.Delay(TimeSpan.FromMilliseconds(Math.Max(5 * 60000, planned + 3 * 60000))));
+            // A run whose touches never arrive still ends, with the log: after the touches' planned waits, 50 ms a step for
+            // touch.ps1 to play it, and 3 minutes for the VM to pull gestures.txt and start; never before 5 minutes.
+            var timeout = Math.Max(5 * 60000, _plannedMs + 50 * _steps + 3 * 60000);
+            await Task.WhenAny(_done.Task, Task.Delay(TimeSpan.FromMilliseconds(timeout)));
             await Finish("timed out after " + _released + " of " + _expected + " touches");
         }
 
@@ -450,6 +476,7 @@ namespace RefApp
             }
 
             _finished = true;
+            CompositionTarget.Rendering -= OnFrame;
             _done.TrySetResult(true);
             await Write("probe.txt", _log.ToString());
             await Write("done.txt", summary);
@@ -460,7 +487,7 @@ namespace RefApp
             _log.Append(_clock.Elapsed.TotalMilliseconds.ToString("0.0", CultureInfo.InvariantCulture)).Append('\t').Append(what).Append('\t').Append(details).Append('\n');
         }
 
-        /// <summary>Waits until the page has laid out and every control on it has its template, up to 10 s, then 500 ms more.</summary>
+        /// <summary>Waits until the page has laid out and every control placed on it (its direct children) has its template, up to 10 s, then 500 ms more.</summary>
         private static async Task Settle(Panel page)
         {
             for (var waited = 0; waited < 10000; waited += 100)
@@ -476,21 +503,6 @@ namespace RefApp
             }
 
             await Task.Delay(500);
-        }
-
-        private static T Find<T>(DependencyObject root) where T : class
-        {
-            for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
-            {
-                var child = VisualTreeHelper.GetChild(root, i);
-                var found = child as T ?? Find<T>(child);
-                if (found != null)
-                {
-                    return found;
-                }
-            }
-
-            return null;
         }
 
         private static FrameworkElement Find(DependencyObject root, string name)
