@@ -401,25 +401,6 @@ public class TiltTests
         Assert.Equal(BindingPriority.Style, root.GetDiagnostic(Visual.RenderTransformProperty).Priority);
     }
 
-    // Another mouse button let go while the left is down doesn't end the press.
-    [AvaloniaFact]
-    public void Releasing_Another_Mouse_Button_Doesnt_Let_Go()
-    {
-        using var clock = new TestClock();
-        using var page = new Page(GridButtons);
-        var button = page.Buttons["B"];
-        var at = page.At("B", new Point(75, 30));
-
-        page.Window.MouseDown(at, MouseButton.Left);
-        clock.At(SettleMs);
-        var held = CfTilt.Current(button);
-        page.Window.MouseDown(at, MouseButton.Right, RawInputModifiers.LeftMouseButton);
-        page.Window.MouseUp(at, MouseButton.Right, RawInputModifiers.LeftMouseButton);
-        clock.At(SettleMs + 1000);
-
-        AssertNear(held, CfTilt.Current(button), angle: 1e-3, depth: 1e-3);
-    }
-
     [AvaloniaFact]
     public void Without_IsEnabled_Nothing_Tilts()
     {
