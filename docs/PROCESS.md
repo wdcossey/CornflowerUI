@@ -97,7 +97,10 @@ The phone's control source was never published ([ADR 0001](decisions/0001-what-f
 So the behaviours come from:
 
 1. The emulator: exercise the control and record what it does, what moves, when, by how much,
-   and what cancels it. A screen recording stepped by frame gives timings.
+   and what cancels it. A template storyboard can be read in the app every frame (a probe, as
+   `run.ps1 -Probe` runs them); a theme transition runs in the compositor and leaves nothing to
+   read, so it is timed from a screen recording stepped by frame (`run.ps1 -Record`). The
+   emulator animates on a 64 Hz clock.
 2. The template: what it declares, its states, transitions and durations.
 3. WinUI 3's source or Uno Platform's port of the same control, as a guide to what to look for.
    A behaviour found only there, and not seen in the emulator, isn't listed.
@@ -194,9 +197,10 @@ over SSH.
   The reference app is [`tools/refapp`](../tools/refapp/README.md). *`ref/wp81/` doesn't exist
   yet.*
 - **A capture is a forced state on a fresh instance, without the motion into it.** Motion (the
-  tilt, page transitions, the ToggleSwitch drag) comes from screen recordings of the emulator
-  ([#24](https://github.com/wdcossey/CornflowerUI/issues/24)). Flyouts, dialogs and the app bar
-  live in popups outside the captured stage and aren't captured yet
+  tilt, page transitions, the ToggleSwitch drag) comes from per-frame probes and screen
+  recordings of the emulator ([#24](https://github.com/wdcossey/CornflowerUI/issues/24)), in
+  `tools/refapp/README.md` "Motion". Flyouts, dialogs and the app bar live in popups outside the
+  captured stage, so they are captured with the emulator's Screenshot tool
   ([#23](https://github.com/wdcossey/CornflowerUI/issues/23)).
 - **One emulator, one driver.** An agent in a worktree doesn't get the VM: two agents driving one
   emulator would collide. So each control's capture list is written at planning time and captured

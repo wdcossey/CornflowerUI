@@ -5,15 +5,17 @@ lists only what exists.
 
 Process per issue: [`PROCESS.md`](PROCESS.md) §0. Start an issue only when its blockers are
 merged. Decisions behind this plan: [ADR 0001](decisions/0001-what-faithful-means.md),
-[ADR 0002](decisions/0002-decisions-of-2026-11-08.md) and
-[ADR 0003](decisions/0003-decisions-on-the-tier-0-infrastructure.md).
+[ADR 0002](decisions/0002-decisions-of-2026-11-08.md),
+[ADR 0003](decisions/0003-decisions-on-the-tier-0-infrastructure.md),
+[ADR 0004](decisions/0004-larger-screens-as-an-extension-pack.md) and
+[ADR 0005](decisions/0005-decisions-of-2026-11-09-and-10.md).
 
 ## Scope
 
 | | |
 |---|---|
-| **In, first** | Windows Phone 8.1's XAML control set: a theme for Avalonia's controls plus the controls Avalonia lacks, dark and light, with the accent colour. Android and iOS are where it will mostly run; desktop works but isn't the priority |
-| **Later** | Windows Phone 8.0's Silverlight-only controls (Panorama, LongListSelector, HubTile, the toolkit's ListPicker), as an add-on to era 1. Windows 10 Mobile as a second era. Windows 10 desktop as a third. High contrast |
+| **In, first** | Windows Phone 8.1's XAML control set: a theme for Avalonia's controls plus the controls Avalonia lacks, dark and light, with the accent colour. Mobile and desktop are both priorities: the core is the phone, at any window size, and keeps the hooks a wider layout needs ([ADR 0004](decisions/0004-larger-screens-as-an-extension-pack.md)) |
+| **Later** | Windows Phone 8.0's Silverlight-only controls (Panorama, LongListSelector, HubTile, the toolkit's ListPicker), as an add-on to era 1. Layouts for wider windows, as a separate extension pack over the core theme, labelled as Cornflower's design, after Tier 2 ([ADR 0004](decisions/0004-larger-screens-as-an-extension-pack.md)). Windows 10 Mobile as a second era. Windows 10 desktop as a third. High contrast |
 | **Out** | MapControl, MediaElement, CaptureElement, WebView, ink, live tiles, the phone's system UI (Start screen, status bar, keyboard). Anything that needs a Microsoft font or a copied Microsoft template |
 
 Not in scope at all: a port of UWP or WinRT XAML (Uno Platform does that), and Windows 11 Fluent
@@ -158,15 +160,21 @@ Nothing in Tier 1 starts until this list is done.
 - [x] The reference app, `tools/winrt-api` and the font measurement scripts moved into `tools/`
       ([#5](https://github.com/wdcossey/CornflowerUI/issues/5)).
 - [ ] Captures committed under `ref/wp81/<control>/`, from the reference profile.
-- [ ] The reference app captures flyouts, dialogs and the app bar
+- [x] The reference app captures flyouts, dialogs and the app bar
       ([#23](https://github.com/wdcossey/CornflowerUI/issues/23)). The popups have tree dumps, and 1080 × 1920
       screenshots from the emulator's Screenshot tool (`run.ps1 -Popups only -Grab`). The page's
-      app bar is left.
-- [ ] Motion recordings: the tilt, page transitions, ToggleSwitch, the pickers
-      ([#24](https://github.com/wdcossey/CornflowerUI/issues/24)).
-- [ ] Read from the emulator: the item count at which ComboBox goes full screen, and the
-      ToggleSwitch drag threshold ([#25](https://github.com/wdcossey/CornflowerUI/issues/25)). Read so far: 10 items
-      open the full-screen picker and 3 open inline; the count where it flips isn't pinned down.
+      app bar is drawn by the shell, so its screenshots are the reference (2026-11-09, #59).
+- [x] Motion recordings: the tilt, page transitions, ToggleSwitch, the pickers
+      ([#24](https://github.com/wdcossey/CornflowerUI/issues/24)), on 2026-11-10 (#66): template
+      storyboards read every frame, theme transitions from video (`run.ps1 -Record`). The numbers
+      are in [`tools/refapp`](../tools/refapp/README.md) "Motion" and
+      [ADR 0005](decisions/0005-decisions-of-2026-11-09-and-10.md#the-motion). Not yet: the pickers'
+      per-row swivel curves.
+- [x] Read from the emulator: the item count at which ComboBox goes full screen, and the
+      ToggleSwitch drag threshold ([#25](https://github.com/wdcossey/CornflowerUI/issues/25)), on 2026-11-09 (#58):
+      5 items open inline and 6 full screen, by count, not by screen. A ToggleSwitch release is a tap
+      if it moved under about 18 view px and was held under about 1,020 ms; otherwise the knob's
+      halfway point decides. In [`tools/refapp`](../tools/refapp/README.md) "Probes".
 - [x] The checklist generator: one control's spec from the `.winmd` and `generic.xaml`
       ([#7](https://github.com/wdcossey/CornflowerUI/issues/7)), as
       `tools/winrt-api checklist <Type>` (2026-11-09). Run on all 57 styled 8.1 controls.
@@ -177,9 +185,10 @@ Nothing in Tier 1 starts until this list is done.
       ([#6](https://github.com/wdcossey/CornflowerUI/issues/6)).
 - [x] The CI actions moved off Node 20 ([#2](https://github.com/wdcossey/CornflowerUI/issues/2)), in the
       bootstrap.
-- [ ] The desktop sample: a phone-sized window, one auto-discovered page per control
-      ([#9](https://github.com/wdcossey/CornflowerUI/issues/9)). A nice-to-have, to watch progress as Avonic's sample
-      does. It doesn't hold up Tier 1.
+- [ ] The desktop sample: a window that opens phone-sized and can be resized, one auto-discovered
+      page per control ([#9](https://github.com/wdcossey/CornflowerUI/issues/9)). It doesn't hold up
+      Tier 1, but it comes next after the type ramp (#26), so the extension pack has a window to be
+      seen in ([ADR 0004](decisions/0004-larger-screens-as-an-extension-pack.md)).
 - [x] The Android sample and a first device run on the Pixel 8
       ([#10](https://github.com/wdcossey/CornflowerUI/issues/10)), with
       [`tools/android/run.ps1`](../tools/android/README.md) (2026-11-09). Start times are in its
@@ -207,10 +216,18 @@ Nothing in Tier 1 starts until this list is done.
       against Segoe UI on 2026-11-06 and against Segoe WP on 2026-11-07.
 - [x] Tokens: theme colours dark and light, the accent and the 20 named accents, the type ramp,
       sizes ([#19](https://github.com/wdcossey/CornflowerUI/issues/19)).
-- [ ] The template glyph set, drawn as our own paths and tested
-      ([#20](https://github.com/wdcossey/CornflowerUI/issues/20)).
-- [ ] The Lucide generator and icon control ([#21](https://github.com/wdcossey/CornflowerUI/issues/21)).
-- [ ] The tilt behaviour, measured and tested ([#22](https://github.com/wdcossey/CornflowerUI/issues/22)).
+- [x] The template glyph set, drawn as our own paths and tested
+      ([#20](https://github.com/wdcossey/CornflowerUI/issues/20)), on 2026-11-10 (#63). 8.1's templates
+      draw three: the tick (CheckBox and list items), the selected item's earmark, and the app bar's
+      ellipsis, which the shell draws. The rest are rectangles and ellipses.
+- [x] The Lucide generator and icon control ([#21](https://github.com/wdcossey/CornflowerUI/issues/21)),
+      on 2026-11-10 (#64): [`tools/lucide`](../tools/lucide), pinned to Lucide 1.71.0, and
+      `LucideIcon`. 161 of WinRT's 193 `Symbol` values have a Lucide icon
+      (`tools/lucide/symbols.tsv`).
+- [x] The tilt behaviour, measured and tested ([#22](https://github.com/wdcossey/CornflowerUI/issues/22)),
+      on 2026-11-10 (#65): `Tilt.IsEnabled`, fitted to #60's 100 grid presses within 0.019°, the
+      screen-position bias included. Open: whether the eye distance scales with the screen, and
+      whether a press at the very edge clicks on the phone.
 
 ## What "done" means for Button
 
