@@ -1,6 +1,8 @@
 using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Templates;
 using Avalonia.Data;
 using Avalonia.Diagnostics;
 using Avalonia.Headless;
@@ -42,11 +44,23 @@ public class TiltTests
         private readonly Scene _scene;
 
         public Page(params Layout[] layouts)
+            : this(layouts, theme: null)
+        {
+        }
+
+        /// <param name="layouts">The Buttons, as the probe laid them out.</param>
+        /// <param name="theme">The Buttons' theme, if not the scene's.</param>
+        /// <param name="width">The view: another profile's.</param>
+        /// <param name="height">The view: another profile's.</param>
+        /// <param name="scaling">Raw pixels per view pixel: another profile's.</param>
+        public Page(Layout[] layouts, ControlTheme? theme, double width = Scene.ReferenceWidth,
+            double height = Scene.ReferenceHeight, double scaling = Scene.ReferenceScaling)
         {
             var canvas = new Canvas();
             foreach (var layout in layouts)
             {
                 var button = new Button { Content = layout.Name, Width = layout.Width, Height = layout.Height };
+                if (theme is not null) button.Theme = theme;
                 Canvas.SetLeft(button, layout.Left);
                 Canvas.SetTop(button, layout.Top);
                 CfTilt.SetIsEnabled(button, true);
@@ -55,7 +69,7 @@ public class TiltTests
                 Layouts[layout.Name] = layout;
             }
 
-            _scene = new Scene(canvas);
+            _scene = new Scene(canvas, width: width, height: height, scaling: scaling);
         }
 
         public Dictionary<string, Button> Buttons { get; } = [];
@@ -89,13 +103,31 @@ public class TiltTests
     [InlineData("D")]
     public void A_Held_Press_Settles_At_The_Reading_For_Its_Point(string name)
     {
-        using var clock = new TestClock();
         using var page = new Page(GridButtons);
+        AssertGrid(page, name, GridPresses);
+    }
+
+    // The 720p profile: a smaller view at another scaling, and the same eye distance in view pixels
+    // fits it as well as the reference profile's (1,055: worst 0.016°, rms 0.006°).
+    [AvaloniaTheory]
+    [InlineData("A")]
+    [InlineData("B")]
+    [InlineData("C")]
+    [InlineData("D")]
+    public void On_The_720p_Profile_A_Held_Press_Settles_At_The_Reading_For_Its_Point(string name)
+    {
+        using var page = new Page(GridButtons720, theme: null, width: 400, height: 711.111, scaling: 1.8);
+        AssertGrid(page, name, GridPresses720);
+    }
+
+    private static void AssertGrid(Page page, string name, Press[] presses)
+    {
+        using var clock = new TestClock();
         var button = page.Buttons[name];
         var misses = new List<string>();
         var time = 0.0;
 
-        foreach (var press in GridPresses.Where(p => p.Button == name))
+        foreach (var press in presses.Where(p => p.Button == name))
         {
             var at = page.At(name, press.Point);
             var touch = page.Window.TouchBegin(at);
@@ -345,9 +377,8 @@ public class TiltTests
         Assert.Equal(modelled.Y, seen.Y, 1e-4);
     }
 
-    // Hit testing goes through the tilt, as on the phone. So a press within about 3 px of an edge
-    // is drawn sunk away from under the finger, and a Button doesn't click there; whether the
-    // phone's does is open. Off that strip, a tilted press clicks.
+    // With the tilt on the template's root (Simple's Button), a tilted press off the edges clicks.
+    // Within about 3 px of an edge it doesn't: see Run_0822_A_Tap_Just_Inside_Each_Edge_Clicks.
     [AvaloniaFact]
     public void A_Tilted_Press_Still_Clicks()
     {
@@ -363,6 +394,96 @@ public class TiltTests
         page.Window.TouchEnd(touch, corner);
 
         Assert.Equal(1, clicks);
+    }
+
+    /// <summary>
+    /// A Button template in the shape the tilt asks for: an untilted root that takes the hits,
+    /// with the part that tilts inside it.
+    /// </summary>
+    private static ControlTheme HitLayerTheme() => new(typeof(Button))
+    {
+        Setters =
+        {
+            new Setter(TemplatedControl.TemplateProperty, new FuncControlTemplate<Button>((_, _) =>
+            {
+                var part = new Border { Name = "Tilted", Background = Brushes.Transparent };
+                CfTilt.SetIsTarget(part, true);
+                return new Grid { Background = Brushes.Transparent, Children = { part } };
+            })),
+        },
+    };
+
+    // Run 0822: on the phone, every tap at 0.84, 1.7 and 3.35 px inside an edge of a tilted Button
+    // clicked. With the tilted part inside an untilted root, so does Avalonia's.
+    [AvaloniaFact]
+    public void Run_0822_A_Tap_Just_Inside_Each_Edge_Clicks()
+    {
+        using var clock = new TestClock();
+        using var page = new Page([FirstButton], HitLayerTheme());
+        var button = page.Buttons[FirstButton.Name];
+        var clicked = new List<Point>();
+        var time = 0.0;
+
+        foreach (var tap in EdgeTaps)
+        {
+            var clicks = 0;
+            void Count(object? sender, RoutedEventArgs e) => clicks++;
+            button.Click += Count;
+            var at = page.At(FirstButton.Name, tap);
+            var touch = page.Window.TouchBegin(at);
+            clock.At(time += SettleMs);
+            Assert.NotEqual(TiltState.Rest, CfTilt.Current(button));
+            page.Window.TouchEnd(touch, at);
+            button.Click -= Count;
+            if (clicks == 1) clicked.Add(tap);
+            clock.At(time += 1000);
+        }
+
+        Assert.Equal(EdgeTaps, clicked);
+    }
+
+    // Why IsTarget exists: Avalonia hit-tests through the tilt, so with Simple's Button, whose
+    // template root is what tilts, run 0822's taps 0.84 px inside the top, left and right edges
+    // don't click. (The bottom one does: the eye is below this button, and the bottom edge, sunk,
+    // is drawn towards it, under the finger.)
+    [AvaloniaFact]
+    public void With_The_Root_Tilted_Avalonia_Misses_A_Tap_Just_Inside_An_Edge()
+    {
+        using var clock = new TestClock();
+        using var page = new Page(FirstButton);
+        var button = page.Buttons[FirstButton.Name];
+        var clicks = 0;
+        button.Click += (_, _) => clicks++;
+        var time = 0.0;
+
+        foreach (var tap in new Point[] { new(150, 0.852), new(0.838, 60), new(299.162, 60) })
+        {
+            var at = page.At(FirstButton.Name, tap);
+            var touch = page.Window.TouchBegin(at);
+            clock.At(time += SettleMs);
+            page.Window.TouchEnd(touch, at);
+            clock.At(time += 1000);
+        }
+
+        Assert.Equal(0, clicks);
+    }
+
+    // The part marked IsTarget tilts, and its root doesn't; without a mark, the root tilts.
+    [AvaloniaFact]
+    public void The_Part_Marked_IsTarget_Is_What_Tilts()
+    {
+        using var clock = new TestClock();
+        using var page = new Page([FirstButton], HitLayerTheme());
+        var button = page.Buttons[FirstButton.Name];
+        var root = (Control)button.GetVisualChildren().Single();
+        var part = (Control)root.GetVisualChildren().Single();
+
+        page.Window.TouchBegin(page.At(FirstButton.Name, new Point(30, 20)));
+        clock.At(SettleMs);
+
+        Assert.Same(part, CfTilt.TargetOf(button));
+        Assert.IsType<MatrixTransform>(part.RenderTransform);
+        Assert.Null(root.RenderTransform);
     }
 
     [AvaloniaFact]

@@ -28,9 +28,15 @@ namespace Cornflower.Controls;
 /// The tilt is drawn on the template's root, where the phone puts it, or on the control itself if
 /// it has no template. Its transform goes on the root's <c>RenderTransform</c> at animation
 /// priority, over the root's own value, which is back untouched at rest. The control's own space
-/// isn't tilted, so <c>GetPosition</c> on it, and its layout, are unchanged. Hit testing goes
-/// through the tilt, as on the phone: pressed within about 3 px of an edge, the element is drawn
-/// sunk away from under the finger, and a <c>Button</c> doesn't click there.
+/// isn't tilted, so <c>GetPosition</c> on it, and its layout, are unchanged.
+/// </para>
+/// <para>
+/// Avalonia hit-tests through a <c>RenderTransform</c>. Pressed within about 3 px of an edge, the
+/// tilted element is drawn sunk away from under the finger, so if it is the template's root, a
+/// <c>Button</c> doesn't click there. The phone's does (run <c>20261110-0822-dev11</c>). So a
+/// template marks the part to tilt with <see cref="IsTargetProperty"/>, inside a root that stays
+/// untilted and is hit across its bounds (a <c>Transparent</c> background): the finger is always
+/// over the root, and the control decides as it would without the tilt.
 /// </para>
 /// <para>
 /// The geometry is in view pixels, with the screen taken as the control's <see cref="TopLevel"/>:
@@ -43,6 +49,13 @@ public static class Tilt
     /// <summary>Whether the control tilts when pressed. Off by default.</summary>
     public static readonly AttachedProperty<bool> IsEnabledProperty =
         AvaloniaProperty.RegisterAttached<Control, bool>("IsEnabled", typeof(Tilt));
+
+    /// <summary>
+    /// Marks the part of a control's template that the tilt is drawn on, in place of the template's
+    /// root. For a template whose root stays untilted and takes the hits; see <see cref="Tilt"/>.
+    /// </summary>
+    public static readonly AttachedProperty<bool> IsTargetProperty =
+        AvaloniaProperty.RegisterAttached<Control, bool>("IsTarget", typeof(Tilt));
 
     private static readonly AttachedProperty<Tracker?> TrackerProperty =
         AvaloniaProperty.RegisterAttached<Control, Tracker?>("Tracker", typeof(Tilt));
@@ -70,12 +83,27 @@ public static class Tilt
     /// <summary>Sets <see cref="IsEnabledProperty"/>.</summary>
     public static void SetIsEnabled(Control control, bool value) => control.SetValue(IsEnabledProperty, value);
 
+    /// <summary>Gets <see cref="IsTargetProperty"/>.</summary>
+    public static bool GetIsTarget(Control control) => control.GetValue(IsTargetProperty);
+
+    /// <summary>Sets <see cref="IsTargetProperty"/>.</summary>
+    public static void SetIsTarget(Control control, bool value) => control.SetValue(IsTargetProperty, value);
+
     /// <summary>The tilt showing on <paramref name="control"/> now, or <see cref="TiltState.Rest"/>. For tests.</summary>
     internal static TiltState Current(Control control) => control.GetValue(TrackerProperty)?.State ?? TiltState.Rest;
 
-    /// <summary>The visual the tilt is drawn on: the template's root, or the control itself.</summary>
-    internal static Visual TargetOf(Control control) =>
-        control is TemplatedControl && control.GetVisualChildren().FirstOrDefault() is Control root ? root : control;
+    /// <summary>
+    /// The visual the tilt is drawn on: the part of the control's own template marked
+    /// <see cref="IsTargetProperty"/>, else the template's root, else the control itself.
+    /// </summary>
+    internal static Visual TargetOf(Control control)
+    {
+        if (control is not TemplatedControl || control.GetVisualChildren().FirstOrDefault() is not Control root)
+            return control;
+
+        return control.GetVisualDescendants().OfType<Control>()
+                   .FirstOrDefault(c => ReferenceEquals(c.TemplatedParent, control) && GetIsTarget(c)) ?? root;
+    }
 
     private enum Phase
     {
