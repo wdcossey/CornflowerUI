@@ -10,14 +10,15 @@ namespace Cornflower.Controls;
 /// </summary>
 /// <remarks>
 /// <para>
-/// All 2,046 icons of Lucide 1.71.0 are 78 KB of Brotli in the assembly (406 KB of path data once
+/// All 2,046 icons of Lucide 1.71.0 are 82 KB of Brotli in the assembly (about 415 KB of lines once
 /// decompressed; the SVGs are 824 KB). The whole set costs less than two of the theme's Selawik
 /// fonts, so it isn't split into a subset or a package of its own.
 /// </para>
 /// <para>
-/// The first icon decompresses the set and indexes its lines; the bytes are kept, and each icon is
-/// decoded and parsed when first asked for, then shared. A geometry is never changed after it's
-/// made, so one instance can be drawn by any number of controls.
+/// The first icon decompresses the set and indexes its lines by the enum's value, which each line
+/// starts with; the bytes are kept, and each icon is decoded and parsed when first asked for, then
+/// shared. A geometry is never changed after it's made, so one instance can be drawn by any number of
+/// controls. Icons are asked for on the UI thread, by <see cref="LucideIcon"/>.
 /// </para>
 /// </remarks>
 internal static class LucideIcons
@@ -52,72 +53,67 @@ internal static class LucideIcons
     private sealed class Set
     {
         private readonly byte[] _data;
-        private readonly int[] _starts;
+        private readonly (int Name, int Path, int End)[] _lines; // by the enum's value; Name 0 for no line
         private readonly Geometry?[] _geometries;
 
         public Set(byte[] data)
         {
             _data = data;
-            var starts = new List<int> { 0 };
-            for (var i = 0; i < data.Length; i++)
+            var defined = Enum.GetValues<LucideIconKind>();
+            _lines = new (int, int, int)[defined.Length == 0 ? 0 : (int)defined.Max() + 1];
+            _geometries = new Geometry?[_lines.Length];
+
+            for (var start = 0; start < data.Length;)
             {
-                if (data[i] == '\n' && i + 1 < data.Length)
+                var end = Array.IndexOf(data, (byte)'\n', start);
+                end = end < 0 ? data.Length : end;
+                var nameTab = Array.IndexOf(data, (byte)'\t', start, end - start);
+                var pathTab = nameTab < 0 ? -1 : Array.IndexOf(data, (byte)'\t', nameTab + 1, end - nameTab - 1);
+                if (pathTab < 0 || !int.TryParse(data.AsSpan(start, nameTab - start), out var value) || (uint)value >= (uint)_lines.Length || _lines[value].Name != 0)
                 {
-                    starts.Add(i + 1);
+                    throw Stale();
                 }
+
+                _lines[value] = (nameTab + 1, pathTab + 1, end);
+                Count++;
+                start = end + 1;
             }
 
-            _starts = [.. starts];
-            _geometries = new Geometry?[_starts.Length];
-
-            var expected = Enum.GetValues<LucideIconKind>().Length;
-            if (_starts.Length != expected)
+            if (Count != defined.Length || defined.Any(kind => _lines[(int)kind].Name == 0))
             {
-                throw new InvalidOperationException($"{Resource} has {_starts.Length} icons and {nameof(LucideIconKind)} has {expected}: run tools/lucide again.");
+                throw Stale();
             }
         }
 
-        public int Count => _starts.Length;
+        public int Count { get; }
 
         public string Name(LucideIconKind kind)
         {
-            var (start, tab, _) = Line(kind);
-            return Encoding.ASCII.GetString(_data, start, tab - start);
+            var line = Line(kind);
+            return Encoding.ASCII.GetString(_data, line.Name, line.Path - 1 - line.Name);
         }
 
         public string Path(LucideIconKind kind)
         {
-            var (_, tab, end) = Line(kind);
-            return Encoding.ASCII.GetString(_data, tab + 1, end - tab - 1);
+            var line = Line(kind);
+            return Encoding.ASCII.GetString(_data, line.Path, line.End - line.Path);
         }
 
-        public Geometry Geometry(LucideIconKind kind)
+        // Generated data has only absolute M, L, C, Q, A and Z, which StreamGeometry reads as SVG does.
+        public Geometry Geometry(LucideIconKind kind) =>
+            _geometries[Index(kind)] ??= StreamGeometry.Parse(Path(kind));
+
+        private (int Name, int Path, int End) Line(LucideIconKind kind) => _lines[Index(kind)];
+
+        private int Index(LucideIconKind kind)
         {
             var index = (int)kind;
-            var geometry = Volatile.Read(ref _geometries[index]);
-            if (geometry is null)
-            {
-                // Generated data has only absolute M, L, C, Q, A and Z, which StreamGeometry reads as SVG does.
-                geometry = StreamGeometry.Parse(Path(kind));
-                geometry = Interlocked.CompareExchange(ref _geometries[index], geometry, null) ?? geometry;
-            }
-
-            return geometry;
+            return (uint)index < (uint)_lines.Length && _lines[index].Name != 0
+                ? index
+                : throw new ArgumentOutOfRangeException(nameof(kind), kind, "Not a Lucide icon.");
         }
 
-        private (int Start, int Tab, int End) Line(LucideIconKind kind)
-        {
-            var index = (int)kind;
-            if ((uint)index >= (uint)_starts.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(kind), kind, "Not a Lucide icon.");
-            }
-
-            var start = _starts[index];
-            var end = Array.IndexOf(_data, (byte)'\n', start);
-            end = end < 0 ? _data.Length : end;
-            var tab = Array.IndexOf(_data, (byte)'\t', start, end - start);
-            return (start, tab, end);
-        }
+        private static InvalidOperationException Stale() =>
+            new($"{Resource} and {nameof(LucideIconKind)} don't match: run tools/lucide again.");
     }
 }

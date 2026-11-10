@@ -5,11 +5,14 @@
 //                                                 [--namespace <ns>] [--enum <name>] [--data <file name>]
 //       Downloads the release in tools/lucide/pin.json (or reads the given files), checks each file's
 //       SHA-256 against the pin, and writes into --out (src/Cornflower.Controls/Icons by default):
-//         <enum>.g.cs   the icons as an enum, by Lucide's PascalCase names (LucideIconKind)
-//         <data>        one "name<TAB>path data" line per icon, Brotli-compressed (lucide.br)
+//         <enum>.g.cs   the icons as an enum, by Lucide's PascalCase names (LucideIconKind), with
+//                       explicit values: an icon keeps the value the existing file gives it, and a
+//                       new one takes the next never used, so a bump renumbers nothing
+//         <data>        one "value<TAB>name<TAB>path data" line per icon, Brotli-compressed (lucide.br)
 //         LICENSE       Lucide's licence, verbatim
-//       The same pin gives the same files. A Lucide icon outside its convention (24-unit box, a stroke
-//       2 wide with round caps and joins, no fill) stops it with the icon's name.
+//       The same pin gives the same files: run it again and git shows no change. A Lucide icon outside
+//       its convention (24-unit box, a stroke 2 wide with round caps and joins, no fill) stops it with
+//       the icon's name.
 //
 //   dotnet run --project tools/lucide -- pin <version>
 //       Points pin.json at another release: downloads its zip and licence and records their SHA-256.
@@ -42,18 +45,18 @@ try
             var options = Options(rest);
             var pin = Pin.Load(pinPath);
             using var http = new HttpClient();
-            var zip = options.TryGetValue("--zip", out var zipPath) ? File.ReadAllBytes(zipPath) : await Pin.FetchAsync(http, pin.Icons);
-            var licence = options.TryGetValue("--licence", out var licencePath) ? File.ReadAllBytes(licencePath) : await Pin.FetchAsync(http, pin.Licence);
-            Pin.Verify(pin.Icons, zip);
-            Pin.Verify(pin.Licence, licence);
+            var zip = await Pin.ReadAsync(http, pin.Icons, options.GetValueOrDefault("--zip"));
+            var licence = await Pin.ReadAsync(http, pin.Licence, options.GetValueOrDefault("--licence"));
 
             var output = new Output(
                 options.GetValueOrDefault("--out") ?? Path.Combine(repo, "src", "Cornflower.Controls", "Icons"),
                 options.GetValueOrDefault("--namespace") ?? "Cornflower.Controls",
                 options.GetValueOrDefault("--enum") ?? "LucideIconKind",
                 options.GetValueOrDefault("--data") ?? "lucide.br");
+            var enumPath = Path.Combine(output.Folder, output.EnumFile);
+            var previous = Numbering.Parse(File.Exists(enumPath) ? File.ReadAllText(enumPath) : null);
             var release = Generator.Read(pin.Version, new MemoryStream(zip), System.Text.Encoding.UTF8.GetString(licence));
-            var files = Generator.Generate(release, output);
+            var files = Generator.Generate(release, output, previous);
             Generator.Write(files, output);
             Console.WriteLine($"Lucide {pin.Version}: {release.Icons.Count} icons into {output.Folder}: "
                 + string.Join(", ", files.Select(file => $"{file.Key} {file.Value.Length:N0} bytes")));

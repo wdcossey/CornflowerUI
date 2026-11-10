@@ -30,10 +30,10 @@ internal sealed record Pin(
 
     public void Save(string path) => File.WriteAllText(path, JsonSerializer.Serialize(this, Options) + "\n");
 
-    /// <summary>The file's bytes, if their SHA-256 is the pinned one.</summary>
-    public static async Task<byte[]> FetchAsync(HttpClient http, PinnedFile file)
+    /// <summary>The file's bytes, from <paramref name="localCopy"/> if given, else downloaded; either way, only if their SHA-256 is the pinned one.</summary>
+    public static async Task<byte[]> ReadAsync(HttpClient http, PinnedFile file, string? localCopy)
     {
-        var bytes = await http.GetByteArrayAsync(file.Url);
+        var bytes = localCopy is null ? await http.GetByteArrayAsync(file.Url) : await File.ReadAllBytesAsync(localCopy);
         Verify(file, bytes);
         return bytes;
     }

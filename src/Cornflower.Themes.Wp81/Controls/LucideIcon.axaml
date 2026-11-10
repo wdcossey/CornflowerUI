@@ -5,7 +5,9 @@
   <!-- Lucide's own pen, which every one of its SVGs sets on its root (tools/lucide checks that it
        does): 2 of the box's 24 units wide, with round caps and joins. Resources, so an app can
        change the pen for every icon. Lucide's shapes and pen are its own, not the phone's
-       (ADR 0001, 3): the 8.1 AppBar glyphs are Segoe UI Symbol's, some of them filled. -->
+       (ADR 0001, 3): the 8.1 AppBar glyphs are Segoe UI Symbol's, some of them filled.
+       Below 2, the few dots Lucide fills (12 icons) show a pin-hole: the generator keeps them as
+       outlines, which a pen of 2 covers (tools/lucide/SvgIcon.cs). -->
   <x:Double x:Key="LucideIconStrokeThickness">2</x:Double>
   <PenLineCap x:Key="LucideIconStrokeLineCap">Round</PenLineCap>
   <PenLineJoin x:Key="LucideIconStrokeJoin">Round</PenLineJoin>

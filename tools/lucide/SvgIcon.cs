@@ -19,7 +19,9 @@ namespace IconGenerator;
 /// <para>
 /// The one exception in Lucide 1.71.0: 28 small circles in 12 icons have <c>fill="currentColor"</c>,
 /// with a radius of 0.5 or 1. A stroke 2 wide covers a circle of radius up to 1 to its centre, so
-/// the fill adds no pixel, and the circle is kept as a stroked outline.
+/// the fill adds no pixel, and the circle is kept as a stroked outline. That holds for a pen of 2 or
+/// more; a thinner one (the theme's resource) leaves a pin-hole in those dots: below 2 in the two of
+/// radius 1, below 1 in the 26 of radius 0.5.
 /// </para>
 /// <para>
 /// Shapes become path data as SVG defines them, after Avonic's <c>SvgArtwork.cs</c> (<c>EllipsePath</c>,
@@ -178,22 +180,25 @@ internal static class SvgIcon
             $"M{x + rx} {y} H{x + width - rx} A{rx} {ry} 0 0 1 {x + width} {y + ry} V{y + height - ry} A{rx} {ry} 0 0 1 {x + width - rx} {y + height} H{x + rx} A{rx} {ry} 0 0 1 {x} {y + height - ry} V{y + ry} A{rx} {ry} 0 0 1 {x + rx} {y} Z");
     }
 
+    /// <summary>
+    /// <c>points</c> is a moveto's number grammar (SVG 2, 10.6): after an <c>M</c>, its first pair moves
+    /// and the rest draw lines, and <see cref="PathData"/> reads <c>1-2</c> and <c>.5.5</c> as a browser does.
+    /// </summary>
     private static string Points(string name, XElement element, bool closed)
     {
         var text = element.Attribute("points")?.Value ?? "";
-        var numbers = text.Split([' ', ',', '\t', '\r', '\n'], StringSplitOptions.RemoveEmptyEntries);
-        if (numbers.Length < 4 || numbers.Length % 2 != 0)
+        var path = "M" + text + (closed ? " Z" : "");
+        try
         {
-            throw new FormatException($"{name}: points=\"{text}\" isn't a list of two or more points.");
+            var normalized = PathData.Normalize(path);
+            return normalized.Contains(" L", StringComparison.Ordinal)
+                ? normalized
+                : throw new FormatException($"{name}: points=\"{text}\" has fewer than two points.");
         }
-
-        var path = new StringBuilder();
-        for (var i = 0; i < numbers.Length; i += 2)
+        catch (FormatException e) when (!e.Message.StartsWith(name + ":", StringComparison.Ordinal))
         {
-            path.Append(i == 0 ? "M" : " L").Append(numbers[i]).Append(' ').Append(numbers[i + 1]);
+            throw new FormatException($"{name}: points=\"{text}\" isn't a list of points ({e.Message})", e);
         }
-
-        return closed ? path.Append(" Z").ToString() : path.ToString();
     }
 
     private static double Number(string name, XElement element, string attribute, double? fallback = null)

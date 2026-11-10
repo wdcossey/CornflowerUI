@@ -44,17 +44,29 @@ public class LucideIconTests
         Assert.True(problems.Count == 0, string.Join(Environment.NewLine, problems));
     }
 
-    // The enum's value is the data's line, so the two must be generated together.
+    // Each data line carries its member's value, so the two must be generated together.
     [Fact]
-    public void The_Data_Has_One_Line_Per_Member_In_The_Enums_Order()
+    public void The_Data_Has_One_Line_Per_Member_Under_Its_Value()
     {
         var kinds = Enum.GetValues<LucideIconKind>();
 
         Assert.Equal(kinds.Length, LucideIcons.Count);
         Assert.Equal(2046, kinds.Length); // Lucide 1.71.0
         Assert.All(kinds, kind => Assert.Equal(kind.ToString(), Generator.Member(LucideIcons.NameOf(kind))));
-        Assert.Equal(kinds.Select(LucideIcons.NameOf).Order(StringComparer.Ordinal), kinds.Select(LucideIcons.NameOf));
     }
+
+    // The values are explicit, and the generator keeps them across bumps: these two are the first
+    // pin's, and a bump must not move them.
+    [Fact]
+    public void Values_Are_The_First_Pins()
+    {
+        Assert.Equal(0, (int)LucideIconKind.AArrowDown);
+        Assert.Equal(2045, (int)LucideIconKind.ZoomOut);
+    }
+
+    [Fact]
+    public void A_Kind_That_Is_No_Icon_Has_No_Geometry() =>
+        Assert.Throws<ArgumentOutOfRangeException>(() => LucideIcons.NameOf((LucideIconKind)5000));
 
     [Fact]
     public void A_Known_Icon_Has_Lucides_Path()
@@ -94,7 +106,7 @@ public class LucideIconTests
 
     [AvaloniaFact]
     public void A_Kind_That_Is_No_Icon_Is_Refused() =>
-        Assert.Throws<ArgumentException>(() => new LucideIcon { Kind = (LucideIconKind)Enum.GetValues<LucideIconKind>().Length });
+        Assert.Throws<ArgumentException>(() => new LucideIcon { Kind = (LucideIconKind)(-1) });
 
     // 20 view px, so an icon reaching its box's edges inks 22 of 24 units: 18.33 view px, 44 px at 2.4,
     // where the 8.1 Add glyph inks 44.25 px.

@@ -77,12 +77,12 @@ internal sealed class ApiReader : IDisposable
     }
 
     /// <summary>
-    /// An enum's members and their values, in the metadata's order. <paramref name="fullName"/> is a
-    /// full name, or a name under <c>Windows.UI.Xaml.Controls</c>.
+    /// An enum's members and their values, in the metadata's order, read as the enum's own type
+    /// (a WinRT flags enum is <c>UInt32</c>).
     /// </summary>
-    public IReadOnlyList<(string Name, long Value)> EnumMembers(string fullName)
+    public IReadOnlyList<(string Name, decimal Value)> EnumMembers(string fullName)
     {
-        if (!_types.TryGetValue(fullName, out var handle) && !_types.TryGetValue("Windows.UI.Xaml.Controls." + fullName, out handle))
+        if (!_types.TryGetValue(fullName, out var handle))
         {
             throw new ArgumentException($"{fullName} isn't in the metadata.");
         }
@@ -93,7 +93,7 @@ internal sealed class ApiReader : IDisposable
             throw new ArgumentException($"{fullName} isn't an enum.");
         }
 
-        var members = new List<(string, long)>();
+        var members = new List<(string, decimal)>();
         foreach (var fieldHandle in type.GetFields())
         {
             var field = _md.GetFieldDefinition(fieldHandle);
@@ -102,13 +102,19 @@ internal sealed class ApiReader : IDisposable
                 continue; // value__, the enum's storage
             }
 
-            var blob = _md.GetBlobReader(_md.GetConstant(field.GetDefaultValue()).Value);
-            var value = blob.Length switch
+            var constant = _md.GetConstant(field.GetDefaultValue());
+            var blob = _md.GetBlobReader(constant.Value);
+            decimal value = constant.TypeCode switch
             {
-                1 => blob.ReadSByte(),
-                2 => blob.ReadInt16(),
-                4 => blob.ReadInt32(),
-                _ => blob.ReadInt64(),
+                ConstantTypeCode.SByte => blob.ReadSByte(),
+                ConstantTypeCode.Byte => blob.ReadByte(),
+                ConstantTypeCode.Int16 => blob.ReadInt16(),
+                ConstantTypeCode.UInt16 => blob.ReadUInt16(),
+                ConstantTypeCode.Int32 => blob.ReadInt32(),
+                ConstantTypeCode.UInt32 => blob.ReadUInt32(),
+                ConstantTypeCode.Int64 => blob.ReadInt64(),
+                ConstantTypeCode.UInt64 => blob.ReadUInt64(),
+                var other => throw new BadImageFormatException($"{fullName}.{_md.GetString(field.Name)} is a {other} constant."),
             };
             members.Add((_md.GetString(field.Name), value));
         }

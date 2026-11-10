@@ -14,8 +14,8 @@
 //       Tokens folder, found from the repo by default.
 //
 //   dotnet run --project tools/winrt-api -- enum <Type> <Windows.winmd>
-//       An enum's members, one "Name<TAB>Value" line each, in the metadata's order. <Type> is a full
-//       name, or a name under Windows.UI.Xaml.Controls (Symbol).
+//       An enum's members, one "Name<TAB>Value" line each, in the metadata's order. <Type> is named as
+//       for checklist (Symbol).
 using WinRtApi;
 
 const string Usage = """
@@ -52,7 +52,7 @@ switch (args)
         try
         {
             using var api = new ApiReader(winmd);
-            foreach (var (name, value) in api.EnumMembers(type))
+            foreach (var (name, value) in api.EnumMembers(ChecklistCommand.Resolve(api, type)))
             {
                 Console.WriteLine($"{name}\t{value}");
             }

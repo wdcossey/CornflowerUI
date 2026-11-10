@@ -1,7 +1,7 @@
 using WinRtApi;
 
-// An enum shaped as Windows.winmd declares Symbol, for `winrt-api enum`: the reader reads this
-// assembly's metadata in place of the SDK's. The values are made up.
+// Enums shaped as Windows.winmd declares Symbol and a flags enum, for `winrt-api enum`: the reader
+// reads this assembly's metadata in place of the SDK's. The values are made up.
 namespace Windows.UI.Xaml.Controls
 {
     public enum FixtureSymbol
@@ -10,6 +10,17 @@ namespace Windows.UI.Xaml.Controls
         Next = 101,
         Pin = 105,
         Back = 99,
+    }
+
+    namespace Primitives
+    {
+        /// <summary>WinRT flags enums are UInt32, and can use the top bit.</summary>
+        [Flags]
+        public enum FixtureFlags : uint
+        {
+            None = 0,
+            Top = 0x80000000,
+        }
     }
 }
 
@@ -24,15 +35,26 @@ namespace Cornflower.Tests.Tools
         {
             using var api = new ApiReader(Metadata);
 
-            Assert.Equal([("Previous", 100L), ("Next", 101L), ("Pin", 105L), ("Back", 99L)], api.EnumMembers("Windows.UI.Xaml.Controls.FixtureSymbol"));
+            Assert.Equal([("Previous", 100m), ("Next", 101m), ("Pin", 105m), ("Back", 99m)], api.EnumMembers("Windows.UI.Xaml.Controls.FixtureSymbol"));
         }
 
         [Fact]
-        public void A_Short_Name_Is_Looked_Up_Under_Controls()
+        public void An_Unsigned_Value_Is_Read_As_Unsigned()
         {
             using var api = new ApiReader(Metadata);
 
-            Assert.Equal(4, api.EnumMembers("FixtureSymbol").Count);
+            Assert.Equal([("None", 0m), ("Top", 2147483648m)], api.EnumMembers("Windows.UI.Xaml.Controls.Primitives.FixtureFlags"));
+        }
+
+        // As for checklist: a full name, or a name under Controls, then Primitives.
+        [Theory]
+        [InlineData("FixtureSymbol", 4)]
+        [InlineData("FixtureFlags", 2)]
+        public void A_Short_Name_Resolves_As_For_Checklist(string type, int count)
+        {
+            using var api = new ApiReader(Metadata);
+
+            Assert.Equal(count, api.EnumMembers(ChecklistCommand.Resolve(api, type)).Count);
         }
 
         [Theory]

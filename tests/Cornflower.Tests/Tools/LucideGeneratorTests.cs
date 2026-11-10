@@ -90,6 +90,18 @@ public class LucideGeneratorTests
                 """<polyline points="1 1 2,3 4 1" />""",
                 """<polygon points="5 5 7 9 9 5" />""")));
 
+    // SVG's points grammar lets a sign or a second point end a number, as in path data.
+    [Fact]
+    public void Points_Are_Read_With_The_Path_Number_Grammar() =>
+        Assert.Equal("M1 -2 L3 -4 L0.5 0.5 Z", SvgIcon.ToPath("points", Svg("""<polygon points="1-2 3-4 .5.5" />""")));
+
+    [Theory]
+    [InlineData("""<polyline points="1 1" />""")]     // one point
+    [InlineData("""<polyline points="1 1 2" />""")]   // half a point
+    [InlineData("""<polyline points="1 1 2 x" />""")]
+    public void Points_That_Are_No_List_Of_Points_Are_Refused(string shape) =>
+        Assert.StartsWith("bad:", Assert.Throws<FormatException>(() => SvgIcon.ToPath("bad", Svg(shape))).Message, StringComparison.Ordinal);
+
     // A filled circle no wider than the stroke is covered by it, so it's kept as an outline.
     [Fact]
     public void A_Fill_The_Stroke_Covers_Is_Accepted() =>
@@ -135,18 +147,39 @@ public class LucideGeneratorTests
     public void A_Name_That_Makes_No_Member_Is_Refused(string name) =>
         Assert.Throws<FormatException>(() => Generator.Member(name));
 
-    // The enum's value is the data's line: both in ordinal order of name, whatever order the zip holds.
+    // A first run numbers the icons in ordinal order of name, whatever order the zip holds; each data
+    // line starts with its icon's value.
     [Fact]
-    public void The_Enum_And_The_Data_Follow_The_Names_Ordinal_Order()
+    public void A_First_Run_Numbers_The_Icons_In_Ordinal_Order()
     {
         var files = Generator.Generate(Release(("minus", "M5 12h14"), ("arrow-up", "M12 19V5"), ("a-b", "M1 1h1")), Out);
 
         var source = Encoding.UTF8.GetString(files["FixtureKind.g.cs"]);
         Assert.Contains("namespace Fixture.Icons;", source, StringComparison.Ordinal);
-        Assert.Contains("public enum FixtureKind\n{\n    AB,\n    ArrowUp,\n    Minus,\n}", source, StringComparison.Ordinal);
+        Assert.Contains("public enum FixtureKind\n{\n    AB = 0,\n    ArrowUp = 1,\n    Minus = 2,\n}", source, StringComparison.Ordinal);
+        Assert.Contains("// Next value: 3\n", source, StringComparison.Ordinal);
         Assert.Contains("Lucide 9.9.9", source, StringComparison.Ordinal);
-        Assert.Equal("a-b\tM1 1 L2 1\narrow-up\tM12 19 L12 5\nminus\tM5 12 L19 12\n", Decompress(files["fixture.br"]));
+        Assert.Equal("0\ta-b\tM1 1 L2 1\n1\tarrow-up\tM12 19 L12 5\n2\tminus\tM5 12 L19 12\n", Decompress(files["fixture.br"]));
     }
+
+    // A bump keeps every value: an icon added takes the next value, and a dropped icon's is never reused.
+    [Fact]
+    public void A_Later_Run_Keeps_The_Values_The_Last_One_Gave()
+    {
+        var first = Generator.Generate(Release(("minus", "M5 12h14"), ("plus", "M5 12h14M12 5v14"), ("x", "M18 6 6 18")), Out);
+        var previous = Numbering.Parse(Encoding.UTF8.GetString(first["FixtureKind.g.cs"]));
+
+        var second = Generator.Generate(Release(("abacus", "M1 1h1"), ("minus", "M5 12h14"), ("x", "M18 6 6 18"), ("zap", "M1 1h1")), Out, previous);
+
+        var source = Encoding.UTF8.GetString(second["FixtureKind.g.cs"]);
+        Assert.Contains("{\n    Abacus = 3,\n    Minus = 0,\n    X = 2,\n    Zap = 4,\n}", source, StringComparison.Ordinal);
+        Assert.Contains("// Next value: 5\n", source, StringComparison.Ordinal);
+        Assert.StartsWith("3\tabacus\t", Decompress(second["fixture.br"]), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void An_Enum_Not_Written_By_The_Generator_Is_Refused() =>
+        Assert.Throws<FormatException>(() => Numbering.Parse("public enum FixtureKind\n{\n    A,\n}\n"));
 
     [Fact]
     public void The_Licence_Is_Copied_Verbatim()
@@ -187,7 +220,7 @@ public class LucideGeneratorTests
         zip.Position = 0;
         var release = Generator.Read("1.0.0", zip, "licence");
 
-        Assert.Equal(["minus", "plus"], release.Icons.Select(icon => icon.Name));
+        Assert.Equal(["minus", "plus"], release.Icons.Select(icon => icon.Name).Order(StringComparer.Ordinal)); // the .json beside each is skipped
     }
 
     [Fact]
