@@ -27,7 +27,7 @@
     <StackPanel Margin="19,12,19,24" Spacing="6">
       <TextBlock Text="CORNFLOWER" FontFamily="{DynamicResource PhoneFontFamilySemiBold}"
                  FontSize="{DynamicResource TextStyleMediumFontSize}" />
-      <TextBlock x:Name="PageTitle" Text="theme" Margin="-2,0,0,12"
+      <TextBlock x:Name="PageTitle" Margin="-2,0,0,12"
                  FontFamily="{DynamicResource PhoneFontFamilySemiLight}"
                  FontSize="{DynamicResource PivotHeaderItemFontSize}" />
 

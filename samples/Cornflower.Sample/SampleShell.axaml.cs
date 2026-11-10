@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Reactive;
@@ -36,7 +37,7 @@ public partial class SampleShell : UserControl
     }
 
     /// <summary>Whether a page is shown, rather than the list.</summary>
-    public bool IsShowingPage => BackButton.IsVisible;
+    public bool IsShowingPage => !ReferenceEquals(Host.Content, Index);
 
     /// <summary>The page shown, or the list.</summary>
     internal object? Shown => Host.Content;
@@ -80,10 +81,19 @@ public partial class SampleShell : UserControl
     private void OnBackRequestFinished(RoutedEventArgs e)
     {
         // RouteFinished is for every top level's request, so only this one's.
-        if (e.Handled || !IsShowingPage || _top is null || e.Source is not Visual source || TopLevel.GetTopLevel(source) != _top)
+        if (e.Handled || !IsShowingPage || _top is null || e.Source is not Visual source || WindowOf(source) != _top)
             return;
 
         e.Handled = true;
         ShowIndex();
+    }
+
+    /// <summary>The window <paramref name="source"/> is in: for a popup, the window it was opened from.</summary>
+    private static TopLevel? WindowOf(Visual source)
+    {
+        var top = TopLevel.GetTopLevel(source);
+        while (top is PopupRoot popup && popup.ParentTopLevel is { } parent && parent != top)
+            top = parent;
+        return top;
     }
 }

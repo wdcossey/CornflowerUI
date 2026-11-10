@@ -63,7 +63,10 @@ function All($type) {
     $cond = New-Object Windows.Automation.PropertyCondition $AE::ControlTypeProperty, $type
     $win.FindAll($TS::Descendants, $cond) | ForEach-Object { $_ }
 }
-function Named($type, $like) { All $type | Where-Object { $_.Current.Name -like $like } | Select-Object -First 1 }
+# By the exact name, case and all: a page's title is a name, not a pattern.
+function Named($type, $name) { All $type | Where-Object { $_.Current.Name -ceq $name } | Select-Object -First 1 }
+# A title as a -like pattern that matches only itself.
+function Literal($text) { [Management.Automation.WildcardPattern]::Escape($text) }
 function Texts { (All $CT::Text | ForEach-Object { $_.Current.Name } | Where-Object { $_ }) }
 function FirstText($like) { Texts | Where-Object { $_ -like $like } | Select-Object -First 1 }
 # A scroll bar's own buttons, which have no size at its ends and aren't the app's.
@@ -135,7 +138,8 @@ function WaitForReady($seen, $seconds = 5) {
         Start-Sleep -Milliseconds 100
     } while ((Get-Date) -lt $until)
 }
-function ViewOf($line) { if ($line -match ' view=([\d.]+)x([\d.]+) ') { [double]$Matches[1], [double]$Matches[2] } }
+# The page's own size, which a shell's chrome would take from; the window's client area is view=.
+function PageOf($line) { if ($line -match ' page=([\d.]+)x([\d.]+)') { [double]$Matches[1], [double]$Matches[2] } }
 function ScalingOf($line) { if ($line -match 'scaling=([\d.]+) ') { [double]$Matches[1] } else { 1 } }
 # Windows gives a window whole pixels, so at 1.25 a 450 view is 562 pixels, 449.6: within a pixel is the size.
 function WithinAPixel($view, $want, $scaling) { [math]::Abs($view - $want) * $scaling -le 1 }
@@ -150,7 +154,8 @@ function Open($title) {
 function Section($title, [scriptblock]$body) {
     "== $title"
     try { & $body }
-    catch { LetGo; $script:failures++; "  FAIL  the section stopped: $($_.Exception.Message) at line $($_.InvocationInfo.ScriptLineNumber)" }
+    # Counted as a check, so the summary's count of checks includes it.
+    catch { LetGo; $script:checks++; $script:failures++; "  FAIL  the section stopped: $($_.Exception.Message) at line $($_.InvocationInfo.ScriptLineNumber)" }
     if ($p.HasExited) { throw "The app exited during $title, with code $($p.ExitCode)" }
 }
 
@@ -192,7 +197,7 @@ try {
             } | ForEach-Object { $_.Current.Name })
             Check "$title has no button without a size" ($empty.Count -eq 0) ($empty -join ', ')
             if ($debugBuild) {
-                $line = WaitForText "${title}: * ms, *"
+                $line = WaitForText "$(Literal $title): * ms, *"
                 Check "$title reports its cost" ([bool]$line) ''
                 if ($line) { "        $line" }
             }
@@ -201,14 +206,14 @@ try {
         }
     }
 
-    Section 'The window opens at the reference view, 450 x 800' {
+    Section 'The page opens at the reference view, 450 x 800' {
         $seen = @(ReadyLines).Count
         Open 'theme'
         $line = WaitForReady $seen
         if ($line) { "        $line" }
-        $w, $h = ViewOf $line
+        $w, $h = PageOf $line
         $scaling = ScalingOf $line
-        Check 'the theme page reports ready, with a 450 x 800 view to the pixel' ((WithinAPixel $w 450 $scaling) -and (WithinAPixel $h 800 $scaling)) "$line"
+        Check 'the theme page reports ready, laid out at 450 x 800 to the pixel' ((WithinAPixel $w 450 $scaling) -and (WithinAPixel $h 800 $scaling)) "$line"
     }
 
     Section 'Alt+Left goes back' {
@@ -228,13 +233,12 @@ try {
         Open 'theme'
         $line = WaitForReady $seen
         if ($line) { "        $line" }
-        $w, $h = ViewOf $line
+        $w, $h = PageOf $line
         # 300 pixels wider, less what the frame takes, which is far less than 100.
-        Check 'once wider, the page reports a wider view' ($w -gt 450 + 200 / (ScalingOf $line)) "$line"
+        Check 'once wider, the page is laid out wider' ($w -gt 450 + 200 / (ScalingOf $line)) "$line"
         Shot 'theme-resized'
     }
 
-    Check 'the app is still running' (-not $p.HasExited)
 }
 finally {
     LetGo

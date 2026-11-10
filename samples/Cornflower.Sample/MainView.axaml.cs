@@ -60,6 +60,7 @@ public partial class MainView : UserControl
         _performance.Begin();
 #endif
         AvaloniaXamlLoader.Load(this);
+        this.GetControl<TextBlock>("PageTitle").Text = SamplePageCatalog.TitleOf(GetType());
 
         var accents = this.GetControl<WrapPanel>("NamedAccents");
         foreach (var name in NamedAccentNames)
@@ -172,11 +173,12 @@ public partial class MainView : UserControl
 
         var size = top.ClientSize;
         var safe = _insets?.SafeAreaPadding ?? default;
+        // view is the window's client area; page is this page's own size, which a shell's chrome would take from.
         DeviceFacts = string.Format(CultureInfo.InvariantCulture,
-            "scaling={0:0.###} view={1:0.##}x{2:0.##} raw={3:0}x{4:0} safe={5:0.##},{6:0.##},{7:0.##},{8:0.##}",
+            "scaling={0:0.###} view={1:0.##}x{2:0.##} raw={3:0}x{4:0} safe={5:0.##},{6:0.##},{7:0.##},{8:0.##} page={9:0.##}x{10:0.##}",
             top.RenderScaling, size.Width, size.Height,
             size.Width * top.RenderScaling, size.Height * top.RenderScaling,
-            safe.Left, safe.Top, safe.Right, safe.Bottom);
+            safe.Left, safe.Top, safe.Right, safe.Bottom, Bounds.Width, Bounds.Height);
         this.GetControl<TextBlock>("DeviceFactsText").Text = DeviceFacts.Replace(' ', '\n');
     }
 

@@ -110,7 +110,7 @@ public class SampleTests
         var view = new MainView();
         using var scene = new Scene(view);
 
-        Assert.Equal("scaling=2.4 view=450x800 raw=1080x1920 safe=0,0,0,0", view.DeviceFacts);
+        Assert.Equal("scaling=2.4 view=450x800 raw=1080x1920 safe=0,0,0,0 page=450x800", view.DeviceFacts);
     }
 
     [AvaloniaFact]

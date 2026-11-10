@@ -20,8 +20,8 @@ public sealed class SamplePageAttribute(string title) : Attribute
     public int Order { get; set; } = int.MaxValue;
 }
 
-/// <summary>One page in the catalogue: its title, and how to make a new one.</summary>
-public sealed record SamplePageEntry(string Title, Func<Control> Create);
+/// <summary>One page in the catalogue: its title, its type, and how to make a new one.</summary>
+public sealed record SamplePageEntry(string Title, Type Type, Func<Control> Create);
 
 /// <summary>Finds the <see cref="SamplePageAttribute"/> pages.</summary>
 public static class SamplePageCatalog
@@ -31,7 +31,8 @@ public static class SamplePageCatalog
 
     /// <summary>Every <see cref="SamplePageAttribute"/> page among <paramref name="types"/>, by order then title.</summary>
     /// <exception cref="InvalidOperationException">
-    /// A type with the attribute isn't a control that can be made with no arguments, or two pages have one title.
+    /// A type with the attribute isn't a control that can be made with no arguments and hosted in a window,
+    /// or two pages have one title, in any case.
     /// </exception>
     public static IReadOnlyList<SamplePageEntry> Discover(IEnumerable<Type> types)
     {
@@ -43,19 +44,29 @@ public static class SamplePageCatalog
             .ThenBy(found => found.Page.Title, StringComparer.Ordinal)
             .ToArray();
 
-        // A page is opened by its title, on the list and by tools/real-window/drive.ps1.
-        var twice = pages.GroupBy(found => found.Page.Title, StringComparer.Ordinal).FirstOrDefault(title => title.Count() > 1);
+        // A page is opened by its title, on the list and by tools/real-window/drive.ps1, whose UI Automation
+        // names are easy to match without regard to case, so two titles that differ only in case are one title.
+        var twice = pages.GroupBy(found => found.Page.Title, StringComparer.OrdinalIgnoreCase).FirstOrDefault(title => title.Count() > 1);
         if (twice is not null)
             throw new InvalidOperationException($"Two pages have the title '{twice.Key}': {string.Join(", ", twice.Select(found => found.Type.FullName))}.");
 
-        return pages.Select(found => new SamplePageEntry(found.Page.Title, found.Create)).ToArray();
+        return pages.Select(found => new SamplePageEntry(found.Page.Title, found.Type, found.Create)).ToArray();
     }
+
+    /// <summary>
+    /// The title <paramref name="type"/>'s <see cref="SamplePageAttribute"/> gives it, so that a page that shows
+    /// its own title states it once.
+    /// </summary>
+    public static string TitleOf(Type type) =>
+        type.GetCustomAttribute<SamplePageAttribute>()?.Title
+        ?? throw new InvalidOperationException($"{type.FullName} has no [SamplePage].");
 
     // Checked when the catalogue is built, so a page that can't be shown fails at start, not when it's opened.
     private static Func<Control> Maker(Type type)
     {
-        if (!typeof(Control).IsAssignableFrom(type) || type.IsAbstract || type.ContainsGenericParameters || type.GetConstructor(Type.EmptyTypes) is null)
-            throw new InvalidOperationException($"{type.FullName} has [SamplePage] but isn't a control with a public constructor that takes no arguments.");
+        // A TopLevel (a Window) can't be the content of another control, so it would fail only when opened.
+        if (!typeof(Control).IsAssignableFrom(type) || typeof(TopLevel).IsAssignableFrom(type) || type.IsAbstract || type.ContainsGenericParameters || type.GetConstructor(Type.EmptyTypes) is null)
+            throw new InvalidOperationException($"{type.FullName} has [SamplePage] but isn't a control, other than a window, with a public constructor that takes no arguments.");
 
         return () => (Control)Activator.CreateInstance(type)!;
     }

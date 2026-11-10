@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
@@ -46,6 +47,12 @@ public class CatalogueTests
     [SamplePage("first")]
     private sealed class AlsoFirst : Border;
 
+    [SamplePage("First")]
+    private sealed class FirstInCapitals : Border;
+
+    [SamplePage("a window")]
+    private sealed class AWindow : Window;
+
     [AvaloniaFact]
     public void Pages_Are_Found_By_Their_Attribute_By_Order_Then_Title()
     {
@@ -61,6 +68,7 @@ public class CatalogueTests
     [InlineData(typeof(NotAControl))]
     [InlineData(typeof(NeedsAnArgument))]
     [InlineData(typeof(Generic<>))]
+    [InlineData(typeof(AWindow))]
     public void A_Page_That_Cant_Be_Made_Fails_When_The_Catalogue_Is_Built(Type type)
     {
         var error = Assert.Throws<InvalidOperationException>(() => SamplePageCatalog.Discover([type]));
@@ -75,13 +83,29 @@ public class CatalogueTests
         Assert.Contains("'first'", error.Message);
     }
 
+    // drive.ps1 finds a page by its name through UI Automation; two names that differ only in case are too easily one.
+    [AvaloniaFact]
+    public void Two_Titles_That_Differ_Only_In_Case_Fail_When_The_Catalogue_Is_Built()
+    {
+        Assert.Throws<InvalidOperationException>(() => SamplePageCatalog.Discover([typeof(First), typeof(FirstInCapitals)]));
+    }
+
+    [AvaloniaFact]
+    public void A_Page_Reads_Its_Title_From_Its_Attribute()
+    {
+        Assert.Equal("first", SamplePageCatalog.TitleOf(typeof(First)));
+        Assert.Throws<InvalidOperationException>(() => SamplePageCatalog.TitleOf(typeof(NotAPage)));
+    }
+
     [AvaloniaFact]
     public void The_Samples_First_Page_Is_The_Theme_Page()
     {
         var first = SampleShell.Pages[0];
 
+        // Not made: a MainView that's never shown keeps its Debug performance listener.
         Assert.Equal("theme", first.Title);
-        Assert.IsType<MainView>(first.Create());
+        Assert.Equal(typeof(MainView), first.Type);
+        Assert.Equal(first.Title, SamplePageCatalog.TitleOf(typeof(MainView)));
     }
 
     [AvaloniaFact]
@@ -93,7 +117,8 @@ public class CatalogueTests
             window.Show();
             Dispatcher.UIThread.RunJobs();
 
-            Assert.Equal(new Size(Scene.ReferenceWidth, Scene.ReferenceHeight), window.ClientSize);
+            Assert.Equal(new Size(Scene.ReferenceWidth + RailWidth, Scene.ReferenceHeight), window.ClientSize);
+            Assert.Equal(WindowStartupLocation.CenterScreen, window.WindowStartupLocation);
             Assert.True(window.CanResize);
             var shell = Assert.IsType<SampleShell>(window.Content);
             Assert.False(shell.IsShowingPage);
@@ -139,18 +164,54 @@ public class CatalogueTests
         Assert.Same(index, shell.Shown);
     }
 
-    // Back lies over the page, so the page is laid out at the reference view itself.
+    // Back is in a rail beside the page, so the page is laid out at the reference view itself, with nothing over it.
     [AvaloniaFact]
-    public void A_Page_Has_The_Whole_View()
+    public void A_Page_Has_The_Whole_View_And_Back_Is_Beside_It()
     {
         var shell = new SampleShell();
-        using var scene = new Scene(shell);
+        using var scene = new Scene(shell, width: Scene.ReferenceWidth + RailWidth);
         var page = new Border();
         shell.ShowPage(page);
         Dispatcher.UIThread.RunJobs();
 
         Assert.Equal(new Rect(0, 0, Scene.ReferenceWidth, Scene.ReferenceHeight), page.Bounds);
-        Assert.True(shell.FindControl<Button>("BackButton")!.Bounds.Height > 0);
+        var back = shell.FindControl<Button>("BackButton")!;
+        Assert.True(back.Bounds.Height > 0);
+        var backInShell = back.TranslatePoint(default, shell)!.Value;
+        Assert.True(backInShell.X >= Scene.ReferenceWidth, $"Back starts at {backInShell.X}, over the page");
+    }
+
+    // Whether a page is shown is the shell's own state, not how Back looks.
+    [AvaloniaFact]
+    public void A_Page_Is_Shown_Whatever_Backs_Visibility()
+    {
+        var shell = new SampleShell();
+        using var scene = new Scene(shell);
+        shell.ShowPage(new Border());
+        shell.FindControl<Button>("BackButton")!.IsVisible = false;
+
+        Assert.True(shell.IsShowingPage);
+        Assert.True(Back(scene.Window));
+        Assert.False(shell.IsShowingPage);
+    }
+
+    // A flyout or drop-down is a popup with a top level of its own; its back request is still this window's.
+    [AvaloniaFact]
+    public void A_Back_Request_From_A_Popup_On_The_Page_Shows_The_List()
+    {
+        var shell = new SampleShell();
+        using var scene = new Scene(shell);
+        var inPopup = new Border { Width = 50, Height = 50 };
+        var page = new Panel();
+        var popup = new Popup { Child = inPopup, PlacementTarget = page };
+        page.Children.Add(popup);
+        shell.ShowPage(page);
+        Dispatcher.UIThread.RunJobs();
+        popup.IsOpen = true;
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.True(Back(inPopup));
+        Assert.False(shell.IsShowingPage);
     }
 
     [AvaloniaFact]
@@ -228,6 +289,9 @@ public class CatalogueTests
         Assert.False(Back(scene.Window));
         Assert.True(shell.IsShowingPage);
     }
+
+    /// <summary>The shell's rail for Back, beside the page; MainWindow is this much wider than the reference view.</summary>
+    private const double RailWidth = 40;
 
     private static IEnumerable<Button> ListButtons(SampleShell shell) =>
         shell.FindControl<StackPanel>("PageList")!.Children.OfType<Button>();
