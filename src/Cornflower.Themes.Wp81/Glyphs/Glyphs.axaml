@@ -19,7 +19,8 @@
        (18.5 × 17 in the template, arranged 18.33 × 17.08), by ListViewItem's and GridViewItem's CheckGlyph in
        list multi-select at the same size, and stretched to 17 × 14.5 as their SelectedGlyph in grid
        multi-select. Measured from refapp 20261108-1443-dev11, dark__CheckBox__checked__CheckStates.Checked.png,
-       glyph box at raw (55, 77), 44 × 41; the same in light. -->
+       glyph box at raw (55, 77), 44 × 41; the same corners in light, and in
+       dark__ListViewItem__selected__MultiSelectStates.ListMultiSelect.png, 15 raw px higher. -->
   <StreamGeometry x:Key="Wp81.Glyph.CheckMark">M15.9,0 L18.31,2.41 L7.7,17.08 L0,8.07 L2.41,5.78 L7.7,11.23 Z</StreamGeometry>
 
   <!-- The selected item's earmark: the top right half of a square, cut corner to corner. ListViewItem's and
@@ -28,12 +29,14 @@
        dark__ListViewItem__selected__MultiSelectStates.GridMultiSelect.png, raw (947, 35), 82 × 82. -->
   <StreamGeometry x:Key="Wp81.Glyph.SelectedEarmark">M0,0 H34.17 V34.17 Z</StreamGeometry>
 
-  <!-- The app bar's ellipsis: three dots 4.64 across, 8.93 apart, 22.5 × 4.64. The shell draws it on the page's
-       app bar and on the pickers' bars, not a template: its dots' tops are 10.49 below the bar's top and the
-       last dot's right is 20.59 from the bar's right. Measured from refapp 20261109-2130-dev11,
+  <!-- The app bar's ellipsis: three dots 4.64 across, their centres 8.93 apart, 22.5 × 4.64 in all. The shell
+       draws it on the page's app bar and on the pickers' bars, not a template: its dots' tops are 10.49 below the
+       bar's top and the last dot's right is 20.59 from the bar's right. Measured from refapp 20261109-2130-dev11,
        dark__BottomAppBar__minimal__popup__screen.png, dots centred at raw (982.13, 1887.75), (1003.57, 1887.75)
        and (1025.01, 1887.75), 97.6 raw px² each; the same in light, in 20261109-2124-dev11's
        dark__AppBar__minimal, and on the DatePickerFlyout's bar in 20261108-2254-dev11, 88 raw px higher. -->
-  <StreamGeometry x:Key="Wp81.Glyph.AppBarEllipsis">M0,2.32 A2.32,2.32 0 1 1 4.64,2.32 A2.32,2.32 0 1 1 0,2.32 Z M8.93,2.32 A2.32,2.32 0 1 1 13.57,2.32 A2.32,2.32 0 1 1 8.93,2.32 Z M17.86,2.32 A2.32,2.32 0 1 1 22.5,2.32 A2.32,2.32 0 1 1 17.86,2.32 Z</StreamGeometry>
+  <!-- Each dot is four quarter arcs round its centre, at x 2.32, 11.25 and 20.18, radius 2.32. (Three
+       EllipseGeometry in a GeometryGroup drew two of them about half a raw pixel off their centres here.) -->
+  <StreamGeometry x:Key="Wp81.Glyph.AppBarEllipsis">M0,2.32 A2.32,2.32 0 0 1 2.32,0 A2.32,2.32 0 0 1 4.64,2.32 A2.32,2.32 0 0 1 2.32,4.64 A2.32,2.32 0 0 1 0,2.32 Z M8.93,2.32 A2.32,2.32 0 0 1 11.25,0 A2.32,2.32 0 0 1 13.57,2.32 A2.32,2.32 0 0 1 11.25,4.64 A2.32,2.32 0 0 1 8.93,2.32 Z M17.86,2.32 A2.32,2.32 0 0 1 20.18,0 A2.32,2.32 0 0 1 22.5,2.32 A2.32,2.32 0 0 1 20.18,4.64 A2.32,2.32 0 0 1 17.86,2.32 Z</StreamGeometry>
 
 </ResourceDictionary>

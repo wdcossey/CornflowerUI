@@ -7,7 +7,7 @@ using Path = Avalonia.Controls.Shapes.Path;
 namespace Cornflower.Tests.Glyphs;
 
 /// <summary>
-/// The glyphs in <c>src/Cornflower.Themes.Wp81/Tokens/Glyphs.axaml</c>, each found through the theme by its
+/// The glyphs in <c>src/Cornflower.Themes.Wp81/Glyphs/Glyphs.axaml</c>, each found through the theme by its
 /// key, drawn where the phone drew it in the capture it was measured from, at the reference profile, and read
 /// back. At 2.4 a frame's pixels are the capture's, so each point is a raw pixel of that capture with the luma
 /// the phone drew there: inside the shape, just outside it, and on its edge at its extent. The captures are
@@ -16,27 +16,37 @@ namespace Cornflower.Tests.Glyphs;
 public class GlyphTests
 {
     /// <summary>
-    /// Skia's anti-aliasing isn't the phone's: on these glyphs an edge pixel differs from the capture's by up
-    /// to 28 luma levels. Half a raw pixel's error in an edge moves it by 53 levels or more, even on the
-    /// accent's smaller range (0x00 to 0x6A).
+    /// Skia's anti-aliasing isn't the phone's. At the edge points below, ours differs from the capture's by up
+    /// to 28 luma levels. Over whole boxes the tick's worst edge pixel differs by 32, and the ellipsis's by 55,
+    /// at its dots' bottoms, where the shell's edge is softer, so edge points are taken where an edge crosses
+    /// the row or column through the glyph's corner or the dot's centre. Half a raw pixel's error in an edge
+    /// moves such a pixel by 53 levels or more, even on the accent's smaller range (0x00 to 0x6A).
     /// </summary>
     private const int EdgeTolerance = 32;
 
     /// <summary>A pixel wholly inside or outside the shape is the fill or the background.</summary>
     private const int SolidTolerance = 4;
 
+    // The captures' colours, not the theme's: the emulator's default accent, and the bar the shell drew.
     private static readonly Color Accent = Color.FromRgb(0x3E, 0x65, 0xFF); // luma 0x6A
     private static readonly Color AppBar = Color.FromRgb(0x1F, 0x1F, 0x1F);
 
     /// <summary>A raw pixel of the capture and the luma the phone drew there.</summary>
-    private readonly record struct Point(int X, int Y, int Luma, bool Edge = false);
+    private readonly record struct Probe(int X, int Y, int Luma, bool Edge = false);
 
-    // refapp 20261108-1443-dev11, dark__CheckBox__checked__CheckStates.Checked.png: the CheckBox's CheckGlyph,
-    // white on black, its box at raw (55, 77), 44 × 41. At its own size, unstretched.
-    [AvaloniaFact]
-    public void The_CheckMark_Matches_The_Checked_CheckBox()
+    // refapp 20261108-1443-dev11: the tick at its own size, unstretched, in a 44 × 41 raw box.
+    // dark__CheckBox__checked__CheckStates.Checked.png: the CheckBox's CheckGlyph, white on black, at raw (55, 77).
+    // light__CheckBox__checked__CheckStates.Checked.png: the same, black on white; every point's luma inverted.
+    // dark__ListViewItem__selected__MultiSelectStates.ListMultiSelect.png: the list item's CheckGlyph in list
+    // multi-select, 15 raw px higher, at raw (55, 62); every point's luma the same.
+    [AvaloniaTheory]
+    [InlineData("dark CheckBox", 0, false)]
+    [InlineData("light CheckBox", 0, true)]
+    [InlineData("dark ListViewItem in list multi-select", -15, false)]
+    public void The_CheckMark_Matches_The_Checked_CheckBox_And_List_Item(string capture, int dy, bool light)
     {
-        Point[] points =
+        _ = capture;
+        Probe[] points =
         [
             new(84, 95, 0xFF),              // inside the long arm
             new(88, 90, 0xFF),              // inside the long arm, higher
@@ -58,7 +68,9 @@ public class GlyphTests
             new(73, 117, 0xAF, Edge: true), // the bottom corner
         ];
 
-        AssertGlyph("Wp81.Glyph.CheckMark", new Rect(55, 77, 44, 41), Stretch.None, Colors.White, Colors.Black, points);
+        var shifted = points.Select(p => p with { Y = p.Y + dy, Luma = light ? 0xFF - p.Luma : p.Luma }).ToArray();
+        AssertGlyph("Wp81.Glyph.CheckMark", new Rect(55, 77 + dy, 44, 41), Stretch.None,
+            light ? Colors.Black : Colors.White, light ? Colors.White : Colors.Black, shifted);
     }
 
     // refapp 20261108-1443-dev11, dark__ListViewItem__selected__MultiSelectStates.GridMultiSelect.png: the
@@ -67,7 +79,7 @@ public class GlyphTests
     [AvaloniaFact]
     public void The_CheckMark_Stretched_Matches_The_Selected_Grid_Item()
     {
-        Point[] points =
+        Probe[] points =
         [
             new(1015, 50, 0xFF),              // inside the long arm
             new(992, 54, 0xFF),               // inside the short arm
@@ -92,7 +104,7 @@ public class GlyphTests
     [AvaloniaFact]
     public void The_SelectedEarmark_Matches_The_Selected_Grid_Item()
     {
-        Point[] points =
+        Probe[] points =
         [
             new(1020, 35, 0x6A),              // the top row, inside
             new(1028, 80, 0x6A),              // the right column, inside
@@ -115,7 +127,7 @@ public class GlyphTests
     [AvaloniaFact]
     public void The_AppBarEllipsis_Matches_The_Minimal_App_Bar()
     {
-        Point[] points =
+        Probe[] points =
         [
             new(982, 1887, 0xFF),              // the first dot's centre
             new(1003, 1887, 0xFF),             // the second's
@@ -130,8 +142,13 @@ public class GlyphTests
             new(982, 1882, 0xD0, Edge: true),  // its top edge
             new(982, 1893, 0x65, Edge: true),  // its bottom edge
             new(982, 1894, 0x1F),              // below it
-            new(1009, 1887, 0x3B, Edge: true), // the second's right edge
-            new(1030, 1887, 0x9B, Edge: true), // the third's right edge
+            new(998, 1887, 0xEE, Edge: true),  // the second's left edge
+            new(1003, 1882, 0xD0, Edge: true), // its top edge
+            new(1003, 1893, 0x65, Edge: true), // its bottom edge
+            new(1019, 1887, 0x99, Edge: true), // the third's left edge
+            new(1025, 1882, 0xCE, Edge: true), // its top edge
+            new(1025, 1893, 0x64, Edge: true), // its bottom edge
+            new(1030, 1887, 0x9B, Edge: true), // its right edge
             new(1031, 1887, 0x1F),             // right of it
         ];
 
@@ -142,7 +159,7 @@ public class GlyphTests
     /// Draws the glyph under <paramref name="key"/>, found through the theme as a template would find it, in a
     /// box at <paramref name="box"/> (raw pixels, the capture's), and checks each point's luma.
     /// </summary>
-    private static void AssertGlyph(string key, Rect box, Stretch stretch, Color fill, Color background, Point[] points)
+    private static void AssertGlyph(string key, Rect box, Stretch stretch, Color fill, Color background, Probe[] points)
     {
         const double scale = Scene.ReferenceScaling;
         // Layout rounding would move a box that isn't on the pixel grid, as the ellipsis's isn't.
