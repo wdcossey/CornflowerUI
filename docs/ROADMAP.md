@@ -75,7 +75,7 @@ step, and a control that climbs a rung says so in its PR.
 |---|---|---|---|---|
 | [#27](https://github.com/wdcossey/CornflowerUI/issues/27) | Button | Button | Theme, tilt. The dry run of the whole loop | 1, 2 |
 | [#28](https://github.com/wdcossey/CornflowerUI/issues/28) | ProgressRing | none | New control | 5 |
-| [#26](https://github.com/wdcossey/CornflowerUI/issues/26) | TextBlock and the text styles | TextBlock | The type ramp, as style classes and resources | 1 |
+| [#26](https://github.com/wdcossey/CornflowerUI/issues/26) | TextBlock and the text styles | TextBlock | The type ramp, as keyed `ControlTheme`s under the WinRT style keys, and resources; done 2026-11-10 (#69), device run owed | 1 |
 | [#29](https://github.com/wdcossey/CornflowerUI/issues/29) | HyperlinkButton | HyperlinkButton | Theme, tilt | 1, 2 |
 | [#30](https://github.com/wdcossey/CornflowerUI/issues/30) | RepeatButton, ToggleButton | the same | Theme, tilt | 1, 2 |
 | [#31](https://github.com/wdcossey/CornflowerUI/issues/31) | CheckBox | CheckBox | Theme, glyph, tilt | 1, 2 |

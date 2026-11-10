@@ -112,8 +112,8 @@ samples/Cornflower.Sample.Android/  exists          the real-device target, run 
 samples/Cornflower.Sample.Desktop/  exists          a thin desktop head over Cornflower.Sample, opening at 450 × 800 and resizable, driven by tools/real-window
 src/Cornflower.Adaptive/            planned         working name: the extension pack for wider windows, after Tier 2 (ADR 0004)
 tools/                              exists          reference capture (refapp), spec extraction and the checklist (winrt-api), the device run (android), breakage, font metrics, token generation (tokens), the icon generator (lucide), the desktop window driver (real-window), the guard's hash list
-docs/                               exists          process, roadmap, decisions, performance, this file; later a folder per control
-ref/wp81/                           planned         committed reference captures from the emulator
+docs/                               exists          process, roadmap, decisions, performance, this file; controls/<Name>/ for each control's PLAN, COMPARISON, README and frames (TextBlock/ first)
+ref/wp81/                           exists          committed reference captures from the emulator, one folder per control (TextBlock/ first, #69)
 ```
 
 A later era adds `src/Cornflower.Themes.W10M/` and `ref/w10m/`. It doesn't change the controls
@@ -522,7 +522,7 @@ millisecond. A theme transition built on Avalonia's `Transitions` is tested at i
 | `FontWeight="SemiLight"` | `PhoneFontFamilySemiLight`, the Semilight family by name | Selawik's Semilight file reports weight 300. On the Normal family, SemiLight draws Light |
 | `CharacterSpacing="n"` | `LetterSpacing` = n × `FontSize` / 1000 | WinRT's unit is thousandths of an em; Avalonia's is DIPs ([spike 5](spikes/README.md#5-the-unit-of-textblockletterspacing)) |
 | `OpticalMarginAlignment="TrimSideBearings"` | No equivalent | Matters for Metro's large titles, which line up on the letter's edge. Measure the offset; likely a recorded deviation |
-| `TextLineBounds`, `LineStackingStrategy` | No equivalent | Where the style sets no `LineHeight`, ours sets 1.33 × `FontSize` (see [Fonts and icons](#fonts-and-icons)). Styles with their own `LineHeight` and `BaselineToBaseline` are measured with the type ramp |
+| `TextLineBounds`, `LineStackingStrategy` | No equivalent | Where the style sets no `LineHeight`, ours sets 1.33 × `FontSize` (see [Fonts and icons](#fonts-and-icons)). Styles with their own `LineHeight` and `BaselineToBaseline`, measured with the type ramp (#69): on the phone the first baseline is Segoe WP's ascent below the top (1.0791 em) whatever `LineHeight` is, and the height adds Segoe WP's share of descent (514/2724) × `LineHeight`. Ours keeps WinRT's `LineHeight` (the distance between baselines) and a `Padding` takes the difference above the first line and below the last, worked out from each `TextBlock`'s own font by `PhoneTextLine`, internal to the theme. Heights within 0.006 DIP of every dump |
 | A `Path` drawing a glyph in a template | A `PathIcon` with a named geometry resource of our own drawing | |
 | `SymbolIcon Symbol="Setting"` | Our icon control with the mapped Lucide name | |
 

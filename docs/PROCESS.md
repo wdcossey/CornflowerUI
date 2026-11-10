@@ -194,8 +194,8 @@ over SSH.
   resolution, scale and date beside them. The JSON template-tree dumps stay outside the repo; a
   plan quotes the numbers it uses and names the dump
   ([ADR 0002](decisions/0002-decisions-of-2026-11-08.md#reference-material)).
-  The reference app is [`tools/refapp`](../tools/refapp/README.md). *`ref/wp81/` doesn't exist
-  yet.*
+  The reference app is [`tools/refapp`](../tools/refapp/README.md). The first committed
+  captures are `ref/wp81/TextBlock/` (#69).
 - **A capture is a forced state on a fresh instance, without the motion into it.** Motion (the
   tilt, page transitions, the ToggleSwitch drag) comes from per-frame probes and screen
   recordings of the emulator ([#24](https://github.com/wdcossey/CornflowerUI/issues/24)), in

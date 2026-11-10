@@ -48,6 +48,19 @@ meant to be raised; the point is that it's a decision.
 limit going past it. When the theme gets there, stop and run the benchmark on the Pixel 8 before
 going on, to decide on real numbers.
 
+## What a resource hook costs
+
+`TypeRampCostBenchmark` (#69) is the same benchmark applied to the text styles: 5,000 `TextBlock`s
+at depth 20, each style five ways (no style, all `StaticResource`, brushes and fonts dynamic, all
+`DynamicResource`, and the theme as shipped). Most of the cost is the first `DynamicResource` on an
+element, about 12 µs, which the brushes need anyway to follow the theme variant. The size hooks the
+extension pack needs ([ADR 0004](../decisions/0004-larger-screens-as-an-extension-pack.md)) add 1 to
+2 µs per styled `TextBlock`. The table is in #69's description.
+
+```
+CORNFLOWER_BENCHMARK=/absolute/path/ramp.md dotnet test tests/Cornflower.Tests -c Release --filter FullyQualifiedName~TypeRampCostBenchmark
+```
+
 ## The trend
 
 Run by hand at each tier's roll-up, on the same machine, and add a row. Timings in CI would mean
