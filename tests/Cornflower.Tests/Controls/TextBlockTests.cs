@@ -513,6 +513,23 @@ public class TextBlockTests
         Assert.Equal(18.14, phone.Block.FontSize);
     }
 
+    // A pack's line height keeps the phone's line rule at the new height, as a size does.
+    [AvaloniaFact]
+    public void A_Wider_Windows_Line_Height_Keeps_The_Phones_Line()
+    {
+        var wide = new TextBlock { Text = Specimen };
+        using var desktop = new Scene(wide, width: 1280, height: 800, scaling: 1);
+        wide.Theme = (ControlTheme)desktop.Window.FindResource("BodyTextBlockStyle")!;
+        Dispatcher.UIThread.RunJobs();
+
+        desktop.Window.Resources["BodyTextBlockStyleLineHeight"] = 30.0;
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(30, wide.LineHeight);
+        Assert.Equal(PhoneLine.FirstBaseline * 18.14, FirstBaseline(wide), 0.001);
+        Assert.Equal(PhoneLine.Height(18.14, 30), Unrounded(wide), 0.01);
+    }
+
     // No fixed phone width (ADR 0004): no style sets one, and wrapped text takes the width it is given.
     [AvaloniaFact]
     public void No_Style_Sets_A_Width_And_Text_Takes_A_Wider_Windows_Width()
