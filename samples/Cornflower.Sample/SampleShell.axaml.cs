@@ -13,9 +13,13 @@ namespace Cornflower.Sample;
 /// </summary>
 public partial class SampleShell : UserControl
 {
-    /// <summary>Every page in the sample, found by its attribute.</summary>
-    internal static readonly IReadOnlyList<SamplePageEntry> Pages =
-        SamplePageCatalog.Discover(typeof(SampleShell).Assembly);
+    private static IReadOnlyList<SamplePageEntry>? _pages;
+
+    /// <summary>
+    /// Every page in the sample, found by its attribute. Found on first use rather than in a static
+    /// initialiser, so that a page that can't be made fails with its own message, not a type initialiser's.
+    /// </summary>
+    internal static IReadOnlyList<SamplePageEntry> Pages => _pages ??= SamplePageCatalog.Discover(typeof(SampleShell).Assembly);
 
     private TopLevel? _top;
     private IDisposable? _backRequests;

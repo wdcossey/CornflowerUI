@@ -10,11 +10,8 @@
     holds it on desktop. The list's buttons and Back are SimpleTheme's until Button is themed.
     Back is also Avalonia's own back request (Alt+Left on desktop, the back button on a phone).
   -->
-  <DockPanel>
-    <Button x:Name="BackButton" DockPanel.Dock="Top" IsVisible="False" Click="OnBack"
-            Content="back" AutomationProperties.Name="Back"
-            HorizontalAlignment="Left" Margin="12,6,0,0" />
-
+  <!-- Back lies over the page's top right-hand corner, so that a page has the whole view, 450 x 800 in the reference profile. -->
+  <Panel>
     <ContentControl x:Name="Host">
       <ScrollViewer x:Name="Index">
         <StackPanel Margin="19,12,19,24" Spacing="6">
@@ -27,5 +24,9 @@
         </StackPanel>
       </ScrollViewer>
     </ContentControl>
-  </DockPanel>
+
+    <Button x:Name="BackButton" IsVisible="False" Click="OnBack"
+            Content="back" AutomationProperties.Name="Back"
+            HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,6,24,0" />
+  </Panel>
 </UserControl>

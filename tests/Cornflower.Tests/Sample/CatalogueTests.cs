@@ -40,6 +40,12 @@ public class CatalogueTests
         public int Value { get; } = value;
     }
 
+    [SamplePage("generic")]
+    private sealed class Generic<T> : Border;
+
+    [SamplePage("first")]
+    private sealed class AlsoFirst : Border;
+
     [AvaloniaFact]
     public void Pages_Are_Found_By_Their_Attribute_By_Order_Then_Title()
     {
@@ -54,10 +60,19 @@ public class CatalogueTests
     [AvaloniaTheory]
     [InlineData(typeof(NotAControl))]
     [InlineData(typeof(NeedsAnArgument))]
+    [InlineData(typeof(Generic<>))]
     public void A_Page_That_Cant_Be_Made_Fails_When_The_Catalogue_Is_Built(Type type)
     {
         var error = Assert.Throws<InvalidOperationException>(() => SamplePageCatalog.Discover([type]));
         Assert.Contains(type.FullName!, error.Message);
+    }
+
+    // A page is opened by its title, on the list and by tools/real-window/drive.ps1.
+    [AvaloniaFact]
+    public void Two_Pages_With_One_Title_Fail_When_The_Catalogue_Is_Built()
+    {
+        var error = Assert.Throws<InvalidOperationException>(() => SamplePageCatalog.Discover([typeof(First), typeof(AlsoFirst)]));
+        Assert.Contains("'first'", error.Message);
     }
 
     [AvaloniaFact]
@@ -122,6 +137,20 @@ public class CatalogueTests
         Dispatcher.UIThread.RunJobs();
         Assert.False(shell.IsShowingPage);
         Assert.Same(index, shell.Shown);
+    }
+
+    // Back lies over the page, so the page is laid out at the reference view itself.
+    [AvaloniaFact]
+    public void A_Page_Has_The_Whole_View()
+    {
+        var shell = new SampleShell();
+        using var scene = new Scene(shell);
+        var page = new Border();
+        shell.ShowPage(page);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(new Rect(0, 0, Scene.ReferenceWidth, Scene.ReferenceHeight), page.Bounds);
+        Assert.True(shell.FindControl<Button>("BackButton")!.Bounds.Height > 0);
     }
 
     [AvaloniaFact]

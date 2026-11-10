@@ -30,21 +30,31 @@ public static class SamplePageCatalog
     public static IReadOnlyList<SamplePageEntry> Discover(Assembly assembly) => Discover(assembly.GetTypes());
 
     /// <summary>Every <see cref="SamplePageAttribute"/> page among <paramref name="types"/>, by order then title.</summary>
-    /// <exception cref="InvalidOperationException">A type with the attribute isn't a control that can be made with no arguments.</exception>
-    public static IReadOnlyList<SamplePageEntry> Discover(IEnumerable<Type> types) =>
-        types
+    /// <exception cref="InvalidOperationException">
+    /// A type with the attribute isn't a control that can be made with no arguments, or two pages have one title.
+    /// </exception>
+    public static IReadOnlyList<SamplePageEntry> Discover(IEnumerable<Type> types)
+    {
+        var pages = types
             .Select(type => (Type: type, Page: type.GetCustomAttribute<SamplePageAttribute>()))
             .Where(found => found.Page is not null)
             .Select(found => (found.Type, Page: found.Page!, Create: Maker(found.Type)))
             .OrderBy(found => found.Page.Order)
             .ThenBy(found => found.Page.Title, StringComparer.Ordinal)
-            .Select(found => new SamplePageEntry(found.Page.Title, found.Create))
             .ToArray();
+
+        // A page is opened by its title, on the list and by tools/real-window/drive.ps1.
+        var twice = pages.GroupBy(found => found.Page.Title, StringComparer.Ordinal).FirstOrDefault(title => title.Count() > 1);
+        if (twice is not null)
+            throw new InvalidOperationException($"Two pages have the title '{twice.Key}': {string.Join(", ", twice.Select(found => found.Type.FullName))}.");
+
+        return pages.Select(found => new SamplePageEntry(found.Page.Title, found.Create)).ToArray();
+    }
 
     // Checked when the catalogue is built, so a page that can't be shown fails at start, not when it's opened.
     private static Func<Control> Maker(Type type)
     {
-        if (!typeof(Control).IsAssignableFrom(type) || type.IsAbstract || type.GetConstructor(Type.EmptyTypes) is null)
+        if (!typeof(Control).IsAssignableFrom(type) || type.IsAbstract || type.ContainsGenericParameters || type.GetConstructor(Type.EmptyTypes) is null)
             throw new InvalidOperationException($"{type.FullName} has [SamplePage] but isn't a control with a public constructor that takes no arguments.");
 
         return () => (Control)Activator.CreateInstance(type)!;

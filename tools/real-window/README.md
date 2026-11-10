@@ -22,7 +22,9 @@ and fails those checks. It stops at once if the window doesn't fit on the screen
 
 - **Every page on the list,** with nothing to add for a new control: opens it with a real click,
   saves a frame, fails on a button with no size and, in a Debug build, on a missing performance
-  line, then clicks Back and checks the list is back.
+  line, then clicks Back and checks the list is back. A page below the fold of a long list is
+  opened through UI Automation instead: a click never goes outside the window. The performance
+  line is looked for under the page's catalogue title, so a page's line has to use that title.
 - **The window's size:** the theme page's `CORNFLOWER ready` line has to report a 450 × 800 view,
   to the pixel. Windows gives a window whole pixels, so at 125 % it is 562 × 1000, a 449.6 view.
 - **Alt+Left,** Avalonia's back on desktop, from a page to the list.

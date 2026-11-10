@@ -98,8 +98,11 @@ function Press { Guard; $script:held = $true; [RealInput]::Down() }
 function Release { [RealInput]::Up(); $script:held = $false }
 # Lets go of whatever an exception left held, on the user's desktop as well as in the sample.
 function LetGo { if ($script:held) { Release } }
+# Refuses a point outside the window, such as a button below the fold of a long list, which would land in whatever is under it.
+function InWindow($x, $y) { $w = $win.Current.BoundingRectangle; $x -gt $w.X -and $x -lt $w.Right -and $y -gt $w.Y -and $y -lt $w.Bottom }
 function Click($el) {
     $x, $y = Centre $el
+    if (-not (InWindow $x $y)) { throw "Not clicking $($el.Current.Name) at ${x}, ${y}: that's outside the window" }
     Guard
     [void][RealInput]::SetCursorPos($x, $y); Start-Sleep -Milliseconds 120
     Press; Start-Sleep -Milliseconds 50; Release; Start-Sleep -Milliseconds 600
@@ -165,19 +168,21 @@ try {
     $r = $win.Current.BoundingRectangle
     $area = [System.Windows.Forms.Screen]::FromHandle($p.MainWindowHandle).WorkingArea
     if ($r.Bottom -gt $area.Bottom -or $r.Right -gt $area.Right -or $r.Y -lt $area.Y -or $r.X -lt $area.X) {
-        throw "The window ($r) doesn't fit on the screen ($area), so clicks would miss and frames would be cut off. Lower the display scale, or move it."
+        throw "The window ($r) doesn't fit on the screen ($area), so clicks would miss and frames would be cut off. Move it, or if it's taller than the screen, lower the display scale."
     }
     "$Exe"
     "window $($r.Width) x $($r.Height) on the screen, frames in $Out"
     $titles = @(AppButtons | ForEach-Object { $_.Current.Name })
     Shot 'index'
     Check 'the list has a page' ($titles.Count -gt 0)
-    $seen = 0
 
     Section 'Every page on the list, opened with a click and left with Back' {
         foreach ($title in $titles) {
             Index
-            Click (Named $CT::Button $title)
+            $link = Named $CT::Button $title
+            $x, $y = Centre $link
+            # A list longer than the window: what's below the fold is opened through UI Automation instead.
+            if (InWindow $x $y) { Click $link } else { "        $title is below the fold: opened through UI Automation"; Invoke-Element $link }
             Check "a click on '$title' opens it" ([bool](Named $CT::Button 'Back'))
             Shot $title
             # A control with no size is invisible, as Avonic's fixed slot's button once was.
@@ -200,7 +205,6 @@ try {
         $seen = @(ReadyLines).Count
         Open 'theme'
         $line = WaitForReady $seen
-        $seen++
         if ($line) { "        $line" }
         $w, $h = ViewOf $line
         $scaling = ScalingOf $line
@@ -209,7 +213,6 @@ try {
 
     Section 'Alt+Left goes back' {
         Open 'theme'
-        $seen++
         Key '%{LEFT}'
         Check 'Alt+Left on a page shows the list' (OnIndex)
     }
@@ -226,7 +229,8 @@ try {
         $line = WaitForReady $seen
         if ($line) { "        $line" }
         $w, $h = ViewOf $line
-        Check 'once wider, the page reports a wider view' ($w -gt 550) "$line"
+        # 300 pixels wider, less what the frame takes, which is far less than 100.
+        Check 'once wider, the page reports a wider view' ($w -gt 450 + 200 / (ScalingOf $line)) "$line"
         Shot 'theme-resized'
     }
 
