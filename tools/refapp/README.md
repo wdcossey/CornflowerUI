@@ -278,9 +278,10 @@ centre as a fraction of its width and height (−0.5 to 0.5):
   | C (225, 400), at the screen's centre | 0.00° | 0.00° |
   | D (119, 570), below and left | +0.28° | +0.18° |
 
-  It is under 1° everywhere measured, and goes with the perspective translation above. Not yet
-  modelled, so a test of the rule above alone needs a tolerance of about 1.3° away from the
-  screen's centre, or the bias taken out.
+  It is under 1° everywhere measured, and goes with the perspective translation above. #65 models
+  it (an eye 1,055 view px away, placed 0.8 of the way from the control's centre to the screen's);
+  a test of the rule above alone needs a tolerance of about 1.3° away from the screen's centre, or
+  the bias taken out.
 - **Timing.** The press is a jump: the first frame after the press already shows 96% to 100% of
   the held values (99% on average, at 30 to 40 ms, the first frame the emulator draws). On release
   the values hold for about 180 ms, then ease back to rest over about 195 ms: a sine ease-out fits
