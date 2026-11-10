@@ -237,10 +237,11 @@ px down. The template root's `PlaneProjection`, read every frame:
 | bottom right, 288.3, 108.3 | 6.71 | −8.28 | −3.19 |
 
 `CenterOfRotation` is 0.5, 0.5, 0 throughout, and the root also gets a `CompositeTransform`
-translating 112 down with a `GlobalOffsetY` of −112 against it. The press reaches its values in
-about 45 ms (three frames). On release nothing moves for about 180 ms, then the tilt eases back
-to rest by about 345 ms. Dragged after the press, the tilt follows the finger. These are readings,
-not yet the model: #22 fits them (next section).
+translating 112 down with a `GlobalOffsetY` of −112 against it. The press seemed to reach its
+values in about 45 ms (three frames); the grid run below reads it closer, as a jump (see its
+Timing). On release nothing moves for about 180 ms, then the tilt eases back to rest by about
+345 ms. Dragged after the press, the tilt follows the finger. These are readings, not yet the
+model: #22 fits them (next section).
 
 ### Tilt: the model (2026-11-09, device 11, for #22)
 
@@ -252,12 +253,12 @@ centre as a fraction of its width and height (−0.5 to 0.5):
 
 | Value | Rule | Fit |
 |---|---|---|
-| `RotationY` | −g(`dx`): a press left of centre tilts positive | over the four sizes, rms 0.05° |
+| `RotationY` | −g(`dx`): a press left of centre tilts positive | over the four sizes, rms 0.08° once each button's offset (the bias below) is taken out; against the raw readings rms 0.38°, worst 1.26° (button A) |
 | `RotationX` | g(`dy`): a press above centre tilts negative | |
 | g(d) | 17.19° × d × (1 + 0.08 \|d\|); 17.19° is 0.3 rad | |
-| `GlobalOffsetZ` | −25 × (1 − (\|`RotationX`\| + \|`RotationY`\|) / 17.19°) | worst residual 0.016 over 100 presses |
+| `GlobalOffsetZ` | −25 × (1 − (\|`RotationX`\| + \|`RotationY`\|) / 17.19°), in view px | from the angles read: worst residual 0.002 px over 100 presses, with 17.19° as 0.3 rad exactly |
 | `CenterOfRotation` | 0.5, 0.5, 0 | always |
-| `RenderTransform` | a `CompositeTransform` translating by 0.8 × (the screen's centre − the button's centre), with `GlobalOffsetX` and `GlobalOffsetY` the opposite | exact for all four buttons and the first run's |
+| `RenderTransform` | a `CompositeTransform` translating by 0.8 × (the screen's centre − the button's centre), with `GlobalOffsetX` and `GlobalOffsetY` the opposite | exact for all four buttons and the first run's, and on the 720p profile (`20261110-0738-dev10`, `-Probe tilt`: translate −20, 76.44) |
 
 - **Size doesn't matter.** The angles depend on the fractions `dx` and `dy`, not on pixels: a
   press 25% from the centre gives 4.33° to 4.45° on all four buttons. Each axis is independent:
@@ -278,7 +279,8 @@ centre as a fraction of its width and height (−0.5 to 0.5):
   | D (119, 570), below and left | +0.28° | +0.18° |
 
   It is under 1° everywhere measured, and goes with the perspective translation above. Not yet
-  modelled.
+  modelled, so a test of the rule above alone needs a tolerance of about 1.3° away from the
+  screen's centre, or the bias taken out.
 - **Timing.** The press is a jump: the first frame after the press already shows 96% to 100% of
   the held values (99% on average, at 30 to 40 ms, the first frame the emulator draws). On release
   the values hold for about 180 ms, then ease back to rest over about 195 ms: a sine ease-out fits

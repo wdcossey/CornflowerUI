@@ -69,12 +69,7 @@ namespace RefApp
         private async Task ToggleSwitchDrag(Grid host)
         {
             var toggle = new ToggleSwitch { Header = "probe", IsOn = false, Margin = new Thickness(19, 120, 19, 0), VerticalAlignment = VerticalAlignment.Top };
-            var page = new Grid { RequestedTheme = ElementTheme.Dark, Background = new SolidColorBrush(Colors.Black) };
-            page.Children.Add(toggle);
-            host.HorizontalAlignment = HorizontalAlignment.Stretch;
-            host.VerticalAlignment = VerticalAlignment.Stretch;
-            host.Children.Add(page);
-            await Settle(page);
+            await Page(host, toggle);
 
             var knob = Find(toggle, "SwitchKnob");
             var knobTransform = knob != null ? knob.RenderTransform as TranslateTransform : null;
@@ -142,26 +137,14 @@ namespace RefApp
         private async Task Tilt(Grid host)
         {
             var button = new Button { Content = "tilt", Width = 300, Height = 120, Margin = new Thickness(75, 200, 0, 0), HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top };
-            var page = new Grid { RequestedTheme = ElementTheme.Dark, Background = new SolidColorBrush(Colors.Black) };
-            page.Children.Add(button);
-            host.HorizontalAlignment = HorizontalAlignment.Stretch;
-            host.VerticalAlignment = VerticalAlignment.Stretch;
-            host.Children.Add(page);
-            await Settle(page);
-
-            var root = VisualTreeHelper.GetChildrenCount(button) > 0 ? VisualTreeHelper.GetChild(button, 0) as FrameworkElement : null;
-            if (root == null)
+            await Page(host, button);
+            var b = await WatchTilt(button);
+            if (b == Rect.Empty)
             {
-                await Write("done.txt", "the Button has no template root");
                 return;
             }
 
-            var b = button.TransformToVisual(null).TransformBounds(new Rect(0, 0, button.ActualWidth, button.ActualHeight));
-            Log("layout", "button " + Num(b.X) + " " + Num(b.Y) + " " + Num(b.Width) + " " + Num(b.Height) + " root " + root.GetType().Name);
-            Watch(button);
             button.Click += (s, e) => Log("click", "");
-            WatchValue("projection", () => Describe(root.Projection));
-            WatchValue("transform", () => Describe(root.RenderTransform));
 
             const double inset = 12;
             var xs = new[] { b.X + inset, b.X + b.Width / 2, b.X + b.Width - inset };
@@ -197,36 +180,26 @@ namespace RefApp
                 new { Name = "C", W = 412.0, H = 80.0, X = 19.0, Y = 360.0 },
                 new { Name = "D", W = 200.0, H = 200.0, X = 19.0, Y = 470.0 },
             };
-            var page = new Grid { RequestedTheme = ElementTheme.Dark, Background = new SolidColorBrush(Colors.Black) };
-            var buttons = new List<Button>();
-            foreach (var size in sizes)
-            {
-                var button = new Button { Name = size.Name, Content = "tilt " + size.Name, Width = size.W, Height = size.H, MinWidth = 0, MinHeight = 0, Margin = new Thickness(size.X, size.Y, 0, 0), HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top };
-                page.Children.Add(button);
-                buttons.Add(button);
-            }
+            var buttons = sizes.Select(size => new Button { Name = size.Name, Content = "tilt " + size.Name, Width = size.W, Height = size.H, MinWidth = 0, MinHeight = 0, Margin = new Thickness(size.X, size.Y, 0, 0), HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top }).ToArray();
+            await Page(host, buttons);
 
-            host.HorizontalAlignment = HorizontalAlignment.Stretch;
-            host.VerticalAlignment = VerticalAlignment.Stretch;
-            host.Children.Add(page);
-            await Settle(page);
-
+            // The layout is the reference profile's, a 450 x 800 view: on a smaller one the presses would miss.
+            var window = Window.Current.Bounds;
             var fractions = new[] { 0.05, 0.25, 0.5, 0.75, 0.95 };
             foreach (var button in buttons)
             {
-                var root = VisualTreeHelper.GetChildrenCount(button) > 0 ? VisualTreeHelper.GetChild(button, 0) as FrameworkElement : null;
-                if (root == null)
+                var b = await WatchTilt(button);
+                if (b == Rect.Empty)
                 {
-                    await Write("done.txt", "button " + button.Name + " has no template root");
                     return;
                 }
 
-                var b = button.TransformToVisual(null).TransformBounds(new Rect(0, 0, button.ActualWidth, button.ActualHeight));
-                Log("layout", "button " + button.Name + " " + Num(b.X) + " " + Num(b.Y) + " " + Num(b.Width) + " " + Num(b.Height) + " root " + root.GetType().Name);
-                Watch(button);
-                var name = button.Name;
-                WatchValue("projection " + name, () => Describe(root.Projection));
-                WatchValue("transform " + name, () => Describe(root.RenderTransform));
+                if (b.Right > window.Width || b.Bottom > window.Height)
+                {
+                    await Write("done.txt", "button " + button.Name + " ends at " + Num(b.Right) + ", " + Num(b.Bottom) + ", outside the " + Num(window.Width) + " x " + Num(window.Height) + " view: tiltgrid is laid out for 450 x 800 (device 11)");
+                    return;
+                }
+
                 foreach (var fy in fractions)
                 {
                     foreach (var fx in fractions)
@@ -237,6 +210,44 @@ namespace RefApp
             }
 
             await Ready();
+        }
+
+        /// <summary>Puts the controls on a dark page in the host, and waits until each has its template.</summary>
+        private static async Task Page(Grid host, params UIElement[] controls)
+        {
+            var page = new Grid { RequestedTheme = ElementTheme.Dark, Background = new SolidColorBrush(Colors.Black) };
+            foreach (var control in controls)
+            {
+                page.Children.Add(control);
+            }
+
+            host.HorizontalAlignment = HorizontalAlignment.Stretch;
+            host.VerticalAlignment = VerticalAlignment.Stretch;
+            host.Children.Add(page);
+            await Settle(page);
+        }
+
+        /// <summary>
+        /// Logs a button's bounds, its pointer events and states, and its template root's projection and transform every
+        /// frame, named by the button's Name if it has one. Returns the bounds in the window, or <see cref="Rect.Empty"/>,
+        /// with done.txt written, when the button has no template root.
+        /// </summary>
+        private async Task<Rect> WatchTilt(Button button)
+        {
+            var tag = Tag(button);
+            var root = VisualTreeHelper.GetChildrenCount(button) > 0 ? VisualTreeHelper.GetChild(button, 0) as FrameworkElement : null;
+            if (root == null)
+            {
+                await Write("done.txt", "button " + tag + "has no template root");
+                return Rect.Empty;
+            }
+
+            var b = button.TransformToVisual(null).TransformBounds(new Rect(0, 0, button.ActualWidth, button.ActualHeight));
+            Log("layout", "button " + tag + Num(b.X) + " " + Num(b.Y) + " " + Num(b.Width) + " " + Num(b.Height) + " root " + root.GetType().Name);
+            Watch(button);
+            WatchValue(("projection " + tag).TrimEnd(), () => Describe(root.Projection));
+            WatchValue(("transform " + tag).TrimEnd(), () => Describe(root.RenderTransform));
+            return b;
         }
 
         /// <summary>A touch held still at (x, y) for 600 ms.</summary>
@@ -345,21 +356,23 @@ namespace RefApp
                     foreach (var group in VisualStateManager.GetVisualStateGroups(root))
                     {
                         var g = group;
-                        g.CurrentStateChanged += (s, e) => Log("state", (control.Name.Length > 0 ? control.Name + " " : "") + g.Name + " " + (e.OldState != null ? e.OldState.Name : "-") + " > " + (e.NewState != null ? e.NewState.Name : "-"));
+                        g.CurrentStateChanged += (s, e) => Log("state", Tag(control) + g.Name + " " + (e.OldState != null ? e.OldState.Name : "-") + " > " + (e.NewState != null ? e.NewState.Name : "-"));
                     }
                 }
             }
         }
 
-        private void Pointer(string what, UIElement control, PointerRoutedEventArgs e)
+        /// <summary>The control's Name and a space, for log lines on pages with several controls; empty if it has none.</summary>
+        private static string Tag(FrameworkElement control) => control.Name.Length > 0 ? control.Name + " " : "";
+
+        private void Pointer(string what, Control control, PointerRoutedEventArgs e)
         {
             var inWindow = e.GetCurrentPoint(null).Position;
             var inControl = e.GetCurrentPoint(control).Position;
-            var name = control is FrameworkElement ? ((FrameworkElement)control).Name : "";
-            Log(what, (name.Length > 0 ? name + " " : "") + Num(inWindow.X) + " " + Num(inWindow.Y) + " in-control " + Num(inControl.X) + " " + Num(inControl.Y) + " " + e.Pointer.PointerDeviceType + (e.Handled ? " handled" : ""));
+            Log(what, Tag(control) + Num(inWindow.X) + " " + Num(inWindow.Y) + " in-control " + Num(inControl.X) + " " + Num(inControl.Y) + " " + e.Pointer.PointerDeviceType + (e.Handled ? " handled" : ""));
         }
 
-        private async void Released(UIElement control, PointerRoutedEventArgs e)
+        private async void Released(Control control, PointerRoutedEventArgs e)
         {
             Pointer("released", control, e);
             _released++;
@@ -377,20 +390,37 @@ namespace RefApp
             }
         }
 
-        /// <summary>Logs a value every frame, when it changes.</summary>
+        private sealed class Watched
+        {
+            public string Name;
+            public Func<string> Read;
+            public string Last;
+        }
+
+        private readonly List<Watched> _watched = new List<Watched>();
+
+        /// <summary>Logs a value every frame, when it changes. One Rendering handler reads them all.</summary>
         private void WatchValue(string name, Func<string> read)
         {
-            string last = null;
-            EventHandler<object> onFrame = (s, e) =>
+            if (_watched.Count == 0)
             {
-                var v = read();
-                if (v != last)
+                CompositionTarget.Rendering += OnFrame;
+            }
+
+            _watched.Add(new Watched { Name = name, Read = read });
+        }
+
+        private void OnFrame(object sender, object e)
+        {
+            foreach (var w in _watched)
+            {
+                var v = w.Read();
+                if (v != w.Last)
                 {
-                    last = v;
-                    Log("value", name + " " + v);
+                    w.Last = v;
+                    Log("value", w.Name + " " + v);
                 }
-            };
-            CompositionTarget.Rendering += onFrame;
+            }
         }
 
         private async Task Ready()
@@ -402,8 +432,10 @@ namespace RefApp
             Log("ready", "touches " + _expected + " raw-per-view " + Num(display.RawPixelsPerViewPixel));
             await Write("ready.txt", "touches " + _expected);
 
-            // A run whose touches never arrive still ends, with the log.
-            await Task.WhenAny(_done.Task, Task.Delay(TimeSpan.FromMinutes(5)));
+            // A run whose touches never arrive still ends, with the log: after the touches' planned time and 3 minutes
+            // more for the VM to pull gestures.txt and start playing, and never before 5 minutes.
+            var planned = _gestures.ToString().Split('\n').Where(l => l.StartsWith("wait ", StringComparison.Ordinal)).Sum(l => double.Parse(l.Substring(5), CultureInfo.InvariantCulture));
+            await Task.WhenAny(_done.Task, Task.Delay(TimeSpan.FromMilliseconds(Math.Max(5 * 60000, planned + 3 * 60000))));
             await Finish("timed out after " + _released + " of " + _expected + " touches");
         }
 
@@ -429,13 +461,13 @@ namespace RefApp
         }
 
         /// <summary>Waits until the page has laid out and every control on it has its template, up to 10 s, then 500 ms more.</summary>
-        private static async Task Settle(FrameworkElement page)
+        private static async Task Settle(Panel page)
         {
             for (var waited = 0; waited < 10000; waited += 100)
             {
                 page.UpdateLayout();
-                var control = Find<Control>(page);
-                if (page.ActualWidth > 0 && control != null && VisualTreeHelper.GetChildrenCount(control) > 0)
+                var controls = page.Children.OfType<Control>().ToList();
+                if (page.ActualWidth > 0 && controls.Count > 0 && controls.All(c => VisualTreeHelper.GetChildrenCount(c) > 0))
                 {
                     break;
                 }
