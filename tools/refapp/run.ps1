@@ -147,6 +147,11 @@ if ($status -notmatch '^done') {
         Copy-Scp @("${HostAlias}:C:/cornflower/refapp/out", "${HostAlias}:C:/cornflower/refapp/session.log", $partial)
         if ($Probe) {
             try { Copy-Scp @("${HostAlias}:C:/cornflower/refapp/touch.log", $partial) } catch { Write-Host '  no touch.log' }
+            if ($Record) {
+                foreach ($file in 'record.mkv', 'frames.csv', 'rect.log') {
+                    try { Copy-Scp @("${HostAlias}:C:/cornflower/refapp/$file", $partial) } catch { Write-Host "  no $file" }
+                }
+            }
         }
         Write-Host "  partial results in $partial"
     }
@@ -167,8 +172,13 @@ Remove-Item (Join-Path $dest 'out') -Recurse -Force
 if ($Probe) {
     Copy-Scp @("${HostAlias}:C:/cornflower/refapp/touch.log", $dest)
     if ($Record) {
-        Copy-Scp @("${HostAlias}:C:/cornflower/refapp/record.mkv", "${HostAlias}:C:/cornflower/refapp/frames.csv", "${HostAlias}:C:/cornflower/refapp/rect.log", $dest)
-        Write-Host "  recording in $(Join-Path $dest 'record.mkv'), $((Get-Content (Join-Path $dest 'frames.csv')).Count) frames"
+        # ffmpeg can die after its start check; the probe's own results are still good, so say so rather than fail.
+        foreach ($file in 'record.mkv', 'frames.csv', 'rect.log') {
+            try { Copy-Scp @("${HostAlias}:C:/cornflower/refapp/$file", $dest) } catch { Write-Host "  no $file (see session.log)" }
+        }
+        $frames = Join-Path $dest 'frames.csv'
+        if (Test-Path $frames) { Write-Host "  recording in $(Join-Path $dest 'record.mkv'), $((Get-Content $frames).Count) frames" }
+        else { Write-Host '  WARNING: no recording came back' }
     }
 
     Write-Host "  probe $Probe`: $(Get-Content (Join-Path $dest 'done.txt'))"

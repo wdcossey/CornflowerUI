@@ -159,8 +159,10 @@ $done = $false
 $stalled = $false
 $lastPngs = -1
 $lastChange = Get-Date
+# Every 20 s, or every 5 s while recording, so that ffmpeg stops soon after the probe is done.
+$poll = if ($recorder) { 5 } else { 20 }
 while ((Get-Date) -lt $deadline) {
-    Start-Sleep -Seconds 20
+    Start-Sleep -Seconds $poll
     $listing = (& $ise dir "deviceindex:$Device" $ProductId 2>&1) -join "`n"
     if ($listing -match 'done\.txt') {
         $done = $true

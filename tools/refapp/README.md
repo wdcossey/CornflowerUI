@@ -303,6 +303,10 @@ page transitions and the ProgressRing. Two ways of reading it:
   open popup's, from `CompositionTarget.Rendering`, logging each element's opacity, render
   transform, projection and clip whenever they change. This reads a template's own storyboards (the
   MenuFlyout's, the ProgressRing's), as it read the tilt.
+  Each popup is labelled `popup<n>` in the order it was first seen, so it keeps its label when
+  another closes (each opening is a new popup, so the numbers climb through a run). A tree over 400
+  elements is read up to the cut, and its readings past the cut carry over rather than read as rest;
+  the log says so once for each tree.
 - **On the screen** (`-Record`): the theme *transitions* (`PopupThemeTransition`,
   `NavigationThemeTransition`, the ToggleSwitch's `RepositionThemeAnimation`) run in the compositor
   and change nothing the app can read: their trees stay at rest every frame. `-Record` has

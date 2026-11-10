@@ -30,7 +30,9 @@ namespace RefApp
         private Dictionary<string, string> _treeSeen = new Dictionary<string, string>();
         private Dictionary<string, string> _treeNow = new Dictionary<string, string>();
         private int _treeVisited;
-        private bool _budgetLogged;
+        private readonly HashSet<string> _budgetLogged = new HashSet<string>();
+        private readonly HashSet<string> _treeCut = new HashSet<string>();
+        private readonly Dictionary<Popup, int> _popupIds = new Dictionary<Popup, int>();
 
         /// <summary>
         /// The ToggleSwitch's slide, the pickers' and flyouts' open and close, and the inline ComboBox: each opened from
@@ -227,7 +229,7 @@ namespace RefApp
             var panel = new Grid { Background = new SolidColorBrush(Colors.Black), Children = { sheet } };
             var projection = new PlaneProjection();
             panel.Projection = projection;
-            var page = await MotionPage(host, panel);
+            var page = await MotionPage(host, false, panel);
 
             Func<Task> sequence = async () =>
             {
@@ -312,7 +314,13 @@ namespace RefApp
         }
 
         /// <summary>Puts the controls on a dark page in the host and waits for their templates; returns the page.</summary>
-        private static async Task<Grid> MotionPage(Grid host, params FrameworkElement[] children)
+        private static Task<Grid> MotionPage(Grid host, params FrameworkElement[] children)
+        {
+            return MotionPage(host, true, children);
+        }
+
+        /// <summary>As above; <paramref name="settle"/> false for a page with no templated control, which Settle would wait 10 s for.</summary>
+        private static async Task<Grid> MotionPage(Grid host, bool settle, params FrameworkElement[] children)
         {
             var page = new Grid { RequestedTheme = ElementTheme.Dark, Background = new SolidColorBrush(Colors.Black) };
             foreach (var c in children)
@@ -323,15 +331,24 @@ namespace RefApp
             host.HorizontalAlignment = HorizontalAlignment.Stretch;
             host.VerticalAlignment = VerticalAlignment.Stretch;
             host.Children.Add(page);
-            await Settle(page);
+            if (settle)
+            {
+                await Settle(page);
+            }
+            else
+            {
+                await Task.Delay(500);
+            }
+
             return page;
         }
 
         /// <summary>
         /// Asks for one tap near the bottom left of the page, on the page's own background, and runs the sequence when
         /// it lands, then finishes. It writes gestures.txt and ready.txt itself rather than through Ready(), whose
-        /// watchdog counts touches: this one gives up 3 minutes after ready if the tap never comes, and otherwise 10
-        /// minutes after the tap (vm\session.ps1 itself gives a probe 8 minutes after its touches).
+        /// watchdog counts touches: this one gives up 3 minutes after ready if the tap never comes, and otherwise 6
+        /// minutes after the tap, so that the log is written before vm\session.ps1 gives up on the probe, 8 minutes
+        /// after the app started.
         /// </summary>
         private async Task RunAfterTap(Grid page, Func<Task> sequence)
         {
@@ -381,8 +398,8 @@ namespace RefApp
                 return;
             }
 
-            await Task.WhenAny(_done.Task, Task.Delay(TimeSpan.FromMinutes(10)));
-            await Finish("timed out after 10 minutes of the sequence");
+            await Task.WhenAny(_done.Task, Task.Delay(TimeSpan.FromMinutes(6)));
+            await Finish("timed out after 6 minutes of the sequence");
         }
 
         /// <summary>Logs every visual state change of the control's template (without <see cref="Watch"/>'s pointer handlers, whose release count ends a touch probe).</summary>
@@ -422,6 +439,7 @@ namespace RefApp
         {
             var now = _treeNow;
             now.Clear();
+            _treeCut.Clear();
             foreach (var tree in _trees)
             {
                 if (tree.Value != null)
@@ -435,7 +453,15 @@ namespace RefApp
                 for (var k = 0; k < popups.Count; k++)
                 {
                     var popup = popups[k];
-                    var label = "popup" + k;
+                    // Numbered in the order first seen, so a popup keeps its label when another one closes.
+                    int id;
+                    if (!_popupIds.TryGetValue(popup, out id))
+                    {
+                        id = _popupIds.Count;
+                        _popupIds[popup] = id;
+                    }
+
+                    var label = "popup" + id;
                     var child = popup.Child as FrameworkElement;
                     var transitions = popup.ChildTransitions != null ? string.Join(",", popup.ChildTransitions.Select(t => t.GetType().Name)) : "";
                     now[label] = "offset " + Num(popup.HorizontalOffset) + " " + Num(popup.VerticalOffset) + (transitions.Length > 0 ? " transitions " + transitions : "") + " child " + (child != null ? child.GetType().Name : "none");
@@ -456,12 +482,21 @@ namespace RefApp
                 }
             }
 
-            foreach (var key in _treeSeen.Keys)
+            foreach (var kv in _treeSeen)
             {
-                if (!now.ContainsKey(key))
+                if (now.ContainsKey(kv.Key))
                 {
-                    Log("tree", key + " | rest");
+                    continue;
                 }
+
+                // A tree cut short by the budget this frame wasn't read past the cut: carry its readings, don't call them rest.
+                if (_treeCut.Contains(TreeOf(kv.Key)))
+                {
+                    now[kv.Key] = kv.Value;
+                    continue;
+                }
+
+                Log("tree", kv.Key + " | rest");
             }
 
             _treeNow = _treeSeen;
@@ -477,26 +512,35 @@ namespace RefApp
 
             if (++_treeVisited > TreeBudget)
             {
-                if (!_budgetLogged)
+                var tree = TreeOf(path);
+                _treeCut.Add(tree);
+                if (_budgetLogged.Add(tree))
                 {
-                    _budgetLogged = true;
-                    Log("tree", "budget: more than " + TreeBudget + " elements under " + path.Split('/')[0] + "; the rest of that tree isn't read (logged once)");
+                    Log("tree", "budget: more than " + TreeBudget + " elements under " + tree + "; the rest of that tree isn't read, and its readings past the cut carry over (logged once a tree)");
                 }
 
                 return;
             }
 
-            var key = path + " " + e.GetType().Name + (e.Name.Length > 0 ? "#" + e.Name : "");
             var d = Animated(e);
             if (isRoot)
             {
-                var r = e.TransformToVisual(null).TransformBounds(new Windows.Foundation.Rect(0, 0, e.ActualWidth, e.ActualHeight));
-                d = "at " + Num(r.X) + " " + Num(r.Y) + " " + Num(r.Width) + " " + Num(r.Height) + (d.Length > 0 ? " " + d : "");
+                // A popup's child can be in the list before it's in the live tree, or after it's left, on its first and last frames.
+                try
+                {
+                    var r = e.TransformToVisual(null).TransformBounds(new Windows.Foundation.Rect(0, 0, e.ActualWidth, e.ActualHeight));
+                    d = "at " + Num(r.X) + " " + Num(r.Y) + " " + Num(r.Width) + " " + Num(r.Height) + (d.Length > 0 ? " " + d : "");
+                }
+                catch (ArgumentException)
+                {
+                    d = "not in the tree" + (d.Length > 0 ? " " + d : "");
+                }
             }
 
+            // The key is built only for an element with something to log: this runs on every element, every frame.
             if (d.Length > 0)
             {
-                now[key] = d;
+                now[path + " " + e.GetType().Name + (e.Name.Length > 0 ? "#" + e.Name : "")] = d;
             }
 
             if (depth >= TreeDepth)
@@ -513,6 +557,13 @@ namespace RefApp
                     Walk(path + "/" + i, child, depth + 1, now, false);
                 }
             }
+        }
+
+        /// <summary>The tree a path or key starts with: its label, before the first '/' or space.</summary>
+        private static string TreeOf(string pathOrKey)
+        {
+            var end = pathOrKey.IndexOfAny(new[] { '/', ' ' });
+            return end < 0 ? pathOrKey : pathOrKey.Substring(0, end);
         }
 
         /// <summary>The element's opacity under 1, a render transform or projection that isn't the identity, and its clip if it has one; empty if none.</summary>
