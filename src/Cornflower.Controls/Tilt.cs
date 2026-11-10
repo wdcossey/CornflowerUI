@@ -182,7 +182,7 @@ public static class Tilt
         {
             if (!e.GetCurrentPoint(_control).Properties.IsLeftButtonPressed || NearerTiltBelow(_control, e.Source))
                 return;
-            if (_phase is Phase.Pressed or Phase.Paused && !Lost())
+            if (_phase is Phase.Pressed or Phase.Paused)
                 return;
             if (TargetOf(_control) is not { } target || target.GetVisualParent() is not { } parent)
                 return;
@@ -240,15 +240,6 @@ public static class Tilt
         }
 
         private void OnDetached(object? sender, VisualTreeAttachmentEventArgs e) => ToRest();
-
-        /// <summary>
-        /// Whether the press being followed was lost without a word: its pointer no longer captured
-        /// within the control, as when the part it was captured by left the tree. Then a new press
-        /// starts afresh rather than being ignored.
-        /// </summary>
-        private bool Lost() =>
-            _pointer?.Captured is not Visual captured ||
-            !(ReferenceEquals(captured, _control) || _control.IsVisualAncestorOf(captured));
 
         /// <summary>The target is still this control's: not swapped out by a new template, and laid out.</summary>
         private bool TargetStands() =>

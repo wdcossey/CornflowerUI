@@ -548,6 +548,35 @@ public class TiltTests
         Assert.IsType<MatrixTransform>(CfTilt.TargetOf(button).RenderTransform);
     }
 
+    // The pointer is captured by what was hit. If that leaves the tree mid-press (content swapped),
+    // Avalonia 12.1.4 hands the capture to its nearest ancestor still in the tree, inside the
+    // control, so the release still arrives and the tilt returns.
+    [AvaloniaFact]
+    public void When_The_Captured_Element_Goes_Mid_Press_The_Release_Still_Arrives()
+    {
+        using var clock = new TestClock();
+        using var page = new Page(FirstButton);
+        var button = page.Buttons[FirstButton.Name];
+        var content = new Border { Width = 300, Height = 120, Background = Brushes.Transparent };
+        button.Content = content;
+        button.Padding = default;
+        Dispatcher.UIThread.RunJobs();
+        IPointer? pointer = null;
+        button.AddHandler(InputElement.PointerPressedEvent, (_, e) => pointer ??= e.Pointer, RoutingStrategies.Tunnel);
+        var at = page.At(FirstButton.Name, new Point(30, 20));
+
+        var touch = page.Window.TouchBegin(at);
+        clock.At(SettleMs);
+        Assert.Same(content, pointer!.Captured);
+        button.Content = null;                                      // the captured element goes
+        Dispatcher.UIThread.RunJobs();
+        Assert.Same(CfTilt.TargetOf(button), pointer.Captured);
+
+        page.Window.TouchEnd(touch, at);
+        clock.At(SettleMs + 1000);
+        Assert.Equal(TiltState.Rest, CfTilt.Current(button));
+    }
+
     [AvaloniaFact]
     public void The_Controls_Own_Transform_Is_Left_Alone_And_The_Roots_Put_Back()
     {
