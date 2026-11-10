@@ -101,8 +101,32 @@ public static class Tilt
         if (control is not TemplatedControl || control.GetVisualChildren().FirstOrDefault() is not Control root)
             return control;
 
-        return control.GetVisualDescendants().OfType<Control>()
-                   .FirstOrDefault(c => ReferenceEquals(c.TemplatedParent, control) && GetIsTarget(c)) ?? root;
+        return MarkedPart(control, root) ?? root;
+    }
+
+    /// <summary>The first template part marked <see cref="IsTargetProperty"/>, not looking into the content.</summary>
+    private static Control? MarkedPart(Control control, Control part)
+    {
+        if (!ReferenceEquals(part.TemplatedParent, control)) return null;
+        if (GetIsTarget(part)) return part;
+
+        foreach (var child in part.GetVisualChildren())
+        {
+            if (child is Control c && MarkedPart(control, c) is { } found) return found;
+        }
+
+        return null;
+    }
+
+    /// <summary>Whether a tilt-enabled control nearer the press than <paramref name="control"/> will tilt instead: only the nearest tilts, as the toolkit's.</summary>
+    private static bool NearerTiltBelow(Control control, object? source)
+    {
+        for (var v = source as Visual; v is not null && !ReferenceEquals(v, control); v = v.GetVisualParent())
+        {
+            if (v is Control c && GetIsEnabled(c)) return true;
+        }
+
+        return false;
     }
 
     private enum Phase
@@ -156,7 +180,9 @@ public static class Tilt
 
         private void OnPressed(object? sender, PointerPressedEventArgs e)
         {
-            if (_phase is Phase.Pressed or Phase.Paused || !e.GetCurrentPoint(_control).Properties.IsLeftButtonPressed)
+            if (!e.GetCurrentPoint(_control).Properties.IsLeftButtonPressed || NearerTiltBelow(_control, e.Source))
+                return;
+            if (_phase is Phase.Pressed or Phase.Paused && !Lost())
                 return;
             if (TargetOf(_control) is not { } target || target.GetVisualParent() is not { } parent)
                 return;
@@ -187,7 +213,12 @@ public static class Tilt
                 return;
 
             var press = e.GetPosition(parent);
-            if (!_target.Bounds.Contains(press))    // edges included
+            // On the control: its own bounds, untilted, edges included. A control drawn tilted
+            // itself (no template) has only its bounds in its parent.
+            var on = ReferenceEquals(_target, _control)
+                ? _target.Bounds.Contains(press)
+                : new Rect(_control.Bounds.Size).Contains(e.GetPosition(_control));
+            if (!on)
             {
                 if (_phase == Phase.Pressed) StartReturn(Phase.Paused);
                 return;
@@ -210,13 +241,31 @@ public static class Tilt
 
         private void OnDetached(object? sender, VisualTreeAttachmentEventArgs e) => ToRest();
 
+        /// <summary>
+        /// Whether the press being followed was lost without a word: its pointer no longer captured
+        /// within the control, as when the part it was captured by left the tree. Then a new press
+        /// starts afresh rather than being ignored.
+        /// </summary>
+        private bool Lost() =>
+            _pointer?.Captured is not Visual captured ||
+            !(ReferenceEquals(captured, _control) || _control.IsVisualAncestorOf(captured));
+
+        /// <summary>The target is still this control's: not swapped out by a new template, and laid out.</summary>
+        private bool TargetStands() =>
+            _target is not null && (ReferenceEquals(_target, _control) || _control.IsVisualAncestorOf(_target)) &&
+            _target.Bounds.Width > 0 && _target.Bounds.Height > 0;
+
         /// <summary>One frame of a press: the tilt for the finger as the current tilt shows it. Steps again next frame until it settles.</summary>
         private void Step()
         {
             Cancel();
-            if (_target is null) return;
+            if (!TargetStands())
+            {
+                ToRest();
+                return;
+            }
 
-            var bounds = _target.Bounds;
+            var bounds = _target!.Bounds;
             var next = TiltModel.Step(State, bounds.Size, _press - bounds.Position, _eye);
             var moved = Math.Abs(next.RotationX - State.RotationX) + Math.Abs(next.RotationY - State.RotationY) +
                         Math.Abs(next.OffsetZ - State.OffsetZ);
@@ -252,14 +301,14 @@ public static class Tilt
         {
             _pending = null;
             var factor = TiltModel.ReturnFactor(CornflowerClock.Now - _released);
-            if (factor <= 0 || _target is null)
+            if (factor <= 0 || !TargetStands())
             {
                 if (_phase == Phase.Paused) Clear();
                 else ToRest();
                 return;
             }
 
-            Show(_held.Scale(factor), _target.Bounds.Size);
+            Show(_held.Scale(factor), _target!.Bounds.Size);
             _pending = CornflowerClock.RequestFrame(_control, Return);
         }
 

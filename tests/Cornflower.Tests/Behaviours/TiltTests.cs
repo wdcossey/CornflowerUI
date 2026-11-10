@@ -27,14 +27,14 @@ namespace Cornflower.Tests.Behaviours;
 public class TiltTests
 {
     /// <summary>
-    /// How near a settled angle has to be, in degrees. The model's worst error over the 100 grid
-    /// presses is 0.019°, and the readings are logged to 0.001°; #60's model without the step
-    /// through the tilt is out by up to 1.26°.
+    /// How near a settled angle has to be, in degrees: 1.5 times the model's worst over the 200
+    /// grid presses of both profiles (0.026°). The readings are logged to 0.001°; without the bias
+    /// (#60's curve, the bias taken out) the readings are out by up to 1.26°.
     /// </summary>
-    private const double AngleTolerance = 0.03;
+    private const double AngleTolerance = 0.04;
 
-    /// <summary>How near a settled depth has to be, in view pixels. The model's worst over the grid is 0.037.</summary>
-    private const double DepthTolerance = 0.06;
+    /// <summary>How near a settled depth has to be, in view pixels: 1.5 times the model's worst over both grids (0.056).</summary>
+    private const double DepthTolerance = 0.085;
 
     /// <summary>Long enough for any press to settle: it takes four or five frames.</summary>
     private const double SettleMs = 160;
@@ -107,8 +107,8 @@ public class TiltTests
         AssertGrid(page, name, GridPresses);
     }
 
-    // The 720p profile: a smaller view at another scaling, and the same eye distance in view pixels
-    // fits it as well as the reference profile's (1,055: worst 0.016°, rms 0.006°).
+    // The 720p profile: a smaller view at another scaling, and the same eye, in view pixels, fits
+    // it as well as the reference profile (worst 0.021°, rms 0.0075°).
     [AvaloniaTheory]
     [InlineData("A")]
     [InlineData("B")]
@@ -498,6 +498,54 @@ public class TiltTests
         Dispatcher.UIThread.RunJobs();
 
         Assert.Same(button.GetVisualChildren().Single(), CfTilt.TargetOf(button));
+    }
+
+    // The toolkit tilts only the nearest tiltable element: a tilting Button inside a tilting item
+    // tilts, and the item doesn't.
+    [AvaloniaFact]
+    public void Only_The_Nearest_Tilting_Control_Tilts()
+    {
+        using var clock = new TestClock();
+        var button = new Button { Content = "inner", Width = 200, Height = 80 };
+        CfTilt.SetIsEnabled(button, true);
+        var item = new ContentControl { Content = button, Padding = new Thickness(20) };
+        CfTilt.SetIsEnabled(item, true);
+        var canvas = new Canvas { Children = { item } };
+        Canvas.SetLeft(item, 50);
+        Canvas.SetTop(item, 100);
+        using var scene = new Scene(canvas);
+
+        scene.Window.TouchBegin(new Point(50 + 20 + 30, 100 + 20 + 20));
+        clock.At(SettleMs);
+
+        Assert.NotEqual(TiltState.Rest, CfTilt.Current(button));
+        Assert.Equal(TiltState.Rest, CfTilt.Current(item));
+    }
+
+    // A new template mid-press (a theme swapped, say) takes the captured part away without a
+    // release: the tilt goes to rest, and the next press tilts the new root.
+    [AvaloniaFact]
+    public void A_New_Template_Mid_Press_Puts_It_At_Rest_And_The_Next_Press_Tilts()
+    {
+        using var clock = new TestClock();
+        using var page = new Page([FirstButton], HitLayerTheme());
+        var button = page.Buttons[FirstButton.Name];
+        var at = page.At(FirstButton.Name, new Point(30, 20));
+
+        page.Window.TouchBegin(at);
+        clock.At(8);                                                // a step pending
+        var oldPart = CfTilt.TargetOf(button);
+        button.Theme = HitLayerTheme();
+        Dispatcher.UIThread.RunJobs();
+        clock.At(SettleMs);
+        Assert.Equal(TiltState.Rest, CfTilt.Current(button));
+        Assert.Null(oldPart.RenderTransform);
+
+        page.Window.TouchBegin(at);
+        clock.At(2 * SettleMs);
+        Assert.NotEqual(TiltState.Rest, CfTilt.Current(button));
+        Assert.NotSame(oldPart, CfTilt.TargetOf(button));
+        Assert.IsType<MatrixTransform>(CfTilt.TargetOf(button).RenderTransform);
     }
 
     [AvaloniaFact]

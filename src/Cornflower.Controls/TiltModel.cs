@@ -33,17 +33,18 @@ internal readonly record struct TiltState(double RotationX, double RotationY, do
 /// is, and further for an element far from the screen's centre. That is the whole of #60's
 /// (1 + 0.08 |d|) term and of its bias of up to 1° by screen position: with the linear rule and
 /// this step, the settled angles match all 100 grid presses of run <c>20261109-2307-dev11</c>
-/// within 0.019° (rms 0.006°), and the depths within 0.04.
+/// within 0.026° (rms 0.008°), and the depths within 0.06; on the 720p profile (run
+/// <c>20261110-0851-dev10</c>), within 0.021° and 0.045, with nothing changed.
 /// </para>
 /// <para>
 /// <b>The projection.</b> The phone puts a <c>PlaneProjection</c> on the template root, about its
-/// centre, and translates the root by <see cref="EyeShift"/> × (the screen's centre − the root's
-/// centre) with a <c>RenderTransform</c>, cancelled by the projection's <c>GlobalOffsetX/Y</c>.
-/// The projection's camera is on its own element's centre; the translation moves the element and
-/// leaves the camera, so the eye ends up over the point that far towards the screen's centre.
-/// <see cref="EyeDistance"/> is that camera's distance, fitted to the grid. Avalonia has no
-/// projection, so <see cref="ToMatrix"/> builds the same mapping as one perspective matrix, with
-/// the eye placed directly.
+/// centre, and translates the root by 0.8 × (the screen's centre − the root's centre) with a
+/// <c>RenderTransform</c>, cancelled by the projection's <c>GlobalOffsetX/Y</c>. That moves the
+/// element and not the projection's camera, so the eye ends up over a point towards the screen's
+/// centre. <see cref="EyeDistance"/> is the camera's distance as measured (#66), and
+/// <see cref="EyeShift"/> is fitted to the grid with it. The grid fixes their ratio, not each:
+/// 0.8 at 1,055 fits as well. Avalonia has no projection, so <see cref="ToMatrix"/> builds the
+/// same mapping as one perspective matrix, with the eye placed directly.
 /// </para>
 /// </remarks>
 internal static class TiltModel
@@ -54,14 +55,19 @@ internal static class TiltModel
     /// <summary>The greatest depth, in view pixels: a press at the centre sinks this far.</summary>
     public const double MaxDepth = 25;
 
-    /// <summary>How far the eye sits towards the screen's centre from the element's: the 0.8 of the phone's translation.</summary>
-    public const double EyeShift = 0.8;
+    /// <summary>
+    /// How far the eye sits towards the screen's centre from the element's, as a fraction. Fitted
+    /// to the grid's 200 angles with <see cref="EyeDistance"/> fixed (least rms at 0.755 to 0.76).
+    /// The phone translates the element by 0.8, so the eye is not quite over its translated centre.
+    /// </summary>
+    public const double EyeShift = 0.76;
 
     /// <summary>
-    /// The eye's distance from the screen, in view pixels. Fitted to the grid's 200 angles on the
-    /// reference profile (rms least at 1,050 to 1,060); whether it scales with the screen is open.
+    /// The eye's distance from the screen, in view pixels: <c>PlaneProjection</c>'s camera, as
+    /// stream A's <c>projections</c> probe measured it (#66, <c>tools/refapp/README.md</c>, "Motion").
+    /// The same in view pixels on the 720p profile, so it doesn't scale with the screen.
     /// </summary>
-    public const double EyeDistance = 1055;
+    public const double EyeDistance = 999;
 
     /// <summary>How long the tilt holds after the finger lets go: 180 ms (fit to 1,199 frames: 178).</summary>
     public static readonly TimeSpan Hold = TimeSpan.FromMilliseconds(180);
