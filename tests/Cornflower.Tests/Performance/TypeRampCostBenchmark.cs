@@ -68,7 +68,7 @@ public class TypeRampCostBenchmark
     }
 
     /// <summary>The style's setters, base first, each property's last.</summary>
-    private static Dictionary<AvaloniaProperty, object?> Setters(ControlTheme theme)
+    internal static Dictionary<AvaloniaProperty, object?> Setters(ControlTheme theme)
     {
         var chain = new List<ControlTheme>();
         for (var t = theme; t is not null; t = t.BasedOn)

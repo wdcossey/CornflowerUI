@@ -24,7 +24,8 @@ namespace Cornflower.Themes.Wp81;
 /// 1.33 em (ADR 0003).</para>
 /// <para><b>CharacterSpacing</b>, in thousandths of an em, is <c>LetterSpacing</c> n × <c>FontSize</c> / 1000
 /// (docs/spikes, 5).</para>
-/// <para>Each value is set at style priority, so a value the app sets on the <c>TextBlock</c> wins, and is
+/// <para>Each value is set at style priority, and only where nothing else sets the property, so a value the app
+/// sets, by itself, a style or a <c>ControlTheme</c> based on a text style, wins. It is
 /// worked out again whenever the <c>TextBlock</c>'s font or sizes change: a local <c>FontSize</c>, or a size an
 /// extension pack sets through the type ramp's keys, keeps the phone's line. A class handler does this, rather
 /// than a binding in each style, because bindings cost about 4 µs each per <c>TextBlock</c>
@@ -64,7 +65,20 @@ internal static class PhoneTextLine
     static PhoneTextLine()
     {
         BaselineToBaselineProperty.Changed.AddClassHandler<TextBlock>((b, _) => UpdatePadding(b));
-        TextBlock.LineHeightProperty.Changed.AddClassHandler<TextBlock>((b, _) => UpdatePadding(b));
+        TextBlock.LineHeightProperty.Changed.AddClassHandler<TextBlock>((b, _) =>
+        {
+            UpdateLineHeight(b);
+            UpdatePadding(b);
+        });
+        // Another source of a value this sets (the app's, a derived theme's) takes over, or gives it back.
+        TextBlock.PaddingProperty.Changed.AddClassHandler<TextBlock>((b, _) => UpdatePadding(b));
+        TextBlock.LetterSpacingProperty.Changed.AddClassHandler<TextBlock>((b, _) => UpdateLetterSpacing(b));
+        StyledElement.ThemeProperty.Changed.AddClassHandler<TextBlock>((b, _) =>
+        {
+            UpdateLineHeight(b);
+            UpdateLetterSpacing(b);
+            UpdatePadding(b);
+        });
         TextBlock.FontFamilyProperty.Changed.AddClassHandler<TextBlock>((b, _) => UpdatePadding(b));
         TextBlock.FontWeightProperty.Changed.AddClassHandler<TextBlock>((b, _) => UpdatePadding(b));
         TextBlock.FontStyleProperty.Changed.AddClassHandler<TextBlock>((b, _) => UpdatePadding(b));
@@ -144,6 +158,11 @@ internal static class PhoneTextLine
         Put(block, Slot.LetterSpacing, TextBlock.LetterSpacingProperty, spacing * block.FontSize / 1000);
     }
 
+    /// <summary>
+    /// Sets <paramref name="value"/> at style priority, unless something else sets the property: the app, an app's
+    /// style, or a <c>ControlTheme</c> based on a text style. An immediate value at style priority would beat a
+    /// <c>ControlTheme</c>'s setters, so this one gives way to any value it finds, and is put back when that goes.
+    /// </summary>
     private static void Put<T>(TextBlock block, Slot slot, StyledProperty<T> property, T value)
     {
         var applied = block.GetValue(AppliedProperty);
@@ -153,24 +172,47 @@ internal static class PhoneTextLine
             block.SetValue(AppliedProperty, applied);
         }
 
-        ref var entry = ref applied[slot];
-        if (entry.Set is not null && Equals(entry.Value, value))
+        if (applied.Busy)
             return;
 
-        var previous = entry.Set;
-        entry = (block.SetValue(property, value, BindingPriority.Style), value);
-        previous?.Dispose();
+        ref var entry = ref applied[slot];
+        if (entry.Set is not null && Equals(entry.Value, value) && Equals(block.GetValue(property), value))
+            return;
+
+        applied.Busy = true;
+        try
+        {
+            var previous = entry.Set;
+            entry = default;
+            previous?.Dispose();
+            if (!block.IsSet(property))
+                entry = (block.SetValue(property, value, BindingPriority.Style), value);
+        }
+        finally
+        {
+            applied.Busy = false;
+        }
     }
 
     private static void Take(TextBlock block, Slot slot)
     {
-        if (block.GetValue(AppliedProperty) is not { } applied)
+        if (block.GetValue(AppliedProperty) is not { Busy: false } applied)
             return;
 
         ref var entry = ref applied[slot];
-        var previous = entry.Set;
-        entry = default;
-        previous?.Dispose();
+        if (entry.Set is not { } previous)
+            return;
+
+        applied.Busy = true;
+        try
+        {
+            entry = default;
+            previous.Dispose();
+        }
+        finally
+        {
+            applied.Busy = false;
+        }
     }
 
     private enum Slot
@@ -184,6 +226,9 @@ internal static class PhoneTextLine
     private sealed class Applied
     {
         private readonly (IDisposable? Set, object? Value)[] _entries = new (IDisposable?, object?)[3];
+
+        /// <summary>While this sets or takes back a value, the change it raises isn't handled again.</summary>
+        public bool Busy { get; set; }
 
         public ref (IDisposable? Set, object? Value) this[Slot slot] => ref _entries[(int)slot];
     }

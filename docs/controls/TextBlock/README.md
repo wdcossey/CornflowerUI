@@ -52,7 +52,8 @@ distance between baselines, as on the phone.
   line height below the one before, and the height is the phone's, from a `Padding` the theme works out from the
   `TextBlock`'s own font and sizes. Descenders draw below a line too short for them, as on the phone.
 - **A `TextBlock`'s own values.** A local `FontSize` keeps the phone's line and letter spacing at the new size. A
-  `Padding`, `LineHeight` or `LetterSpacing` the app sets wins over the style's.
+  `Padding`, `LineHeight` or `LetterSpacing` the app sets, on the `TextBlock`, in a style or in a `ControlTheme`
+  based on a text style, wins over the style's.
 - **Dark and light.** The brushes follow the theme variant, as the phone's `ThemeResource`s do.
 - **No global rule.** The styles add nothing to the style budget: a `ControlTheme`'s setters cost only the
   `TextBlock`s that use it.
@@ -72,7 +73,7 @@ application's `Resources` overrides it ([ADR 0004](../../decisions/0004-larger-s
   `<Style>CharacterSpacing` for GroupHeader, MessageDialogTitle and FlyoutPickerTitle, in thousandths of an em.
 
 No style sets a width. What the hooks cost is in [PLAN.md](PLAN.md#the-hooks-adr-0004): the `DynamicResource`s
-that the variant needs anyway cost most of it, and the size hooks about 1 µs more per styled `TextBlock`.
+that the variant needs anyway cost most of it, and the size hooks 1 to 2 µs more per styled `TextBlock`.
 
 ## The ladder
 
@@ -91,8 +92,11 @@ substituted.
 - **The phone's text-size setting** (`IsTextScaleFactorEnabled`) has no equivalent.
 - **Not captured on the phone**: the two MessageDialog styles, and two-line text.
 - **Not run on the Android device** yet: the phone was locked on 2026-11-10.
-- **Fallback fonts**: the `Padding` reads the `TextBlock`'s own face, so a line whose fallback font (a script
-  Selawik lacks) has a taller ascent sits lower than the phone's line by the difference.
+- **Fallback fonts and larger runs**: the `Padding` reads the `TextBlock`'s own face and size, so a first line
+  whose fallback font (a script Selawik lacks) or a larger `Run` has a taller ascent sits lower than the phone's
+  line by the difference.
+- **A local `LineHeight` on a MaxHeight style** is taken as it is, where the phone would still keep the font's
+  line if it were shorter.
 
 ## The checklist
 

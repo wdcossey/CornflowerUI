@@ -107,8 +107,9 @@ the edge pixel.
 | `Margin`, `Opacity` (ComboBoxPlaceholder) | The same, by `DynamicResource` | |
 
 `PhoneTextLine` (`src/Cornflower.Themes.Wp81/PhoneTextLine.cs`) is internal to the theme. It works each value
-out from the `TextBlock`'s own font and sizes whenever they change, at style priority: a local `FontSize`
-keeps the phone's line, and a value the app sets itself wins. It is a class handler, not a binding in each
+out from the `TextBlock`'s own font and sizes whenever they change, at style priority and only where nothing
+else sets the property: a local `FontSize` keeps the phone's line, and a value the app sets, by itself, in a
+style or in a `ControlTheme` based on a text style, wins. It is a class handler, not a binding in each
 style: bindings were measured at about 4 µs each per `TextBlock` (below).
 
 ## The hooks (ADR 0004)
@@ -133,19 +134,20 @@ depth of 20, Release, headless on the desktop PC, µs per `TextBlock` (the PR ha
 
 | Style | No style | `StaticResource` | Brushes and fonts dynamic | `DynamicResource` | The theme |
 |---|---|---|---|---|---|
-| `BodyTextBlockStyle` | 12.6 | 18.7 | 30.3 | 31.5 | 33.8 |
-| `GroupHeaderTextBlockStyle` | 13.3 | 22.4 | 32.4 | 33.5 | 39.1 |
+| `BodyTextBlockStyle` | 13.8 | 21.1 | 33.5 | 35.6 | 35.3 |
+| `GroupHeaderTextBlockStyle` | 14.6 | 25.5 | 36.5 | 37.8 | 43.8 |
 
 The columns: a plain `TextBlock`; every value fixed, as `StaticResource` would fix it (with `PhoneTextLine`'s
 values worked out once); only the brushes and font families dynamic; every resource dynamic, `PhoneTextLine`'s
-values fixed; and the theme as shipped. Three earlier runs the same morning, before the theme's own load was
-taken out of the timing, were within 2.6 µs of this one in every cell. Bindings in place of `PhoneTextLine`, measured first, made the theme 66.6 and 85.6.
+values fixed; and the theme as shipped. Four earlier runs the same morning, of earlier versions, had every
+difference between columns within 2.6 µs of this one's; this machine was busier for this run, so every cell
+is up 1 to 3 µs. Bindings in place of `PhoneTextLine`, measured first, made the theme 66.6 and 85.6.
 
 Most of the cost of `DynamicResource` is the first one on an element: a style whose brushes and fonts are
 dynamic, which the variant and an app's own font need whatever the hooks do, costs nearly what one with every
-resource dynamic does. So the size hooks themselves add about 1 µs per styled `TextBlock` (1.2 and 1.1;
+resource dynamic does. So the size hooks themselves add about 1 to 2 µs per styled `TextBlock` (2.1 and 1.3;
 0.5 to 2.6 over the earlier runs).
-`PhoneTextLine` adds 2.3 (Body) and 5.6 (GroupHeader, which also has letter spacing). A `TextBlock`
+`PhoneTextLine` adds nothing measurable for Body and 6.0 for GroupHeader, which also has letter spacing. A `TextBlock`
 without a text style pays a property read or two in a class handler when its font changes.
 
 ## Behaviours
@@ -166,6 +168,7 @@ Each has a test in `tests/Cornflower.Tests/Controls/TextBlockTests.cs` unless na
    `Each_Style_Draws_In_The_Phones_Colour`, `The_Colour_Follows_A_Change_Of_Variant`.
 9. **A local `FontSize` keeps the phone's line; a value the app sets wins; taking the style away takes its
    values away.** `A_Local_FontSize_Keeps_The_Phones_Line`, `A_Value_The_App_Sets_Wins_Over_The_Styles`,
+   `A_Value_An_Apps_Style_Sets_Wins_Over_The_Styles`, `A_Value_A_Derived_ControlTheme_Sets_Wins_Over_The_Styles`,
    `Taking_The_Style_Away_Takes_Its_Values_Away`.
 10. **Every hook is a `DynamicResource`, and a key in a wider window's `Resources` changes the style** (ADR
     0004). `Every_Resource_A_Style_Reads_Is_Reached_By_DynamicResource`,

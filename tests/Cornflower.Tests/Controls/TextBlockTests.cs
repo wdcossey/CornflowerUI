@@ -165,8 +165,9 @@ public class TextBlockTests
 
     // ── The phone's line ─────────────────────────────────────────────────────────────────────
 
+    // Only the captured styles: the MessageDialog styles' heights would be the model checking itself.
     [AvaloniaTheory]
-    [MemberData(nameof(TextStyleReadings.Keys), MemberType = typeof(TextStyleReadings))]
+    [MemberData(nameof(TextStyleReadings.CapturedKeys), MemberType = typeof(TextStyleReadings))]
     public void Each_Style_Is_As_Tall_As_On_The_Phone(string key)
     {
         var phone = TextStyleReadings.Get(key);
@@ -179,7 +180,7 @@ public class TextBlockTests
     }
 
     [AvaloniaTheory]
-    [MemberData(nameof(TextStyleReadings.Keys), MemberType = typeof(TextStyleReadings))]
+    [MemberData(nameof(TextStyleReadings.CapturedKeys), MemberType = typeof(TextStyleReadings))]
     public void Each_Styles_First_Baseline_Is_The_Phones(string key)
     {
         var phone = TextStyleReadings.Get(key);
@@ -361,6 +362,34 @@ public class TextBlockTests
         Assert.Equal(40, listed.Block.LineHeight);
     }
 
+    // An app's or a pack's own ControlTheme, based on a text style, can set what PhoneTextLine sets.
+    [AvaloniaFact]
+    public void A_Value_A_Derived_ControlTheme_Sets_Wins_Over_The_Styles()
+    {
+        using var spaced = new Specimens("GroupHeaderTextBlockStyle");
+        using var listed = new Specimens("ListViewItemSubheaderTextBlockStyle");
+        var dense = new ControlTheme(typeof(TextBlock)) { BasedOn = spaced.Block.Theme };
+        dense.Setters.Add(new Setter(TextBlock.PaddingProperty, new Thickness(12, 0)));
+        dense.Setters.Add(new Setter(TextBlock.LetterSpacingProperty, 0.0));
+        var tall = new ControlTheme(typeof(TextBlock)) { BasedOn = listed.Block.Theme };
+        tall.Setters.Add(new Setter(TextBlock.LineHeightProperty, 40.0));
+
+        spaced.Block.Theme = dense;
+        listed.Block.Theme = tall;
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(new Thickness(12, 0), Padding(spaced.Block));
+        Assert.Equal(0, spaced.Block.LetterSpacing);
+        Assert.Equal(40, listed.Block.LineHeight);
+
+        spaced.Block.FontSize = 30;
+        listed.Block.FontSize = 30;
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(new Thickness(12, 0), Padding(spaced.Block));
+        Assert.Equal(0, spaced.Block.LetterSpacing);
+        Assert.Equal(40, listed.Block.LineHeight);
+    }
+
     [AvaloniaFact]
     public void Taking_The_Style_Away_Takes_Its_Values_Away()
     {
@@ -385,16 +414,10 @@ public class TextBlockTests
         foreach (var style in TextStyleReadings.All.Select(r => r.Key))
         {
             theme.TryGetResource(style, null, out var found);
-            var chain = new List<ControlTheme>();
-            for (var t = (ControlTheme?)found; t is not null; t = t.BasedOn)
-                chain.Insert(0, t);
-            var setters = new Dictionary<AvaloniaProperty, Setter>();
-            foreach (var setter in chain.SelectMany(t => t.Setters).OfType<Setter>())
-                setters[setter.Property!] = setter;
-            foreach (var setter in setters.Values)
+            foreach (var (property, value) in TypeRampCostBenchmark.Setters((ControlTheme)found!))
             {
-                if (setter.Value is DynamicResourceExtension { ResourceKey: string key })
-                    yield return (style, setter.Property!, key);
+                if (value is DynamicResourceExtension { ResourceKey: string key })
+                    yield return (style, property, key);
             }
         }
     }
