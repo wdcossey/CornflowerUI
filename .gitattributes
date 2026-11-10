@@ -4,3 +4,5 @@
 *.png binary
 *.ttf binary
 *.br binary
+# The generator reads its own enum back for the values it gave; keep it as written.
+src/Cornflower.Controls/Icons/*.g.cs text eol=lf

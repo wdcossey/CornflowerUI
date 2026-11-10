@@ -18,7 +18,7 @@ public class LucideIcon : TemplatedControl
 {
     /// <summary>Defines <see cref="Kind"/>.</summary>
     public static readonly StyledProperty<LucideIconKind?> KindProperty =
-        AvaloniaProperty.Register<LucideIcon, LucideIconKind?>(nameof(Kind), validate: kind => kind is null || Enum.IsDefined(kind.Value));
+        AvaloniaProperty.Register<LucideIcon, LucideIconKind?>(nameof(Kind));
 
     /// <summary>Defines <see cref="Data"/>.</summary>
     public static readonly DirectProperty<LucideIcon, Geometry?> DataProperty =
@@ -26,7 +26,11 @@ public class LucideIcon : TemplatedControl
 
     private Geometry? _data;
 
-    /// <summary>The icon. Null, the default, draws nothing.</summary>
+    /// <summary>
+    /// The icon. Null, the default, draws nothing, and so does a value that names no icon in this
+    /// version: one a later Lucide dropped, compiled into a library or stored by an app. Values are
+    /// never reused, so such a value never draws another icon.
+    /// </summary>
     public LucideIconKind? Kind
     {
         get => GetValue(KindProperty);
@@ -46,7 +50,7 @@ public class LucideIcon : TemplatedControl
         base.OnPropertyChanged(change);
         if (change.Property == KindProperty)
         {
-            Data = change.GetNewValue<LucideIconKind?>() is { } kind ? LucideIcons.Get(kind) : null;
+            Data = change.GetNewValue<LucideIconKind?>() is { } kind && LucideIcons.Has(kind) ? LucideIcons.Get(kind) : null;
         }
     }
 }

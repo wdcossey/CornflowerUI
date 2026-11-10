@@ -42,7 +42,7 @@ try
     {
         case ["generate", .. var rest]:
         {
-            var options = Options(rest);
+            var options = Options(rest, "--zip", "--licence", "--out", "--namespace", "--enum", "--data");
             var pin = Pin.Load(pinPath);
             using var http = new HttpClient();
             var zip = await Pin.ReadAsync(http, pin.Icons, options.GetValueOrDefault("--zip"));
@@ -80,23 +80,35 @@ try
             return 1;
     }
 }
-catch (Exception e) when (e is FormatException or InvalidDataException or IOException or HttpRequestException or System.Text.Json.JsonException)
+catch (Exception e)
 {
-    Console.Error.WriteLine(e.Message);
+    // A timed-out download, a read-only folder, a bad zip: one line and exit 1, not a stack trace.
+    Console.Error.WriteLine(e is TaskCanceledException ? "The download timed out." : e.Message);
     return 1;
 }
 
-static Dictionary<string, string> Options(string[] rest)
+// Only the named options, each once, each with a value that isn't itself an option, so a misspelt
+// --out can't quietly write over the committed icons.
+static Dictionary<string, string> Options(string[] rest, params string[] known)
 {
     var options = new Dictionary<string, string>(StringComparer.Ordinal);
-    for (var i = 0; i < rest.Length; i++)
+    for (var i = 0; i < rest.Length; i += 2)
     {
-        if (!rest[i].StartsWith("--", StringComparison.Ordinal) || i + 1 >= rest.Length)
+        var name = rest[i];
+        if (!known.Contains(name, StringComparer.Ordinal))
         {
-            throw new FormatException($"Unexpected argument {rest[i]}.");
+            throw new FormatException($"Unknown option {name}. Options: {string.Join(", ", known)}.");
         }
 
-        options[rest[i]] = rest[++i];
+        if (i + 1 >= rest.Length || rest[i + 1].StartsWith("--", StringComparison.Ordinal))
+        {
+            throw new FormatException($"{name} needs a value.");
+        }
+
+        if (!options.TryAdd(name, rest[i + 1]))
+        {
+            throw new FormatException($"{name} is given twice.");
+        }
     }
 
     return options;

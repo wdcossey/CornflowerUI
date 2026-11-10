@@ -123,6 +123,12 @@ internal static class SvgIcon
             throw new FormatException($"{name}: <{tag}> isn't drawn.");
         }
 
+        // An <animate> or <title> inside a shape would be dropped without a word: refuse it.
+        if (element.Nodes().Any(node => node is not XComment && !(node is XText text && string.IsNullOrWhiteSpace(text.Value))))
+        {
+            throw new FormatException($"{name}: <{tag}> has something inside it, which Lucide's convention doesn't.");
+        }
+
         foreach (var attribute in element.Attributes())
         {
             var key = attribute.Name.LocalName;

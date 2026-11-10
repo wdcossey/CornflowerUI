@@ -113,6 +113,8 @@ public class LucideGeneratorTests
     [InlineData("""<path d="M1 1L2 2" stroke-width="1" />""")]              // a pen of its own
     [InlineData("""<path d="M1 1L2 2" transform="scale(2)" />""")]
     [InlineData("""<g><path d="M1 1L2 2" /></g>""")]
+    [InlineData("""<path d="M1 1L2 2"><animate attributeName="d" /></path>""")] // nothing inside a shape
+    [InlineData("""<path d="M1 1L2 2"><title>x</title></path>""")]
     [InlineData("""<text>A</text>""")]
     [InlineData("""<rect x="1" y="1" width="0" height="4" />""")]
     [InlineData("")]
@@ -177,6 +179,46 @@ public class LucideGeneratorTests
         Assert.StartsWith("3\tabacus\t", Decompress(second["fixture.br"]), StringComparison.Ordinal);
     }
 
+    // git may check the enum out with CRLF; the values must still be read, every one of them.
+    [Fact]
+    public void A_Checkout_With_Crlf_Keeps_The_Values()
+    {
+        var first = Generator.Generate(Release(("minus", "M5 12h14"), ("plus", "M5 12h14M12 5v14"), ("x", "M18 6 6 18")), Out);
+        var lf = Encoding.UTF8.GetString(first["FixtureKind.g.cs"]);
+
+        var fromCrlf = Numbering.Parse(lf.Replace("\n", "\r\n", StringComparison.Ordinal));
+        var fromLf = Numbering.Parse(lf);
+
+        Assert.Equal(3, fromCrlf.Next);
+        Assert.Equal(fromLf.Values.OrderBy(pair => pair.Key), fromCrlf.Values.OrderBy(pair => pair.Key));
+        Assert.Equal(3, fromCrlf.Values.Count);
+    }
+
+    // Brotli's bytes can differ between native library versions; unchanged lines leave the committed file alone.
+    [Fact]
+    public void A_Data_File_With_The_Same_Lines_Is_Left_Alone()
+    {
+        var folder = Directory.CreateTempSubdirectory("lucide-write-").FullName;
+        try
+        {
+            var output = Out with { Folder = folder };
+            var files = Generator.Generate(Release(("minus", "M5 12h14")), output);
+            var data = Path.Combine(folder, output.DataName);
+            var otherBytes = Generator.Compress(Generator.Decompress(files[output.DataName])); // same lines
+            File.WriteAllBytes(data, otherBytes);
+            var before = File.GetLastWriteTimeUtc(data);
+            File.SetLastWriteTimeUtc(data, before.AddHours(-1));
+
+            Generator.Write(files, output);
+
+            Assert.Equal(before.AddHours(-1), File.GetLastWriteTimeUtc(data));
+        }
+        finally
+        {
+            Directory.Delete(folder, recursive: true);
+        }
+    }
+
     [Fact]
     public void An_Enum_Not_Written_By_The_Generator_Is_Refused() =>
         Assert.Throws<FormatException>(() => Numbering.Parse("public enum FixtureKind\n{\n    A,\n}\n"));
@@ -215,6 +257,8 @@ public class LucideGeneratorTests
             Add(archive, "icons/plus.svg", Svg("""<path d="M5 12h14" />"""));
             Add(archive, "icons/plus.json", "{}");
             Add(archive, "icons/minus.svg", Svg("""<path d="M5 12h14" />"""));
+            Add(archive, "preview/plus.svg", Svg("""<path d="M5 12h14" />""")); // not an icon: outside icons/
+            Add(archive, "icons/variants/plus.svg", Svg("""<path d="M5 12h14" />"""));
         }
 
         zip.Position = 0;

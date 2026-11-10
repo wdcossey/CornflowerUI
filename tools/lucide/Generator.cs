@@ -27,8 +27,10 @@ internal sealed record Numbering(IReadOnlyDictionary<string, int> Values, int Ne
 {
     public static readonly Numbering None = new(new Dictionary<string, int>(), 0);
 
-    private static readonly Regex MemberLine = new(@"^    (?<member>[A-Za-z0-9]+) = (?<value>\d+),$", RegexOptions.Multiline);
-    private static readonly Regex NextLine = new(@"^// Next value: (?<next>\d+)$", RegexOptions.Multiline);
+    // \r? because git may check the file out with CRLF (core.autocrlf), though .gitattributes asks for LF:
+    // in Multiline mode $ matches only before \n.
+    private static readonly Regex MemberLine = new(@"^    (?<member>[A-Za-z0-9]+) = (?<value>\d+),\r?$", RegexOptions.Multiline);
+    private static readonly Regex NextLine = new(@"^// Next value: (?<next>\d+)\r?$", RegexOptions.Multiline);
 
     /// <summary>The numbering in an enum the generator wrote, or <see cref="None"/> for none.</summary>
     public static Numbering Parse(string? source)
@@ -66,20 +68,21 @@ internal sealed record Numbering(IReadOnlyDictionary<string, int> Values, int Ne
 /// </para>
 /// <para>
 /// The output depends only on the release and the previous enum, so the same pin gives the same
-/// files: run <c>generate</c> again and <c>git status</c> shows nothing. Brotli's encoder is
-/// deterministic for one input and quality.
+/// files: run <c>generate</c> again and <c>git status</c> shows nothing. The data file is compared
+/// decompressed and left alone when its lines are unchanged, because Brotli's bytes for one input can
+/// differ between versions of the native library that .NET ships.
 /// </para>
 /// </remarks>
 internal static class Generator
 {
-    /// <summary>Reads the icons and the licence out of a release zip (<c>icons/*.svg</c>).</summary>
+    /// <summary>Reads the icons and the licence out of a release zip: only <c>icons/&lt;name&gt;.svg</c>, so an SVG anywhere else in it isn't taken for an icon.</summary>
     public static Release Read(string version, Stream zip, string licence)
     {
         using var archive = new ZipArchive(zip, ZipArchiveMode.Read);
         var icons = new List<(string, string)>();
         foreach (var entry in archive.Entries)
         {
-            if (!entry.FullName.EndsWith(".svg", StringComparison.Ordinal))
+            if (!entry.FullName.StartsWith("icons/", StringComparison.Ordinal) || entry.FullName.IndexOf('/', "icons/".Length) >= 0 || !entry.FullName.EndsWith(".svg", StringComparison.Ordinal))
             {
                 continue;
             }
@@ -125,14 +128,31 @@ internal static class Generator
         };
     }
 
-    /// <summary>Writes the files into <see cref="Output.Folder"/>, replacing what's there.</summary>
+    /// <summary>
+    /// Writes the files into <see cref="Output.Folder"/>, replacing what's there, except a data file whose
+    /// lines are unchanged, which is left as it is.
+    /// </summary>
     public static void Write(IReadOnlyDictionary<string, byte[]> files, Output output)
     {
         Directory.CreateDirectory(output.Folder);
         foreach (var (name, bytes) in files)
         {
-            File.WriteAllBytes(Path.Combine(output.Folder, name), bytes);
+            var path = Path.Combine(output.Folder, name);
+            if (name == output.DataName && File.Exists(path) && Decompress(File.ReadAllBytes(path)).AsSpan().SequenceEqual(Decompress(bytes)))
+            {
+                continue;
+            }
+
+            File.WriteAllBytes(path, bytes);
         }
+    }
+
+    internal static byte[] Decompress(byte[] data)
+    {
+        using var brotli = new BrotliStream(new MemoryStream(data), CompressionMode.Decompress);
+        using var raw = new MemoryStream();
+        brotli.CopyTo(raw);
+        return raw.ToArray();
     }
 
     /// <summary>Lucide's own PascalCase name for an icon, as its React and other packages spell it: <c>arrow-down-0-1</c> is <c>ArrowDown01</c>.</summary>

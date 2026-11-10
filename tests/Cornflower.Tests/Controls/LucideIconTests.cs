@@ -104,9 +104,19 @@ public class LucideIconTests
         Assert.Null(icon.Data);
     }
 
-    [AvaloniaFact]
-    public void A_Kind_That_Is_No_Icon_Is_Refused() =>
-        Assert.Throws<ArgumentException>(() => new LucideIcon { Kind = (LucideIconKind)(-1) });
+    // A value a later Lucide dropped, compiled into a library or stored, draws nothing rather than throwing.
+    [AvaloniaTheory]
+    [InlineData(-1)]
+    [InlineData(5000)]
+    public void A_Kind_That_Is_No_Icon_Draws_Nothing(int value)
+    {
+        var icon = new LucideIcon { Kind = LucideIconKind.Plus };
+        icon.Kind = (LucideIconKind)value;
+
+        Assert.Null(icon.Data);
+        Assert.False(LucideIcons.Has((LucideIconKind)value));
+    }
+
 
     // 20 view px, so an icon reaching its box's edges inks 22 of 24 units: 18.33 view px, 44 px at 2.4,
     // where the 8.1 Add glyph inks 44.25 px.

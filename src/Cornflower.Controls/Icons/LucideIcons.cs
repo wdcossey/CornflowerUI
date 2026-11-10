@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using System.Text;
 using Avalonia.Media;
+using Avalonia.Threading;
 
 namespace Cornflower.Controls;
 
@@ -18,7 +19,10 @@ namespace Cornflower.Controls;
 /// The first icon decompresses the set and indexes its lines by the enum's value, which each line
 /// starts with; the bytes are kept, and each icon is decoded and parsed when first asked for, then
 /// shared. A geometry is never changed after it's made, so one instance can be drawn by any number of
-/// controls. Icons are asked for on the UI thread, by <see cref="LucideIcon"/>.
+/// controls. A geometry is an Avalonia object, so it's made on the UI thread only: <see cref="Get"/> checks,
+/// as Avalonia does (the headless test platform lets any thread pass, so no test can hold it). Should two
+/// threads get past the check anyway, both get the one instance published first. The names and path data
+/// can be read from any thread.
 /// </para>
 /// </remarks>
 internal static class LucideIcons
@@ -28,8 +32,15 @@ internal static class LucideIcons
 
     private static readonly Lazy<Set> All = new(Load, LazyThreadSafetyMode.ExecutionAndPublication);
 
-    /// <summary>The icon's geometry, in Lucide's 24-unit box.</summary>
-    public static Geometry Get(LucideIconKind kind) => All.Value.Geometry(kind);
+    /// <summary>The icon's geometry, in Lucide's 24-unit box. On the UI thread only.</summary>
+    public static Geometry Get(LucideIconKind kind)
+    {
+        Dispatcher.UIThread.VerifyAccess();
+        return All.Value.Geometry(kind);
+    }
+
+    /// <summary>Whether <paramref name="kind"/> names an icon in this version's data.</summary>
+    public static bool Has(LucideIconKind kind) => All.Value.Has(kind);
 
     /// <summary>The icon's Lucide name, <c>arrow-down-0-1</c> for <see cref="LucideIconKind.ArrowDown01"/>.</summary>
     internal static string NameOf(LucideIconKind kind) => All.Value.Name(kind);
@@ -45,28 +56,31 @@ internal static class LucideIcons
         using var stream = typeof(LucideIcons).Assembly.GetManifestResourceStream(Resource)
             ?? throw new InvalidOperationException($"{Resource} isn't embedded.");
         using var brotli = new BrotliStream(stream, CompressionMode.Decompress);
-        using var bytes = new MemoryStream();
+        using var bytes = new MemoryStream(512 * 1024);
         brotli.CopyTo(bytes);
-        return new Set(bytes.ToArray());
+        // The stream's own buffer, not a copy of it: the set reads only its first Length bytes.
+        return new Set(bytes.GetBuffer(), (int)bytes.Length);
     }
 
     private sealed class Set
     {
         private readonly byte[] _data;
+        private readonly int _length;
         private readonly (int Name, int Path, int End)[] _lines; // by the enum's value; Name 0 for no line
         private readonly Geometry?[] _geometries;
 
-        public Set(byte[] data)
+        public Set(byte[] data, int length)
         {
             _data = data;
+            _length = length;
             var defined = Enum.GetValues<LucideIconKind>();
             _lines = new (int, int, int)[defined.Length == 0 ? 0 : (int)defined.Max() + 1];
             _geometries = new Geometry?[_lines.Length];
 
-            for (var start = 0; start < data.Length;)
+            for (var start = 0; start < length;)
             {
-                var end = Array.IndexOf(data, (byte)'\n', start);
-                end = end < 0 ? data.Length : end;
+                var end = Array.IndexOf(data, (byte)'\n', start, length - start);
+                end = end < 0 ? length : end;
                 var nameTab = Array.IndexOf(data, (byte)'\t', start, end - start);
                 var pathTab = nameTab < 0 ? -1 : Array.IndexOf(data, (byte)'\t', nameTab + 1, end - nameTab - 1);
                 if (pathTab < 0 || !int.TryParse(data.AsSpan(start, nameTab - start), out var value) || (uint)value >= (uint)_lines.Length || _lines[value].Name != 0)
@@ -87,6 +101,8 @@ internal static class LucideIcons
 
         public int Count { get; }
 
+        public bool Has(LucideIconKind kind) => (uint)(int)kind < (uint)_lines.Length && _lines[(int)kind].Name != 0;
+
         public string Name(LucideIconKind kind)
         {
             var line = Line(kind);
@@ -100,15 +116,20 @@ internal static class LucideIcons
         }
 
         // Generated data has only absolute M, L, C, Q, A and Z, which StreamGeometry reads as SVG does.
-        public Geometry Geometry(LucideIconKind kind) =>
-            _geometries[Index(kind)] ??= StreamGeometry.Parse(Path(kind));
+        public Geometry Geometry(LucideIconKind kind)
+        {
+            var index = Index(kind);
+            return Volatile.Read(ref _geometries[index])
+                ?? Interlocked.CompareExchange(ref _geometries[index], StreamGeometry.Parse(Path(kind)), null)
+                ?? _geometries[index]!;
+        }
 
         private (int Name, int Path, int End) Line(LucideIconKind kind) => _lines[Index(kind)];
 
         private int Index(LucideIconKind kind)
         {
             var index = (int)kind;
-            return (uint)index < (uint)_lines.Length && _lines[index].Name != 0
+            return Has(kind)
                 ? index
                 : throw new ArgumentOutOfRangeException(nameof(kind), kind, "Not a Lucide icon.");
         }
