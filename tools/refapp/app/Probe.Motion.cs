@@ -18,7 +18,7 @@ namespace RefApp
     /// The motion probes (#24): the theme's animations, read in the app every frame. No touch drives them but one tap,
     /// which starts the sequence, so that a screen recording (run.ps1 -Record) and the log start together. Every frame,
     /// the log has each watched tree's animated values whenever they change: for every element down to a depth, its
-    /// opacity, render transform, projection and clip when they aren't at rest, under a path of child indexes, type
+    /// opacity under 1, a render transform or projection that isn't the identity, and its clip, under a path of child indexes, type
     /// and name. Open popups are watched the same way, each from its child, with the popup's offset and the child's
     /// bounds in the window.
     /// </summary>
@@ -28,7 +28,9 @@ namespace RefApp
         private const int TreeBudget = 400;
         private readonly List<KeyValuePair<string, FrameworkElement>> _trees = new List<KeyValuePair<string, FrameworkElement>>();
         private Dictionary<string, string> _treeSeen = new Dictionary<string, string>();
+        private Dictionary<string, string> _treeNow = new Dictionary<string, string>();
         private int _treeVisited;
+        private bool _budgetLogged;
 
         /// <summary>
         /// The ToggleSwitch's slide, the pickers' and flyouts' open and close, and the inline ComboBox: each opened from
@@ -41,7 +43,7 @@ namespace RefApp
             var combo6 = Combo("combo6", 6, 260);
             var combo5 = Combo("combo5", 5, 360);
             var page = await MotionPage(host, toggle, opener, combo6, combo5);
-            Watch(toggle);
+            WatchStates(toggle);
             toggle.Toggled += (s, e) => Log("toggled", "IsOn " + toggle.IsOn);
             WatchTree("toggle", toggle);
             WatchTree("combo5", combo5);
@@ -207,8 +209,8 @@ namespace RefApp
             var ring = new ProgressRing { Name = "ring", IsActive = true, Margin = new Thickness(19, 120, 0, 0), HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top };
             var large = new ProgressRing { Name = "large", IsActive = true, Width = 120, Height = 120, Margin = new Thickness(19, 300, 0, 0), HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top };
             var page = await MotionPage(host, ring, large);
-            Watch(ring);
-            Watch(large);
+            WatchStates(ring);
+            WatchStates(large);
             WatchTree("ring", ring);
             WatchTree("large", large);
             await RunAfterTap(page, () => Task.Delay(6000));
@@ -267,7 +269,7 @@ namespace RefApp
         private async Task Pages(Grid host)
         {
             var root = Window.Current.Content as Frame;
-            var rootTransitions = root != null && root.ContentTransitions != null ? root.ContentTransitions : null;
+            var rootTransitions = root != null ? root.ContentTransitions : null;
             Log("layout", "root frame transitions " + (rootTransitions == null ? "none" : string.Join(",", rootTransitions.Select(t => t.GetType().Name))));
             var frame = new Frame { Name = "frame" };
             frame.ContentTransitions = new TransitionCollection { new NavigationThemeTransition() };
@@ -327,7 +329,9 @@ namespace RefApp
 
         /// <summary>
         /// Asks for one tap near the bottom left of the page, on the page's own background, and runs the sequence when
-        /// it lands, then finishes. The gestures wait out the sequence, so the VM's recording covers it.
+        /// it lands, then finishes. It writes gestures.txt and ready.txt itself rather than through Ready(), whose
+        /// watchdog counts touches: this one gives up 3 minutes after ready if the tap never comes, and otherwise 10
+        /// minutes after the tap (vm\session.ps1 itself gives a probe 8 minutes after its touches).
         /// </summary>
         private async Task RunAfterTap(Grid page, Func<Task> sequence)
         {
@@ -361,7 +365,40 @@ namespace RefApp
             _gestures.AppendLine("wait 80");
             _gestures.AppendLine("up 30 " + Num(b.Height - 30));
             _gestures.AppendLine("wait 1000");
-            await Ready();
+            var display = Windows.Graphics.Display.DisplayInformation.GetForCurrentView();
+            await Write("gestures.txt", "view " + Num(b.Width) + " " + Num(b.Height) + "\n" + _gestures);
+            _clock.Start();
+            Log("ready", "one tap starts the sequence; raw-per-view " + Num(display.RawPixelsPerViewPixel));
+            await Write("ready.txt", "touches 1");
+            for (var waited = 0; !started && waited < 180; waited++)
+            {
+                await Task.Delay(1000);
+            }
+
+            if (!started)
+            {
+                await Finish("timed out: the tap never came");
+                return;
+            }
+
+            await Task.WhenAny(_done.Task, Task.Delay(TimeSpan.FromMinutes(10)));
+            await Finish("timed out after 10 minutes of the sequence");
+        }
+
+        /// <summary>Logs every visual state change of the control's template (without <see cref="Watch"/>'s pointer handlers, whose release count ends a touch probe).</summary>
+        private void WatchStates(Control control)
+        {
+            var root = VisualTreeHelper.GetChildrenCount(control) > 0 ? VisualTreeHelper.GetChild(control, 0) as FrameworkElement : null;
+            if (root == null)
+            {
+                return;
+            }
+
+            foreach (var group in VisualStateManager.GetVisualStateGroups(root))
+            {
+                var g = group;
+                g.CurrentStateChanged += (s, e) => Log("state", (control.Name.Length > 0 ? control.Name + " " : "") + g.Name + " " + (e.OldState != null ? e.OldState.Name : "-") + " > " + (e.NewState != null ? e.NewState.Name : "-"));
+            }
         }
 
         /// <summary>Watches a tree every frame from this element down (see the class summary).</summary>
@@ -383,12 +420,13 @@ namespace RefApp
 
         private void OnTreeFrame(object sender, object e)
         {
-            var now = new Dictionary<string, string>();
+            var now = _treeNow;
+            now.Clear();
             foreach (var tree in _trees)
             {
-                _treeVisited = 0;
                 if (tree.Value != null)
                 {
+                    _treeVisited = 0;
                     Walk(tree.Key, tree.Value, 0, now, true);
                     continue;
                 }
@@ -403,6 +441,7 @@ namespace RefApp
                     now[label] = "offset " + Num(popup.HorizontalOffset) + " " + Num(popup.VerticalOffset) + (transitions.Length > 0 ? " transitions " + transitions : "") + " child " + (child != null ? child.GetType().Name : "none");
                     if (child != null)
                     {
+                        _treeVisited = 0;
                         Walk(label, child, 0, now, true);
                     }
                 }
@@ -425,13 +464,25 @@ namespace RefApp
                 }
             }
 
+            _treeNow = _treeSeen;
             _treeSeen = now;
         }
 
         private void Walk(string path, FrameworkElement e, int depth, Dictionary<string, string> now, bool isRoot)
         {
-            if (++_treeVisited > TreeBudget || e.Visibility == Visibility.Collapsed)
+            if (e.Visibility == Visibility.Collapsed)
             {
+                return;
+            }
+
+            if (++_treeVisited > TreeBudget)
+            {
+                if (!_budgetLogged)
+                {
+                    _budgetLogged = true;
+                    Log("tree", "budget: more than " + TreeBudget + " elements under " + path.Split('/')[0] + "; the rest of that tree isn't read (logged once)");
+                }
+
                 return;
             }
 
@@ -464,7 +515,7 @@ namespace RefApp
             }
         }
 
-        /// <summary>The element's opacity, render transform, projection and clip, where they aren't at rest; empty if none is.</summary>
+        /// <summary>The element's opacity under 1, a render transform or projection that isn't the identity, and its clip if it has one; empty if none.</summary>
         private static string Animated(UIElement e)
         {
             var sb = new StringBuilder();
@@ -483,7 +534,11 @@ namespace RefApp
                 }
             }
 
-            if (e.Projection != null)
+            var pp = e.Projection as PlaneProjection;
+            var restingPlane = pp != null && pp.RotationX == 0 && pp.RotationY == 0 && pp.RotationZ == 0
+                && pp.LocalOffsetX == 0 && pp.LocalOffsetY == 0 && pp.LocalOffsetZ == 0
+                && pp.GlobalOffsetX == 0 && pp.GlobalOffsetY == 0 && pp.GlobalOffsetZ == 0;
+            if (e.Projection != null && !restingPlane)
             {
                 sb.Append(" projection ").Append(Describe(e.Projection));
             }
