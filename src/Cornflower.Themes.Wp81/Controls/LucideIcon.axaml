@@ -1,0 +1,40 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:cf="using:Cornflower.Controls">
+
+  <!-- Lucide's own pen, which every one of its SVGs sets on its root (tools/lucide checks that it
+       does): 2 of the box's 24 units wide, with round caps and joins. Resources, so an app can
+       change the pen for every icon. Lucide's shapes and pen are its own, not the phone's
+       (ADR 0001, 3): the 8.1 AppBar glyphs are Segoe UI Symbol's, some of them filled. -->
+  <x:Double x:Key="LucideIconStrokeThickness">2</x:Double>
+  <PenLineCap x:Key="LucideIconStrokeLineCap">Round</PenLineCap>
+  <PenLineJoin x:Key="LucideIconStrokeJoin">Round</PenLineJoin>
+
+  <ControlTheme x:Key="{x:Type cf:LucideIcon}" TargetType="cf:LucideIcon">
+    <!-- 20 × 20. In the 8.1 SymbolIcon the glyph is Segoe UI Symbol at 19 px, and the Add glyph's
+         ink is 44.25 px wide at 2.4 (18.4 view px; dev11 capture 20261108-1732, AppBarButton).
+         A Lucide icon reaching its box's edges inks 22 of its 24 units, so 20 gives 18.3. -->
+    <Setter Property="Width" Value="20" />
+    <Setter Property="Height" Value="20" />
+    <!-- The 8.1 SymbolIcon's root is a Grid with a transparent background, so the whole box takes input. -->
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Panel Background="{TemplateBinding Background}">
+          <!-- Layout rounding is off inside the Viewbox, where it would round the 24-unit box up to
+               24.17 (58 px at 2.4) in the box's own units, and every icon would draw 0.7% small. -->
+          <Viewbox Stretch="Uniform" UseLayoutRounding="False">
+            <Path Width="24"
+                  Height="24"
+                  Data="{TemplateBinding Data}"
+                  Stroke="{TemplateBinding Foreground}"
+                  StrokeThickness="{DynamicResource LucideIconStrokeThickness}"
+                  StrokeLineCap="{DynamicResource LucideIconStrokeLineCap}"
+                  StrokeJoin="{DynamicResource LucideIconStrokeJoin}" />
+          </Viewbox>
+        </Panel>
+      </ControlTemplate>
+    </Setter>
+  </ControlTheme>
+
+</ResourceDictionary>

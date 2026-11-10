@@ -12,12 +12,17 @@
 //       generic.xaml and themeresources.xaml in <design folder>; each beside Avalonia's equivalent. <Type>
 //       is a full name, or a name under Windows.UI.Xaml.Controls or .Primitives. --tokens is the theme's
 //       Tokens folder, found from the repo by default.
+//
+//   dotnet run --project tools/winrt-api -- enum <Type> <Windows.winmd>
+//       An enum's members, one "Name<TAB>Value" line each, in the metadata's order. <Type> is a full
+//       name, or a name under Windows.UI.Xaml.Controls (Symbol).
 using WinRtApi;
 
 const string Usage = """
     usage:
       types <Windows.winmd> [generic.xaml]
       checklist <Type> <Windows.winmd> <design folder> [--stop <Type>] [--tokens <folder>]
+      enum <Type> <Windows.winmd>
     """;
 
 Console.OutputEncoding = System.Text.Encoding.UTF8;
@@ -38,6 +43,22 @@ switch (args)
             return 0;
         }
         catch (Exception e) when (e is ArgumentException or IOException or UnauthorizedAccessException or System.Xml.XmlException or BadImageFormatException)
+        {
+            Console.Error.WriteLine(e.Message);
+            return 1;
+        }
+
+    case ["enum", var type, var winmd]:
+        try
+        {
+            using var api = new ApiReader(winmd);
+            foreach (var (name, value) in api.EnumMembers(type))
+            {
+                Console.WriteLine($"{name}\t{value}");
+            }
+            return 0;
+        }
+        catch (Exception e) when (e is ArgumentException or IOException or UnauthorizedAccessException or BadImageFormatException)
         {
             Console.Error.WriteLine(e.Message);
             return 1;
