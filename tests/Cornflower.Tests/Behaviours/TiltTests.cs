@@ -191,6 +191,22 @@ public class TiltTests
         }
     }
 
+    // Moves come faster than frames: one before the press has settled still decides where it settles.
+    [AvaloniaFact]
+    public void A_Move_Before_The_Press_Settles_Is_Followed()
+    {
+        using var clock = new TestClock();
+        using var page = new Page(GridButtons);
+        var button = page.Buttons["B"];
+
+        var touch = page.Window.TouchBegin(page.At("B", new Point(149.98, 60.033)));
+        clock.At(8);                                                // half a frame: the next step is pending
+        page.Window.TouchMove(touch, page.At("B", new Point(14.98, 5.803)));
+        clock.At(SettleMs);
+
+        AssertNear(new TiltState(-8.504, 8.186, -0.726), CfTilt.Current(button));
+    }
+
     // Run 2118: dragged out of the button, the tilt stayed as it was at the edge and stopped
     // following, then went back 182 ms after the finger left, as from a release.
     [AvaloniaFact]
