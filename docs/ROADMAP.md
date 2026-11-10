@@ -134,7 +134,7 @@ step, and a control that climbs a rung says so in its PR.
 
 Nothing in Tier 1 starts until this list is done, except the type ramp (#26), which may start once
 #20, #21, #22 and #24 are open and green (`D-tier1-start`,
-[ADR 0005](decisions/0005-decisions-of-2026-11-09-and-10.md)). The desktop sample (#9) doesn't hold up
+[ADR 0005](decisions/0005-decisions-of-2026-11-09-and-10.md)). The desktop sample (#9) didn't hold up
 Tier 1.
 
 - [x] A reference VM with the Windows Phone 8.1 tools (2026-11-07). The RTM and Update 1
@@ -188,10 +188,12 @@ Tier 1.
       ([#6](https://github.com/wdcossey/CornflowerUI/issues/6)).
 - [x] The CI actions moved off Node 20 ([#2](https://github.com/wdcossey/CornflowerUI/issues/2)), in the
       bootstrap.
-- [ ] The desktop sample: a window that opens phone-sized and can be resized, one auto-discovered
-      page per control ([#9](https://github.com/wdcossey/CornflowerUI/issues/9)). It doesn't hold up
-      Tier 1, but it comes next after the type ramp (#26), so the extension pack has a window to be
-      seen in ([ADR 0004](decisions/0004-larger-screens-as-an-extension-pack.md)).
+- [x] The desktop sample: a window that opens phone-sized and can be resized, one auto-discovered
+      page per control ([#9](https://github.com/wdcossey/CornflowerUI/issues/9)), on 2026-11-10 (#68):
+      `samples/Cornflower.Sample.Desktop`, the `[SamplePage]` catalogue, and
+      [`tools/real-window/drive.ps1`](../tools/real-window), from Avonic. Moved up so the extension
+      pack has a window to be seen in ([ADR 0004](decisions/0004-larger-screens-as-an-extension-pack.md)).
+      The phone still opens `MainView` alone.
 - [x] The Android sample and a first device run on the Pixel 8
       ([#10](https://github.com/wdcossey/CornflowerUI/issues/10)), with
       [`tools/android/run.ps1`](../tools/android/README.md) (2026-11-09). Start times are in its
@@ -200,8 +202,8 @@ Tier 1.
       ([#11](https://github.com/wdcossey/CornflowerUI/issues/11)).
 - [x] Metrics from Avonic: the style budget, `StyleTrace`, the census, the benchmark, the Debug
       performance line, the breakage tool ([#12](https://github.com/wdcossey/CornflowerUI/issues/12)),
-      in [`docs/performance`](performance/README.md) (2026-11-09). Avonic's real-window driver waits
-      for the desktop sample (#9).
+      in [`docs/performance`](performance/README.md) (2026-11-09). Avonic's real-window driver came
+      with the desktop sample (#9, #68).
 - [x] The test that lists every templated Avalonia control without a Wp81 theme
       ([#13](https://github.com/wdcossey/CornflowerUI/issues/13)), with the list in
       `tests/Cornflower.Tests/Completeness/Holes.txt` (2026-11-09): 79 holes.

@@ -152,6 +152,6 @@ Copied from Avonic's `v2` branch. What changed:
 - The benchmark measures `Wp81Theme` against no theme, and counts themed controls through the holes
   list.
 - `tools/breakage/run.js` finds the test project itself, so another library can copy it unchanged.
-- Not carried over yet: `tools/real-window/drive.ps1`, which drives the desktop sample's real
-  window. It waits for the desktop sample
-  ([#9](https://github.com/wdcossey/CornflowerUI/issues/9)).
+- `tools/real-window/drive.ps1`, which drives the desktop sample's real window, came with the
+  desktop sample ([#9](https://github.com/wdcossey/CornflowerUI/issues/9), #68). For now it opens
+  each page and checks the view size; its per-control sections come back with controls.

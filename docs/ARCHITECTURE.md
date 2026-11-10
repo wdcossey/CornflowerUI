@@ -107,11 +107,11 @@ src/Cornflower.Themes.Wp81/         exists          era 1: tokens and ControlThe
 src/Cornflower/                     exists, no code the umbrella package
 src/Cornflower.Fonts.Noto/          planned         the optional fallback font package
 tests/Cornflower.Tests/             exists          Avalonia.Headless with Skia and xunit v3: harness, discovery, spikes, fonts, tokens, glyphs, controls, behaviours, sample, performance, tools, completeness, repository guards
-samples/Cornflower.Sample/          exists          the shared sample app: one page for now, with the Debug performance line; a page per control comes with #9
+samples/Cornflower.Sample/          exists          the shared sample app: the [SamplePage] catalogue (SampleShell, MainWindow), one page so far (MainView), with the Debug performance line
 samples/Cornflower.Sample.Android/  exists          the real-device target, run by tools/android
-samples/Cornflower.Sample.Desktop/  planned (#9)    a thin desktop head over Cornflower.Sample, opening phone-sized and resizable; not a gate
+samples/Cornflower.Sample.Desktop/  exists          a thin desktop head over Cornflower.Sample, opening at 450 × 800 and resizable, driven by tools/real-window
 src/Cornflower.Adaptive/            planned         working name: the extension pack for wider windows, after Tier 2 (ADR 0004)
-tools/                              exists          reference capture (refapp), spec extraction and the checklist (winrt-api), the device run (android), breakage, font metrics, token generation (tokens), the icon generator (lucide), the guard's hash list
+tools/                              exists          reference capture (refapp), spec extraction and the checklist (winrt-api), the device run (android), breakage, font metrics, token generation (tokens), the icon generator (lucide), the desktop window driver (real-window), the guard's hash list
 docs/                               exists          process, roadmap, decisions, performance, this file; later a folder per control
 ref/wp81/                           planned         committed reference captures from the emulator
 ```
@@ -354,7 +354,7 @@ set low from the start, and the measurement is repeated on the Android device.
 Avonic's metrics collection carried over ([#12](https://github.com/wdcossey/CornflowerUI/issues/12)).
 What exists, the limits, the measurements, and what changed in the copy ("From Avonic") are in
 [`docs/performance`](performance/README.md). The table below is the plan it was copied by, kept
-for the Avonic paths; only `drive.ps1` is still to come, with the desktop sample
+for the Avonic paths; the last of it, `drive.ps1`, came with the desktop sample
 ([#9](https://github.com/wdcossey/CornflowerUI/issues/9)):
 
 | Avonic file | What it does | For Cornflower |
@@ -365,7 +365,7 @@ for the Avonic paths; only `drive.ps1` is still to come, with the desktop sample
 | `tests/Avonic.Components.Tests/Performance/StyleCostBenchmark.cs` | Attach time with and without the theme: 5,000 elements at depth 20, 25 rounds, median, Release only, gated on an environment variable so CI never times anything | Copy, renaming the variable and the theme class. Run at each tier's roll-up on the same machine, and once on the Android device |
 | `samples/Avonic.Sample/Diagnostics/PerformanceMonitor.cs` | The line along the bottom of a Debug sample: open time, element count, census, and Avalonia's own measure, arrange and render times from `Avalonia.Diagnostic.Meter`. Nothing is added to the library | Copy unchanged |
 | `tests/Avonic.Components.Tests/Performance/PerformanceMonitorTests.cs` | Proves the line's format, that it reports once a page is in, and that Avalonia's meter still has its three instruments | Copy unchanged |
-| `tools/real-window/drive.ps1` | Drives the real sample window with real input and saves a frame of every page | Copy for the desktop sample. The phone equivalent, the Android sample over ADB with captured frames, is new work |
+| `tools/real-window/drive.ps1` | Drives the real sample window with real input and saves a frame of every page | Copied with the desktop sample (#68): every page opened with a real click, a frame saved, Back, the view size and resizing. Avonic's per-control sections and touch come back with controls. The phone equivalent is `tools/android/run.ps1` |
 | `tools/breakage/run.js` | Breaks each behaviour in a fresh clone and checks a test goes red | Copy unchanged |
 | `tests/Avonic.Components.Tests/Scene.cs`, `TestClock.cs`, `Frames.cs` | A shown headless window closed when the test ends; a clock the test advances by hand; `PixelAt` on a captured frame | **Done** ([#11](https://github.com/wdcossey/CornflowerUI/issues/11)), with changes: `Scene` is the reference profile, 450 × 800 at 2.4, with the themes in the window's `Styles` and Dark by default; `TestClock` replaces one internal source behind `CornflowerClock`, refuses to nest or go back, and lands a frame 16 ms after it is asked for; `PixelAt` checks bounds and reads only RGBA and BGRA |
 
