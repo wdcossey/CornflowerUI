@@ -24,7 +24,7 @@ namespace RefApp
     /// visual state change and value it watches to <c>probe.txt</c>, with milliseconds since the page was ready, and
     /// writes <c>done.txt</c> once the last touch has been released and has settled. run.ps1 -Probe picks one.
     /// </summary>
-    internal sealed class Probe
+    internal sealed partial class Probe
     {
         private readonly StorageFolder _out = ApplicationData.Current.LocalFolder;
         private readonly Stopwatch _clock = new Stopwatch();
@@ -52,6 +52,18 @@ namespace RefApp
                     break;
                 case "tiltgrid":
                     await probe.TiltGrid(host);
+                    break;
+                case "motion":
+                    await probe.Motion(host);
+                    break;
+                case "pages":
+                    await probe.Pages(host);
+                    break;
+                case "projections":
+                    await probe.Projections(host);
+                    break;
+                case "ring":
+                    await probe.Ring(host);
                     break;
                 default:
                     await probe.Write("done.txt", "unknown probe " + name);

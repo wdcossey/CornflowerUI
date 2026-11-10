@@ -48,6 +48,10 @@
     <Compile Include="Options.cs" />
     <Compile Include="Popups.cs" />
     <Compile Include="Probe.cs" />
+    <Compile Include="Probe.Motion.cs" />
+    <Compile Include="ProbePage.xaml.cs">
+      <DependentUpon>ProbePage.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Suite.cs" />
     <Compile Include="Suite.Popups.cs" />
     <Compile Include="TreeDump.cs" />
@@ -69,6 +73,10 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Page Include="MainPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="ProbePage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

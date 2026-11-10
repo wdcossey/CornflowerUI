@@ -24,7 +24,11 @@
   open in the emulator, for screenshots by hand. It captures nothing.
   -Probe <name> runs one of the app's probes (app\Probe.cs) instead of the suite: the app lays a control out and
   writes the touches it wants, vm\touch.ps1 plays them on the emulator's display with the mouse, and the app's
-  log of what the control did comes back as probe.txt, beside touch.log. Probes: toggleswitch, tilt, tiltgrid.
+  log of what the control did comes back as probe.txt, beside touch.log. Probes: toggleswitch, tilt, tiltgrid, motion,
+  pages.
+  -Record (with -Probe) records the emulator's display with ffmpeg gdigrab from just before the touches until the
+  probe is done, lossless, and brings back record.mkv and frames.csv, each frame's time in seconds. Probes motion and
+  pages start their sequence on one tap, so the recording and the log start together.
   -TouchMode real (the default) moves the VM's real cursor, which needs the emulator in front and the VM's
   mouse left alone; post posts the mouse messages to the emulator's display window, which the emulator
   ignored when tried (2026-11-09).
@@ -43,6 +47,7 @@ param(
     [switch]$Grab,
     [string]$Probe = '',
     [ValidateSet('post', 'real')][string]$TouchMode = 'real',
+    [switch]$Record,
     [string]$HostAlias = 'cornflower-ref',
     [string]$Out = 'R:\cornflower-reference\refapp',
     [int]$TimeoutMinutes = 40
@@ -107,7 +112,7 @@ if (-not ($build -match '^built ')) {
 $build | Select-Object -Last 3 | ForEach-Object { Write-Host "  $_" }
 
 Write-Host "3/5 starting the session task for device $Device"
-$taskArgs = "-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File $remote\vm\session.ps1 -Device $Device -ProductId $productId -Root $remote -TimeoutMinutes $TimeoutMinutes$(if ($Demo) { ' -Demo' })$(if ($Grab) { ' -Grab' })$(if ($Probe) { " -Probe -TouchMode $TouchMode" })"
+$taskArgs = "-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File $remote\vm\session.ps1 -Device $Device -ProductId $productId -Root $remote -TimeoutMinutes $TimeoutMinutes$(if ($Demo) { ' -Demo' })$(if ($Grab) { ' -Grab' })$(if ($Probe) { " -Probe -TouchMode $TouchMode" })$(if ($Record) { ' -Record' })"
 Remote @"
 `$a = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument '$taskArgs'
 `$p = New-ScheduledTaskPrincipal -UserId `$env:USERNAME -LogonType Interactive -RunLevel Highest
@@ -160,6 +165,11 @@ Remove-Item (Join-Path $dest 'out') -Recurse -Force
 
 if ($Probe) {
     Copy-Scp @("${HostAlias}:C:/cornflower/refapp/touch.log", $dest)
+    if ($Record) {
+        Copy-Scp @("${HostAlias}:C:/cornflower/refapp/record.mkv", "${HostAlias}:C:/cornflower/refapp/frames.csv", "${HostAlias}:C:/cornflower/refapp/rect.log", $dest)
+        Write-Host "  recording in $(Join-Path $dest 'record.mkv'), $((Get-Content (Join-Path $dest 'frames.csv')).Count) frames"
+    }
+
     Write-Host "  probe $Probe`: $(Get-Content (Join-Path $dest 'done.txt'))"
     Write-Host "  log in $(Join-Path $dest 'probe.txt')"
     return

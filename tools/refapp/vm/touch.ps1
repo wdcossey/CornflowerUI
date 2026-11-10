@@ -14,11 +14,14 @@
 # -Title picks the emulator by its profile's name (its XDE process's /displayName), since more than one can be
 # running, one per profile, and their windows are all titled "XDE". -Mode post (the default) posts the mouse messages to that window, so it needn't be in front;
 # -Mode real moves the real cursor and clicks, which needs the window in front and unobscured.
+# -RectOnly brings the display window to the front, prints "rect <left> <top> <width> <height>" (its client area on the
+# screen) and plays nothing: session.ps1 -Record records that area.
 param(
     [Parameter(Mandatory = $true)][string]$Gestures,
     [Parameter(Mandatory = $true)][string]$Log,
     [string]$Title = '',
-    [ValidateSet('post', 'real')][string]$Mode = 'post'
+    [ValidateSet('post', 'real')][string]$Mode = 'post',
+    [switch]$RectOnly
 )
 
 $ErrorActionPreference = 'Stop'
@@ -106,6 +109,13 @@ $chosen = @($all | Where-Object { $_.Value -eq $xde[0].ProcessId })
 if ($chosen.Count -ne 1) { Log "failed: $($chosen.Count) display windows belong to process $($xde[0].ProcessId)"; exit 1 }
 $window = $chosen[0].Key
 $left, $top, $width, $height = [XdeMouse]::Client($window)
+if ($RectOnly) {
+    [XdeMouse]::Front([IntPtr]$window)
+    Log "display window at $left,$top, $width x $height"
+    "rect $left $top $width $height"
+    exit 0
+}
+
 $lines = Get-Content $Gestures
 $inv = [Globalization.CultureInfo]::InvariantCulture
 $viewW, $viewH = ($lines[0] -split ' ')[1..2] | ForEach-Object { [double]::Parse($_, $inv) }
