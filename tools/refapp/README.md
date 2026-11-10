@@ -287,6 +287,10 @@ centre as a fraction of its width and height (−0.5 to 0.5):
   the values hold for about 180 ms, then ease back to rest over about 195 ms: a sine ease-out fits
   1,199 frames with an rms of 0.03 of the full value (quadratic 0.036, linear 0.037, cubic 0.059).
   Every press was within 1% of rest by 335 to 372 ms.
+- **A tap at the very edge clicks** (`-Probe tiltedge`, `20261110-0822-dev11`): a Button 300 × 120,
+  tapped for 150 ms at the middle of each edge, 0.84, 1.7 and 3.35 view px inside it (the nearest the
+  cursor gets to 1, 2 and 3), three times each: all 36 taps clicked. The tilt sinks the edge away
+  from the finger, but the phone still counts the press as on the button.
 
 ## The page's app bar (2026-11-09, device 11, #23)
 
