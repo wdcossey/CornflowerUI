@@ -486,6 +486,20 @@ public class TiltTests
         Assert.Null(root.RenderTransform);
     }
 
+    // A mark in the content is the content's business, not the control's template.
+    [AvaloniaFact]
+    public void IsTarget_In_The_Content_Doesnt_Move_The_Tilt()
+    {
+        using var page = new Page(FirstButton);
+        var button = page.Buttons[FirstButton.Name];
+        var inner = new Border();
+        CfTilt.SetIsTarget(inner, true);
+        button.Content = inner;
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Same(button.GetVisualChildren().Single(), CfTilt.TargetOf(button));
+    }
+
     [AvaloniaFact]
     public void The_Controls_Own_Transform_Is_Left_Alone_And_The_Roots_Put_Back()
     {
