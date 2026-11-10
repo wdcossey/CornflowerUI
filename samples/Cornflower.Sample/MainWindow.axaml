@@ -1,0 +1,13 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="using:Cornflower.Sample"
+        x:Class="Cornflower.Sample.MainWindow"
+        Title="Cornflower"
+        Width="450" Height="800"
+        Background="{DynamicResource ApplicationPageBackgroundThemeBrush}">
+  <!--
+    The desktop sample's window. It opens at the reference profile's view, 450 x 800 (ADR 0001),
+    and can be resized, so that a larger screen's layout has somewhere to be seen (ADR 0004).
+  -->
+  <local:SampleShell x:Name="Shell" />
+</Window>

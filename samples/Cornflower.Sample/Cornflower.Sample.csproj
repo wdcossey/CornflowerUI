@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- The sample's app and pages, shared by every head: Cornflower.Sample.Android now, a desktop
-       head later (#9). The heads hold only their platform's entry point. -->
+  <!-- The sample's app, its desktop window and its pages, shared by every head:
+       Cornflower.Sample.Android and Cornflower.Sample.Desktop. The heads hold only their platform's
+       entry point. -->
   <PropertyGroup>
     <IsPackable>false</IsPackable>
   </PropertyGroup>

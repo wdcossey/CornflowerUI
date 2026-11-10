@@ -1,0 +1,31 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Cornflower.Sample.SampleShell"
+             Background="{DynamicResource ApplicationPageBackgroundThemeBrush}"
+             Foreground="{DynamicResource PhoneForegroundBrush}"
+             FontFamily="{DynamicResource PhoneFontFamilyNormal}"
+             FontSize="{DynamicResource TextStyleLargeFontSize}">
+  <!--
+    The catalogue: a list of the pages marked [SamplePage], one per control, and Back. MainWindow
+    holds it on desktop. The list's buttons and Back are SimpleTheme's until Button is themed.
+    Back is also Avalonia's own back request (Alt+Left on desktop, the back button on a phone).
+  -->
+  <DockPanel>
+    <Button x:Name="BackButton" DockPanel.Dock="Top" IsVisible="False" Click="OnBack"
+            Content="back" AutomationProperties.Name="Back"
+            HorizontalAlignment="Left" Margin="12,6,0,0" />
+
+    <ContentControl x:Name="Host">
+      <ScrollViewer x:Name="Index">
+        <StackPanel Margin="19,12,19,24" Spacing="6">
+          <TextBlock Text="CORNFLOWER" FontFamily="{DynamicResource PhoneFontFamilySemiBold}"
+                     FontSize="{DynamicResource TextStyleMediumFontSize}" />
+          <TextBlock Text="samples" Margin="-2,0,0,12"
+                     FontFamily="{DynamicResource PhoneFontFamilySemiLight}"
+                     FontSize="{DynamicResource PivotHeaderItemFontSize}" />
+          <StackPanel x:Name="PageList" Spacing="9.6" />
+        </StackPanel>
+      </ScrollViewer>
+    </ContentControl>
+  </DockPanel>
+</UserControl>

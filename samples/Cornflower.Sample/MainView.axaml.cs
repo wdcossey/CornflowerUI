@@ -17,7 +17,9 @@ namespace Cornflower.Sample;
 /// drawn, it writes one <c>CORNFLOWER ready</c> line to standard output (logcat's <c>DOTNET</c> tag on Android), which
 /// <c>tools/android/run.ps1</c> waits for. In a Debug build, a line along the bottom says what the page
 /// cost to open, the first time it's shown (<see cref="Diagnostics.PerformanceMonitor"/>).
+/// First in the desktop sample's catalogue (<see cref="SampleShell"/>), under the title it shows.
 /// </summary>
+[SamplePage("theme", Order = 0)]
 public partial class MainView : UserControl
 {
     internal const string ReadyMarker = "CORNFLOWER ready";
