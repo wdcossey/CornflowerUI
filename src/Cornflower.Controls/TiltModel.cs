@@ -120,15 +120,15 @@ internal static class TiltModel
         // A point (x, y) is u = x − cx, v = y − cy from the centre. In 3D it goes to
         // P = R (u, v, 0) + (cx, cy, z), and is drawn at eye + (P − eye) × d / (d − P.z).
         // With W = (d − P.z) / d, the drawn point times W is eye × W + P.xy − eye: linear in x, y.
-        var wx = -r[2, 0] / d;
-        var wy = -r[2, 1] / d;
+        var wx = -r.M20 / d;
+        var wy = -r.M21 / d;
         var w0 = 1 - tilt.OffsetZ / d - wx * cx - wy * cy;
 
         return new Matrix(
-            eye.X * wx + r[0, 0], eye.Y * wx + r[1, 0], wx,
-            eye.X * wy + r[0, 1], eye.Y * wy + r[1, 1], wy,
-            eye.X * w0 - r[0, 0] * cx - r[0, 1] * cy + cx - eye.X,
-            eye.Y * w0 - r[1, 0] * cx - r[1, 1] * cy + cy - eye.Y,
+            eye.X * wx + r.M00, eye.Y * wx + r.M10, wx,
+            eye.X * wy + r.M01, eye.Y * wy + r.M11, wy,
+            eye.X * w0 - r.M00 * cx - r.M01 * cy + cx - eye.X,
+            eye.Y * w0 - r.M10 * cx - r.M11 * cy + cy - eye.Y,
             w0);
     }
 
@@ -142,7 +142,7 @@ internal static class TiltModel
         double cx = size.Width / 2, cy = size.Height / 2, d = EyeDistance;
 
         // The plane's normal, R (0, 0, 1), and a point on it, its centre (cx, cy, z).
-        double nx = r[0, 2], ny = r[1, 2], nz = r[2, 2];
+        double nx = r.M02, ny = r.M12, nz = r.M22;
         // The line from the eye (eye, d) through the press (press, 0).
         double lx = press.X - eye.X, ly = press.Y - eye.Y, lz = -d;
         var t = ((cx - eye.X) * nx + (cy - eye.Y) * ny + (tilt.OffsetZ - d) * nz) / (lx * nx + ly * ny + lz * nz);
@@ -150,8 +150,8 @@ internal static class TiltModel
 
         // Back into the plane's own axes: Rᵀ.
         return new Point(
-            cx + r[0, 0] * hx + r[1, 0] * hy + r[2, 0] * hz,
-            cy + r[0, 1] * hx + r[1, 1] * hy + r[2, 1] * hz);
+            cx + r.M00 * hx + r.M10 * hy + r.M20 * hz,
+            cy + r.M01 * hx + r.M11 * hy + r.M21 * hz);
     }
 
     /// <summary>
@@ -160,18 +160,22 @@ internal static class TiltModel
     /// 20 times worse). A negative <c>RotationX</c> takes the top away; a positive <c>RotationY</c>
     /// takes the left away. So the side pressed sinks.
     /// </summary>
-    private static double[,] Rotation(TiltState tilt)
+    private static Rotation3 Rotation(TiltState tilt)
     {
         var a = tilt.RotationX * Math.PI / 180;
         var b = tilt.RotationY * Math.PI / 180;
         double ca = Math.Cos(a), sa = Math.Sin(a), cb = Math.Cos(b), sb = Math.Sin(b);
 
         // RY(b) × RX(a), with RX(a) = [1 0 0; 0 ca sa; 0 −sa ca] and RY(b) = [cb 0 −sb; 0 1 0; sb 0 cb].
-        return new[,]
-        {
-            { cb, sb * sa, -sb * ca },
-            { 0, ca, sa },
-            { sb, -cb * sa, cb * ca },
-        };
+        return new Rotation3(
+            cb, sb * sa, -sb * ca,
+            0, ca, sa,
+            sb, -cb * sa, cb * ca);
     }
+
+    /// <summary>A 3 × 3 rotation, row by row: Mij is row i, column j.</summary>
+    private readonly record struct Rotation3(
+        double M00, double M01, double M02,
+        double M10, double M11, double M12,
+        double M20, double M21, double M22);
 }

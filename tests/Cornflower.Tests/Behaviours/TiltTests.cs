@@ -1,11 +1,14 @@
 using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Data;
+using Avalonia.Diagnostics;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Cornflower.Controls;
@@ -326,15 +329,18 @@ public class TiltTests
         Assert.Equal(modelled.Y, seen.Y, 1e-4);
     }
 
+    // Hit testing goes through the tilt, as on the phone. So a press within about 3 px of an edge
+    // is drawn sunk away from under the finger, and a Button doesn't click there; whether the
+    // phone's does is open. Off that strip, a tilted press clicks.
     [AvaloniaFact]
-    public void A_Corner_Press_Still_Clicks()
+    public void A_Tilted_Press_Still_Clicks()
     {
         using var clock = new TestClock();
         using var page = new Page(GridButtons);
         var button = page.Buttons["A"];
         var clicks = 0;
         button.Click += (_, _) => clicks++;
-        var corner = page.At("A", new Point(5.848, 3.344));
+        var corner = page.At("A", new Point(30.002, 15.016));
 
         var touch = page.Window.TouchBegin(corner);
         clock.At(SettleMs);
@@ -365,6 +371,53 @@ public class TiltTests
         clock.At(SettleMs + 1000);
         Assert.Same(rootOwn, root.RenderTransform);
         Assert.Same(own, button.RenderTransform);
+    }
+
+    // The tilt's transform goes on above the root's own value, styled or local, and comes off
+    // without leaving a local value behind: a style still sets the root's transform afterwards.
+    [AvaloniaFact]
+    public void A_Styled_Transform_On_The_Root_Still_Follows_Its_Style()
+    {
+        using var clock = new TestClock();
+        using var page = new Page(GridButtons);
+        var button = page.Buttons["B"];
+        var styled = new ScaleTransform(1, 1);
+        var style = new Style(x => x.OfType<Button>().Template().OfType<Avalonia.Controls.Presenters.ContentPresenter>())
+        {
+            Setters = { new Setter(Visual.RenderTransformProperty, styled) },
+        };
+        page.Window.Styles.Add(style);
+        Dispatcher.UIThread.RunJobs();
+        var root = CfTilt.TargetOf(button);
+        Assert.Same(styled, root.RenderTransform);
+        var at = page.At("B", new Point(75, 30));
+
+        var touch = page.Window.TouchBegin(at);
+        clock.At(SettleMs);
+        Assert.IsType<MatrixTransform>(root.RenderTransform);
+        page.Window.TouchEnd(touch, at);
+        clock.At(SettleMs + 1000);
+        Assert.Same(styled, root.RenderTransform);
+        Assert.Equal(BindingPriority.Style, root.GetDiagnostic(Visual.RenderTransformProperty).Priority);
+    }
+
+    // Another mouse button let go while the left is down doesn't end the press.
+    [AvaloniaFact]
+    public void Releasing_Another_Mouse_Button_Doesnt_Let_Go()
+    {
+        using var clock = new TestClock();
+        using var page = new Page(GridButtons);
+        var button = page.Buttons["B"];
+        var at = page.At("B", new Point(75, 30));
+
+        page.Window.MouseDown(at, MouseButton.Left);
+        clock.At(SettleMs);
+        var held = CfTilt.Current(button);
+        page.Window.MouseDown(at, MouseButton.Right, RawInputModifiers.LeftMouseButton);
+        page.Window.MouseUp(at, MouseButton.Right, RawInputModifiers.LeftMouseButton);
+        clock.At(SettleMs + 1000);
+
+        AssertNear(held, CfTilt.Current(button), angle: 1e-3, depth: 1e-3);
     }
 
     [AvaloniaFact]

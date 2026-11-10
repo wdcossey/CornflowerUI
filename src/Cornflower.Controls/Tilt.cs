@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Data;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
@@ -25,9 +26,16 @@ namespace Cornflower.Controls;
 /// </para>
 /// <para>
 /// The tilt is drawn on the template's root, where the phone puts it, or on the control itself if
-/// it has no template. Its <c>RenderTransform</c> is replaced while the tilt shows and put back at
-/// rest. The control's own space isn't tilted, so <c>GetPosition</c> on it, and its layout, are
-/// unchanged; hit testing goes through the tilt, as on the phone.
+/// it has no template. Its transform goes on the root's <c>RenderTransform</c> at animation
+/// priority, over the root's own value, which is back untouched at rest. The control's own space
+/// isn't tilted, so <c>GetPosition</c> on it, and its layout, are unchanged. Hit testing goes
+/// through the tilt, as on the phone: pressed within about 3 px of an edge, the element is drawn
+/// sunk away from under the finger, and a <c>Button</c> doesn't click there.
+/// </para>
+/// <para>
+/// The geometry is in view pixels, with the screen taken as the control's <see cref="TopLevel"/>:
+/// a phone's single view. Under a scaling ancestor, or in a desktop popup with a window of its own,
+/// the eye isn't where the phone's would be.
 /// </para>
 /// </remarks>
 public static class Tilt
@@ -87,12 +95,14 @@ public static class Tilt
         private Phase _phase;
         private IPointer? _pointer;
         private Point _press;          // the finger, in the target's parent's space
+        private Point _eye;            // the point under the eye, in the target's space, for this press
         private TimeSpan _released;
         private TiltState _held;
         private IDisposable? _pending;
+        private bool _stepPending;
         private Visual? _target;
-        private ITransform? _savedTransform;
         private MatrixTransform? _transform;
+        private IDisposable? _shown;   // the transform on the target, above its own values; disposed, they're back
 
         public Tracker(Control control)
         {
@@ -122,7 +132,7 @@ public static class Tilt
                 return;
             if (TargetOf(_control) is not { } target || target.GetVisualParent() is not { } parent)
                 return;
-            if (target.Bounds.Width <= 0 || target.Bounds.Height <= 0)
+            if (target.Bounds.Width <= 0 || target.Bounds.Height <= 0 || EyeFor(target, parent) is not { } eye)
                 return;
 
             if (!ReferenceEquals(target, _target))
@@ -134,6 +144,7 @@ public static class Tilt
             _phase = Phase.Pressed;
             _pointer = e.Pointer;
             _press = e.GetPosition(parent);
+            _eye = eye;
             Step();
         }
 
@@ -148,9 +159,7 @@ public static class Tilt
                 return;
 
             var press = e.GetPosition(parent);
-            var bounds = _target.Bounds;
-            var inside = press.X >= bounds.Left && press.X <= bounds.Right && press.Y >= bounds.Top && press.Y <= bounds.Bottom;
-            if (!inside)
+            if (!_target.Bounds.Contains(press))    // edges included
             {
                 if (_phase == Phase.Pressed) StartReturn(Phase.Paused);
                 return;
@@ -158,12 +167,12 @@ public static class Tilt
 
             _phase = Phase.Pressed;
             _press = press;
-            Step();
+            if (!_stepPending) Step();               // else the frame already asked for steps from here
         }
 
         private void OnReleased(object? sender, PointerReleasedEventArgs e)
         {
-            if (e.Pointer == _pointer) LetGo();
+            if (e.Pointer == _pointer && e.InitialPressMouseButton == MouseButton.Left) LetGo();
         }
 
         private void OnCaptureLost(object? sender, PointerCaptureLostEventArgs e)
@@ -177,16 +186,19 @@ public static class Tilt
         private void Step()
         {
             Cancel();
-            if (Eye() is not { } eye) return;
+            if (_target is null) return;
 
-            var bounds = _target!.Bounds;
-            var next = TiltModel.Step(State, bounds.Size, _press - bounds.Position, eye);
+            var bounds = _target.Bounds;
+            var next = TiltModel.Step(State, bounds.Size, _press - bounds.Position, _eye);
             var moved = Math.Abs(next.RotationX - State.RotationX) + Math.Abs(next.RotationY - State.RotationY) +
                         Math.Abs(next.OffsetZ - State.OffsetZ);
-            Show(next, bounds.Size, eye);
+            Show(next, bounds.Size);
 
             if (moved > TiltModel.Settled)
+            {
                 _pending = CornflowerClock.RequestFrame(_control, Step);
+                _stepPending = true;
+            }
         }
 
         /// <summary>The finger is up, or the pointer was taken: the tilt returns, if it isn't already, and the press is over.</summary>
@@ -212,51 +224,61 @@ public static class Tilt
         {
             _pending = null;
             var factor = TiltModel.ReturnFactor(CornflowerClock.Now - _released);
-            if (factor <= 0 || Eye() is not { } eye)
+            if (factor <= 0 || _target is null)
             {
                 if (_phase == Phase.Paused) Clear();
                 else ToRest();
                 return;
             }
 
-            Show(_held.Scale(factor), _target!.Bounds.Size, eye);
+            Show(_held.Scale(factor), _target.Bounds.Size);
             _pending = CornflowerClock.RequestFrame(_control, Return);
         }
 
-        /// <summary>The point under the eye, in the target's space, or null if the target isn't in a window.</summary>
-        private Point? Eye()
+        /// <summary>
+        /// The point under the eye, in the target's space: <see cref="TiltModel.EyeShift"/> of the way
+        /// from its centre to the centre of its <see cref="TopLevel"/>, which on a phone is the
+        /// screen. Null outside a window.
+        /// </summary>
+        private Point? EyeFor(Visual target, Visual parent)
         {
-            if (_target?.GetVisualParent() is not { } parent || TopLevel.GetTopLevel(_control) is not { } top)
-                return null;
+            if (TopLevel.GetTopLevel(_control) is not { } top) return null;
 
-            var bounds = _target.Bounds;
+            var bounds = target.Bounds;
             var screenCentre = top.TranslatePoint(new Point(top.ClientSize.Width / 2, top.ClientSize.Height / 2), parent);
             return screenCentre is { } centre ? TiltModel.Eye(bounds.Size, centre - bounds.Center) : null;
         }
 
-        private void Show(TiltState state, Size size, Point eye)
+        private void Show(TiltState state, Size size)
         {
             State = state;
             if (_target is null) return;
 
-            if (_transform is null)
-            {
-                _savedTransform = _target.RenderTransform;
-                _transform = new MatrixTransform();
-                _target.RenderTransform = _transform;
-            }
+            _transform ??= new MatrixTransform();
 
             // Avalonia draws a RenderTransform about RenderTransformOrigin; the model's matrix is about
             // the top left, so it's moved there and back.
             var origin = _target.RenderTransformOrigin.ToPixels(size);
-            _transform.Matrix = Matrix.CreateTranslation(origin) * TiltModel.ToMatrix(state, size, eye) *
+            _transform.Matrix = Matrix.CreateTranslation(origin) * TiltModel.ToMatrix(state, size, _eye) *
                                 Matrix.CreateTranslation(-origin);
+            Put();
+        }
+
+        /// <summary>
+        /// Puts the tilt's transform on the target at animation priority: above the target's own
+        /// value, local or styled, which is back untouched once the tilt's is taken off.
+        /// </summary>
+        private void Put()
+        {
+            if (_shown is null && _target is not null && _transform is not null)
+                _shown = _target.SetValue(Visual.RenderTransformProperty, _transform, BindingPriority.Animation);
         }
 
         private void Cancel()
         {
             _pending?.Dispose();
             _pending = null;
+            _stepPending = false;
         }
 
         /// <summary>No tilt showing: the target's own transform back, nothing pending. A press still down stays down.</summary>
@@ -264,10 +286,9 @@ public static class Tilt
         {
             Cancel();
             State = TiltState.Rest;
-            if (_target is not null && _transform is not null && ReferenceEquals(_target.RenderTransform, _transform))
-                _target.RenderTransform = _savedTransform;
+            _shown?.Dispose();
+            _shown = null;
             _transform = null;
-            _savedTransform = null;
         }
 
         /// <summary>Back to rest at once, and the press forgotten.</summary>
