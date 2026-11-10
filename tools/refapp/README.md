@@ -291,6 +291,11 @@ centre as a fraction of its width and height (−0.5 to 0.5):
   tapped for 150 ms at the middle of each edge, 0.84, 1.7 and 3.35 view px inside it (the nearest the
   cursor gets to 1, 2 and 3), three times each: all 36 taps clicked. The tilt sinks the edge away
   from the finger, but the phone still counts the press as on the button.
+- **On the 720p profile** (`20261110-0851-dev10`, `-Probe tiltgrid`, C narrowed to 362 to fit the
+  400 wide view; 100 presses, no errors): the same rule fits within 0.08° once each button's offset
+  is taken out (0.33° raw, worst 1.04°), the depth within 0.002 px. The offsets are the bias again,
+  for the buttons' places on a smaller screen (A −0.72° on `RotationX`, D +0.35°): #65 can check
+  whether its eye distance scales with the screen.
 
 ## The page's app bar (2026-11-09, device 11, #23)
 
