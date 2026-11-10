@@ -41,7 +41,7 @@ measure the reference before writing a line, and you build and test before every
 | `docs/ARCHITECTURE.md` | Eras, layout, the ladder, theming, platform features, metrics and testing; the draft mapping rules |
 | `docs/performance/` | What the theme costs: the style budget, the benchmark's trend table, the Debug line, breakage runs |
 | `docs/spikes/` | Questions about Avalonia 12.1.4 answered by tests in `tests/Cornflower.Tests/Spikes/` |
-| `docs/decisions/` | ADR 0001, what "faithful" means; ADR 0002, the decisions of 2026-11-08; ADR 0003, the decisions on the Tier 0 infrastructure (rounding, transitions, line height, variant, licence) |
+| `docs/decisions/` | ADR 0001, what "faithful" means; ADR 0002, the decisions of 2026-11-08; ADR 0003, the decisions on the Tier 0 infrastructure (rounding, transitions, line height, variant, licence); ADR 0004, larger screens as an extension pack over the core theme |
 
 ## Build
 
