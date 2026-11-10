@@ -6,8 +6,9 @@
              FontFamily="{DynamicResource PhoneFontFamilyNormal}"
              FontSize="{DynamicResource TextStyleLargeFontSize}">
   <!--
-    What the theme has today: its tokens and fonts, read through their WinRT keys. No control is
-    themed yet, so this page uses only panels, borders and text. Pages per control come with them.
+    What the theme has today: its tokens and fonts, read through their WinRT keys, and the text
+    styles. No other control is themed yet, so this page uses only panels, borders and text. Pages per
+    control come with them.
     The view's padding follows the device's safe area (TopLevel.AutoSafeAreaPadding, on by default).
     In a Debug build, a line along the bottom says what the page cost to open (docs/performance/README.md).
   -->
@@ -43,6 +44,30 @@
 
       <TextBlock Text="type ramp" Classes="section" />
       <StackPanel x:Name="TypeRamp" />
+
+      <!-- The 8.1 text styles, each by its key, as an 8.1 page would set Style. DynamicResource, so the page
+           also loads where the theme isn't the application's (the tests); in an app whose Application.Styles
+           has Wp81Theme, StaticResource works as on the phone. -->
+      <TextBlock Text="text styles" Classes="section" />
+      <StackPanel x:Name="TextStyles" Spacing="6">
+        <TextBlock x:Name="HeaderTextBlockStyle" Theme="{DynamicResource HeaderTextBlockStyle}" Text="header" />
+        <TextBlock x:Name="SubheaderTextBlockStyle" Theme="{DynamicResource SubheaderTextBlockStyle}" Text="subheader" />
+        <TextBlock x:Name="ListViewItemTextBlockStyle" Theme="{DynamicResource ListViewItemTextBlockStyle}" Text="list view item" />
+        <TextBlock x:Name="ListViewItemSubheaderTextBlockStyle" Theme="{DynamicResource ListViewItemSubheaderTextBlockStyle}" Text="list view item subheader" />
+        <TextBlock x:Name="ListViewItemContentTextBlockStyle" Theme="{DynamicResource ListViewItemContentTextBlockStyle}" Text="list view item content" />
+        <TextBlock x:Name="ListViewEmptyStaticTextBlockStyle" Theme="{DynamicResource ListViewEmptyStaticTextBlockStyle}" Text="list view empty" />
+        <TextBlock x:Name="GroupHeaderTextBlockStyle" Theme="{DynamicResource GroupHeaderTextBlockStyle}" Text="group header" />
+        <TextBlock x:Name="MessageDialogTitleStyle" Theme="{DynamicResource MessageDialogTitleStyle}" Text="message dialog title" />
+        <TextBlock x:Name="MessageDialogContentStyle" Theme="{DynamicResource MessageDialogContentStyle}" Text="message dialog content" />
+        <TextBlock x:Name="TitleTextBlockStyle" Theme="{DynamicResource TitleTextBlockStyle}" Text="title" />
+        <TextBlock x:Name="FlyoutPickerTitleTextBlockStyle" Theme="{DynamicResource FlyoutPickerTitleTextBlockStyle}" Text="FLYOUT PICKER TITLE" />
+        <TextBlock x:Name="BaseTextBlockStyle" Theme="{DynamicResource BaseTextBlockStyle}" Text="base" />
+        <TextBlock x:Name="BodyTextBlockStyle" Theme="{DynamicResource BodyTextBlockStyle}"
+                   Text="body: lines of a paragraph sit 24 apart, baseline to baseline, and wrap between words" />
+        <TextBlock x:Name="ControlHeaderTextBlockStyle" Theme="{DynamicResource ControlHeaderTextBlockStyle}" Text="control header" />
+        <TextBlock x:Name="ControlContextualInfoTextBlockStyle" Theme="{DynamicResource ControlContextualInfoTextBlockStyle}" Text="control contextual info" />
+        <TextBlock x:Name="ComboBoxPlaceholderTextBlockStyle" Theme="{DynamicResource ComboBoxPlaceholderTextBlockStyle}" Text="combo box placeholder" />
+      </StackPanel>
 
       <TextBlock Text="font families" Classes="section" />
       <StackPanel x:Name="FontFamilies" />

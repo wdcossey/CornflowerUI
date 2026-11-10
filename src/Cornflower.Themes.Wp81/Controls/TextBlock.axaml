@@ -1,0 +1,156 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:wp81="using:Cornflower.Themes.Wp81">
+  <!--
+    The Windows Phone 8.1 text styles, the type ramp: one ControlTheme for each TextBlock style of the
+    8.1 SDK's generic.xaml, under the style's own key, based on the same style as the phone's. Where an
+    8.1 page says Style="{StaticResource BodyTextBlockStyle}", an Avalonia one says
+    Theme="{StaticResource BodyTextBlockStyle}". A TextBlock without one is Avalonia's own: the phone's
+    TextBlock has no default style either.
+
+    These are ControlThemes, not style classes, because a ControlTheme's setters cost only the TextBlocks
+    that use it, where a class is a global rule every TextBlock in an app is checked against
+    (docs/performance). They add nothing to the style budget.
+
+    Every value is a DynamicResource, so an app or an extension pack can override it by its key, in a
+    window's Resources or the application's (ADR 0004): the sizes through Typography.axaml's WinRT keys
+    and TextStyles.axaml's own, the brushes through Colors.axaml's, which also follow the theme variant.
+    No width is set: a TextBlock takes its width from where it is put.
+
+    How WinRT's text properties map (docs/controls/TextBlock/PLAN.md has the measurements):
+    - LineHeight with LineStackingStrategy="BaselineToBaseline": LineHeight, for the distance between
+      baselines, and PhoneTextLine.BaselineToBaseline, which sets a Padding worked out from the
+      TextBlock's own font and sizes, putting the first baseline and the bottom where the phone puts them.
+    - LineStackingStrategy="MaxHeight": PhoneTextLine.MaxHeightLineHeight, which sets LineHeight to the
+      larger of WinRT's and the phone's own line, 1.33 em (ADR 0003), with no Padding.
+    - CharacterSpacing: PhoneTextLine.CharacterSpacing, which sets LetterSpacing to n × FontSize / 1000.
+    - TextTrimming="Clip": None. TextWrapping="WrapWholeWords": WrapWithOverflow, which breaks only
+      between words.
+    - TextLineBounds="Full" is what Avalonia does. OpticalMarginAlignment has no equivalent.
+    - ClipToBounds is False: the phone draws descenders below a TextBlock whose LineHeight leaves them
+      no room, and Avalonia's TextBlock clips to its bounds by default.
+  -->
+
+  <ControlTheme x:Key="BaseTextBlockStyle" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{DynamicResource PhoneFontFamilyNormal}" />
+    <Setter Property="FontSize" Value="{DynamicResource TextStyleLargeFontSize}" />
+    <Setter Property="Foreground" Value="{DynamicResource PhoneForegroundBrush}" />
+    <Setter Property="TextTrimming" Value="None" />
+    <Setter Property="TextWrapping" Value="WrapWithOverflow" />
+    <Setter Property="LineHeight" Value="{DynamicResource BaseTextBlockStyleLineHeight}" />
+    <Setter Property="ClipToBounds" Value="False" />
+    <Setter Property="wp81:PhoneTextLine.BaselineToBaseline" Value="True" />
+  </ControlTheme>
+
+  <ControlTheme x:Key="ListViewItemTextBlockStyle" TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
+    <Setter Property="FontFamily" Value="{DynamicResource PhoneFontFamilySemiLight}" />
+    <Setter Property="FontSize" Value="{DynamicResource TextStyleExtraLargePlusFontSize}" />
+    <Setter Property="TextWrapping" Value="NoWrap" />
+    <Setter Property="LineHeight" Value="{DynamicResource ListViewItemTextBlockStyleLineHeight}" />
+  </ControlTheme>
+
+  <ControlTheme x:Key="ListViewEmptyStaticTextBlockStyle" TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
+    <Setter Property="FontFamily" Value="{DynamicResource PhoneFontFamilySemiLight}" />
+    <Setter Property="FontSize" Value="{DynamicResource TextStyleExtraLargePlusFontSize}" />
+    <Setter Property="Foreground" Value="{DynamicResource PhoneMidBrush}" />
+    <Setter Property="LineHeight" Value="{DynamicResource ListViewEmptyStaticTextBlockStyleLineHeight}" />
+  </ControlTheme>
+
+  <!-- Not based on BaseTextBlockStyle, on the phone either. TextTrimming is set because Avalonia's
+       inherits and WinRT's doesn't. -->
+  <ControlTheme x:Key="ListViewItemSubheaderTextBlockStyle" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{DynamicResource PhoneFontFamilySemiLight}" />
+    <Setter Property="FontSize" Value="{DynamicResource TextStyleMediumFontSize}" />
+    <Setter Property="TextTrimming" Value="None" />
+    <Setter Property="TextWrapping" Value="NoWrap" />
+    <Setter Property="wp81:PhoneTextLine.MaxHeightLineHeight" Value="{DynamicResource ListViewItemSubheaderTextBlockStyleLineHeight}" />
+    <Setter Property="Foreground" Value="{DynamicResource PhoneMidBrush}" />
+    <Setter Property="ClipToBounds" Value="False" />
+  </ControlTheme>
+
+  <ControlTheme x:Key="ListViewItemContentTextBlockStyle" TargetType="TextBlock" BasedOn="{StaticResource ListViewItemSubheaderTextBlockStyle}">
+    <Setter Property="FontFamily" Value="{DynamicResource PhoneFontFamilyNormal}" />
+    <Setter Property="Foreground" Value="{DynamicResource PhoneForegroundBrush}" />
+  </ControlTheme>
+
+  <ControlTheme x:Key="BodyTextBlockStyle" TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
+    <Setter Property="LineHeight" Value="{DynamicResource BodyTextBlockStyleLineHeight}" />
+  </ControlTheme>
+
+  <ControlTheme x:Key="ControlHeaderTextBlockStyle" TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
+    <Setter Property="FontFamily" Value="{DynamicResource PhoneFontFamilyNormal}" />
+    <Setter Property="FontSize" Value="{DynamicResource TextStyleMediumFontSize}" />
+    <Setter Property="Foreground" Value="{DynamicResource PhoneMidBrush}" />
+    <Setter Property="LineHeight" Value="{DynamicResource ControlHeaderTextBlockStyleLineHeight}" />
+  </ControlTheme>
+
+  <ControlTheme x:Key="ControlContextualInfoTextBlockStyle" TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
+    <Setter Property="FontSize" Value="{DynamicResource TextStyleMediumFontSize}" />
+    <Setter Property="Foreground" Value="{DynamicResource PhoneMidBrush}" />
+    <Setter Property="LineHeight" Value="{DynamicResource ControlContextualInfoTextBlockStyleLineHeight}" />
+  </ControlTheme>
+
+  <ControlTheme x:Key="GroupHeaderTextBlockStyle" TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
+    <Setter Property="FontFamily" Value="{DynamicResource PhoneFontFamilySemiLight}" />
+    <Setter Property="FontSize" Value="{DynamicResource GroupHeaderTextBlockStyleFontSize}" />
+    <Setter Property="Foreground" Value="{DynamicResource PhoneMidBrush}" />
+    <Setter Property="LineHeight" Value="{DynamicResource GroupHeaderTextBlockStyleLineHeight}" />
+    <Setter Property="wp81:PhoneTextLine.CharacterSpacing" Value="{DynamicResource GroupHeaderTextBlockStyleCharacterSpacing}" />
+  </ControlTheme>
+
+  <!-- Not based on BaseTextBlockStyle, and sets no Foreground, on the phone either. -->
+  <ControlTheme x:Key="ComboBoxPlaceholderTextBlockStyle" TargetType="TextBlock">
+    <Setter Property="FontSize" Value="{DynamicResource ContentControlFontSize}" />
+    <Setter Property="FontFamily" Value="{DynamicResource PhoneFontFamilyNormal}" />
+    <Setter Property="TextTrimming" Value="None" />
+    <Setter Property="TextWrapping" Value="NoWrap" />
+    <Setter Property="LineHeight" Value="{DynamicResource ComboBoxPlaceholderTextBlockStyleLineHeight}" />
+    <Setter Property="wp81:PhoneTextLine.BaselineToBaseline" Value="True" />
+    <Setter Property="Margin" Value="{DynamicResource ComboBoxFlyoutListPlaceholderTextThemeMargin}" />
+    <Setter Property="Opacity" Value="{DynamicResource ComboBoxFlyoutListPlaceholderTextOpacity}" />
+    <Setter Property="ClipToBounds" Value="False" />
+  </ControlTheme>
+
+  <ControlTheme x:Key="MessageDialogTitleStyle" TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
+    <Setter Property="FontFamily" Value="{DynamicResource PhoneFontFamilyNormal}" />
+    <Setter Property="FontSize" Value="{DynamicResource TextStyleExtraLargeFontSize}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="LineHeight" Value="{DynamicResource MessageDialogTitleStyleLineHeight}" />
+    <Setter Property="wp81:PhoneTextLine.CharacterSpacing" Value="{DynamicResource MessageDialogTitleStyleCharacterSpacing}" />
+  </ControlTheme>
+
+  <ControlTheme x:Key="MessageDialogContentStyle" TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
+    <Setter Property="FontSize" Value="{DynamicResource TextStyleLargeFontSize}" />
+    <Setter Property="LineHeight" Value="{DynamicResource MessageDialogContentStyleLineHeight}" />
+  </ControlTheme>
+
+  <ControlTheme x:Key="TitleTextBlockStyle" TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
+    <Setter Property="FontSize" Value="{DynamicResource TextStyleLargeFontSize}" />
+    <Setter Property="FontFamily" Value="{DynamicResource PhoneFontFamilyNormal}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="TextWrapping" Value="NoWrap" />
+  </ControlTheme>
+
+  <ControlTheme x:Key="FlyoutPickerTitleTextBlockStyle" TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
+    <Setter Property="FontSize" Value="{DynamicResource TextStyleLargeFontSize}" />
+    <Setter Property="FontFamily" Value="{DynamicResource PhoneFontFamilyNormal}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="TextWrapping" Value="NoWrap" />
+    <Setter Property="wp81:PhoneTextLine.CharacterSpacing" Value="{DynamicResource FlyoutPickerTitleTextBlockStyleCharacterSpacing}" />
+  </ControlTheme>
+
+  <ControlTheme x:Key="HeaderTextBlockStyle" TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
+    <Setter Property="FontFamily" Value="{DynamicResource PhoneFontFamilySemiLight}" />
+    <Setter Property="FontSize" Value="{DynamicResource HeaderTextBlockStyleFontSize}" />
+    <Setter Property="FontWeight" Value="SemiLight" />
+    <Setter Property="LineHeight" Value="{DynamicResource HeaderTextBlockStyleLineHeight}" />
+    <Setter Property="TextWrapping" Value="NoWrap" />
+  </ControlTheme>
+
+  <ControlTheme x:Key="SubheaderTextBlockStyle" TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
+    <Setter Property="FontFamily" Value="{DynamicResource PhoneFontFamilySemiLight}" />
+    <Setter Property="FontSize" Value="{DynamicResource SubheaderTextBlockStyleFontSize}" />
+    <Setter Property="FontWeight" Value="SemiLight" />
+    <Setter Property="LineHeight" Value="{DynamicResource SubheaderTextBlockStyleLineHeight}" />
+  </ControlTheme>
+</ResourceDictionary>

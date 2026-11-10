@@ -65,4 +65,22 @@ public class LineMetricTests
         Assert.Equal(ascent + (PhoneLine * fontSize - natural) / 2, text.Line.Baseline, precision: 6);
         Assert.Equal(0.025, PhoneBaseline - text.Line.Baseline / fontSize, precision: 3);
     }
+
+    // The text styles' LineHeights are often shorter than Selawik's line (21.5 at 18.14, 57.5 at 57.5), and
+    // PhoneTextLine relies on what Avalonia does then: the baseline stays at the font's ascent, so the line is
+    // cut from below, and the descenders draw past it.
+    [AvaloniaTheory]
+    [InlineData(18.14, 21.5)]
+    [InlineData(57.5, 57.5)]
+    public void A_Shorter_LineHeight_Keeps_The_Baseline_At_The_Ascent(double fontSize, double lineHeight)
+    {
+        var file = OpenTypeFile.Bundled("Selawik/selawk.ttf");
+        var ascent = file.HheaAscender / (double)file.UnitsPerEm * fontSize;
+        Assert.True(lineHeight < file.HheaLine * fontSize);
+
+        using var text = new ThemeText("PhoneFontFamilyNormal", "button", fontSize, lineHeight: lineHeight);
+
+        Assert.Equal(lineHeight, text.Line.Height, precision: 6);
+        Assert.Equal(ascent, text.Line.Baseline, precision: 6);
+    }
 }
