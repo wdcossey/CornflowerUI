@@ -55,7 +55,16 @@ at depth 20, each style five ways (no style, all `StaticResource`, brushes and f
 `DynamicResource`, and the theme as shipped). Most of the cost is the first `DynamicResource` on an
 element, about 12 µs, which the brushes need anyway to follow the theme variant. The size hooks the
 extension pack needs ([ADR 0004](../decisions/0004-larger-screens-as-an-extension-pack.md)) add 1 to
-2 µs per styled `TextBlock`. The table is in #69's description.
+2 µs per styled `TextBlock`. µs per `TextBlock`, Release, headless, on the desktop PC, 2026-11-10
+(four earlier runs put every difference between columns within 2.6 µs of these):
+
+| Style | No style | All `StaticResource` | Brushes and fonts dynamic | All `DynamicResource` | The theme |
+|---|---|---|---|---|---|
+| `BodyTextBlockStyle` | 13.8 | 21.1 | 33.5 | 35.6 | 35.3 |
+| `GroupHeaderTextBlockStyle` | 14.6 | 25.5 | 36.5 | 37.8 | 43.8 |
+
+The theme's column adds `PhoneTextLine`: nothing measurable for Body, 6.0 for GroupHeader, which
+also has letter spacing. The maintainer judges the cost (`D-type-ramp-cost`).
 
 ```
 CORNFLOWER_BENCHMARK=/absolute/path/ramp.md dotnet test tests/Cornflower.Tests -c Release --filter FullyQualifiedName~TypeRampCostBenchmark
@@ -65,6 +74,8 @@ CORNFLOWER_BENCHMARK=/absolute/path/ramp.md dotnet test tests/Cornflower.Tests -
 
 Run by hand at each tier's roll-up, on the same machine, and add a row. Timings in CI would mean
 nothing.
+Tier 0's row is owed: it has to be measured on main once #63 to #69 are merged, so it is added when
+this roll-up is rebased onto them.
 
 ```
 CORNFLOWER_BENCHMARK=/absolute/path/row.md dotnet test tests/Cornflower.Tests -c Release --filter FullyQualifiedName~StyleCostBenchmark
@@ -166,5 +177,7 @@ Copied from Avonic's `v2` branch. What changed:
   list.
 - `tools/breakage/run.js` finds the test project itself, so another library can copy it unchanged.
 - `tools/real-window/drive.ps1`, which drives the desktop sample's real window, came with the
-  desktop sample ([#9](https://github.com/wdcossey/CornflowerUI/issues/9), #68). For now it opens
-  each page and checks the view size; its per-control sections come back with controls.
+  desktop sample ([#9](https://github.com/wdcossey/CornflowerUI/issues/9), #68). It opens every
+  page with a real click and saves a frame, and checks buttons with no size, the Debug line, the
+  page's 450 × 800 from the ready line, Back, Alt+Left and resizing; its per-control sections come
+  back with controls.

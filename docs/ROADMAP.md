@@ -133,7 +133,7 @@ step, and a control that climbs a rung says so in its PR.
 ## Tier 0
 
 Nothing in Tier 1 starts until this list is done, except the type ramp (#26), which may start once
-#20, #21, #22 and #24 are open and green (`D-tier1-start`,
+the rest of Tier 0 is open and green, on 2026-11-10 #20, #21, #22 and #24 (`D-tier1-start`,
 [ADR 0005](decisions/0005-decisions-of-2026-11-09-and-10.md)). The desktop sample (#9) didn't hold up
 Tier 1.
 
@@ -162,7 +162,9 @@ Tier 1.
       [`tools/refapp`](../tools/refapp/README.md).
 - [x] The reference app, `tools/winrt-api` and the font measurement scripts moved into `tools/`
       ([#5](https://github.com/wdcossey/CornflowerUI/issues/5)).
-- [ ] Captures committed under `ref/wp81/<control>/`, from the reference profile.
+- [x] Captures committed under `ref/wp81/<control>/`, from the reference profile: PNGs only
+      (`D-captures-public`), first `ref/wp81/TextBlock/` with the type ramp (#69). Each control
+      commits its own.
 - [x] The reference app captures flyouts, dialogs and the app bar
       ([#23](https://github.com/wdcossey/CornflowerUI/issues/23)). The popups have tree dumps, and 1080 × 1920
       screenshots from the emulator's Screenshot tool (`run.ps1 -Popups only -Grab`). The page's
