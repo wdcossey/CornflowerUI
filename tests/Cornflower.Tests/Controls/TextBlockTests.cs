@@ -330,6 +330,37 @@ public class TextBlockTests
         Assert.Equal(PhoneLine.FirstBaseline * 30, FirstBaseline(specimen.Block), 0.001);
     }
 
+    // An app's own Style beats a ControlTheme, so it beats the values PhoneTextLine sets for one, before and
+    // after the font changes.
+    [AvaloniaFact]
+    public void A_Value_An_Apps_Style_Sets_Wins_Over_The_Styles()
+    {
+        using var spaced = new Specimens("GroupHeaderTextBlockStyle");
+        using var listed = new Specimens("ListViewItemSubheaderTextBlockStyle");
+        foreach (var window in new[] { spaced.Window, listed.Window })
+        {
+            var rule = new Style(x => x.OfType<TextBlock>().Class("dense"));
+            rule.Setters.Add(new Setter(TextBlock.PaddingProperty, new Thickness(3)));
+            rule.Setters.Add(new Setter(TextBlock.LetterSpacingProperty, 1.0));
+            rule.Setters.Add(new Setter(TextBlock.LineHeightProperty, 40.0));
+            window.Styles.Add(rule);
+        }
+
+        spaced.Block.Classes.Add("dense");
+        listed.Block.Classes.Add("dense");
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(new Thickness(3), Padding(spaced.Block));
+        Assert.Equal(1, spaced.Block.LetterSpacing);
+        Assert.Equal(40, listed.Block.LineHeight);
+
+        spaced.Block.FontSize = 30;
+        listed.Block.FontSize = 30;
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(new Thickness(3), Padding(spaced.Block));
+        Assert.Equal(1, spaced.Block.LetterSpacing);
+        Assert.Equal(40, listed.Block.LineHeight);
+    }
+
     [AvaloniaFact]
     public void Taking_The_Style_Away_Takes_Its_Values_Away()
     {

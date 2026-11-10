@@ -54,7 +54,7 @@ dotnet test  Cornflower.sln
 
 ## Controls
 
-None yet.
+The 8.1 text styles (the type ramp): 16 `ControlTheme`s for `TextBlock`, by their WinRT keys, in `Wp81Theme`.
 
 ## Avalonia facts the code relies on
 

@@ -56,10 +56,12 @@ public class TypeRampCostBenchmark
             root = new Border { Child = root };
         }
 
+        // Loaded before the clock starts, as StyleCostBenchmark's are.
+        var wp81 = new Wp81Theme();
         GC.Collect();
         GC.WaitForPendingFinalizers();
         var stopwatch = Stopwatch.StartNew();
-        using var scene = new Scene(root, themes: [new Wp81Theme()]);
+        using var scene = new Scene(root, themes: [wp81]);
         Dispatcher.UIThread.RunJobs();
         stopwatch.Stop();
         return stopwatch.Elapsed.TotalMilliseconds;

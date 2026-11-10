@@ -1,6 +1,9 @@
 # TextBlock and the text styles
 
-Status: done · [#26](https://github.com/wdcossey/CornflowerUI/issues/26)
+Status: device run owed · [#26](https://github.com/wdcossey/CornflowerUI/issues/26)
+
+(The loop is done but for the sample's run on the Android device, as the phone was locked on 2026-11-10. The
+line becomes `Status: done` with that run.)
 
 The Windows Phone 8.1 type ramp: the 16 `TextBlock` styles of the phone's `generic.xaml`, as `ControlTheme`s
 under the same keys, in `src/Cornflower.Themes.Wp81/Controls/TextBlock.axaml`. The plan, with the measurements,
@@ -69,7 +72,7 @@ application's `Resources` overrides it ([ADR 0004](../../decisions/0004-larger-s
   `<Style>CharacterSpacing` for GroupHeader, MessageDialogTitle and FlyoutPickerTitle, in thousandths of an em.
 
 No style sets a width. What the hooks cost is in [PLAN.md](PLAN.md#the-hooks-adr-0004): the `DynamicResource`s
-that the variant needs anyway cost most of it, and the size hooks 0.5 to 2.6 µs more per styled `TextBlock`.
+that the variant needs anyway cost most of it, and the size hooks about 1 µs more per styled `TextBlock`.
 
 ## The ladder
 
@@ -88,6 +91,8 @@ substituted.
 - **The phone's text-size setting** (`IsTextScaleFactorEnabled`) has no equivalent.
 - **Not captured on the phone**: the two MessageDialog styles, and two-line text.
 - **Not run on the Android device** yet: the phone was locked on 2026-11-10.
+- **Fallback fonts**: the `Padding` reads the `TextBlock`'s own face, so a line whose fallback font (a script
+  Selawik lacks) has a taller ascent sits lower than the phone's line by the difference.
 
 ## The checklist
 

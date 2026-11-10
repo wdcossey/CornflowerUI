@@ -133,19 +133,20 @@ depth of 20, Release, headless on the desktop PC, µs per `TextBlock` (the PR ha
 
 | Style | No style | `StaticResource` | Brushes and fonts dynamic | `DynamicResource` | The theme |
 |---|---|---|---|---|---|
-| `BodyTextBlockStyle` | 12.7 | 17.9 | 29.6 | 32.2 | 32.9 |
-| `GroupHeaderTextBlockStyle` | 13.1 | 23.3 | 31.1 | 31.6 | 38.4 |
+| `BodyTextBlockStyle` | 12.6 | 18.7 | 30.3 | 31.5 | 33.8 |
+| `GroupHeaderTextBlockStyle` | 13.3 | 22.4 | 32.4 | 33.5 | 39.1 |
 
 The columns: a plain `TextBlock`; every value fixed, as `StaticResource` would fix it (with `PhoneTextLine`'s
 values worked out once); only the brushes and font families dynamic; every resource dynamic, `PhoneTextLine`'s
-values fixed; and the theme as shipped. A second run the same morning was within 2.6 µs of this one in every
-cell. Bindings in place of `PhoneTextLine`, measured first, made the theme 66.6 and 85.6.
+values fixed; and the theme as shipped. Three earlier runs the same morning, before the theme's own load was
+taken out of the timing, were within 2.6 µs of this one in every cell. Bindings in place of `PhoneTextLine`, measured first, made the theme 66.6 and 85.6.
 
 Most of the cost of `DynamicResource` is the first one on an element: a style whose brushes and fonts are
 dynamic, which the variant and an app's own font need whatever the hooks do, costs nearly what one with every
-resource dynamic does. So the size hooks themselves add 0.5 to 2.6 µs per styled `TextBlock`.
-`PhoneTextLine` adds 0.7 (Body) to 6.8 (GroupHeader, which also has letter spacing). A `TextBlock`
-without a text style pays nothing but a class handler's property read when its font changes.
+resource dynamic does. So the size hooks themselves add about 1 µs per styled `TextBlock` (1.2 and 1.1;
+0.5 to 2.6 over the earlier runs).
+`PhoneTextLine` adds 2.3 (Body) and 5.6 (GroupHeader, which also has letter spacing). A `TextBlock`
+without a text style pays a property read or two in a class handler when its font changes.
 
 ## Behaviours
 

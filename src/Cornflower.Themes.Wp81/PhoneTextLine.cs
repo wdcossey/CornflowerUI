@@ -17,7 +17,9 @@ namespace Cornflower.Themes.Wp81;
 /// reference app captured (docs/controls/TextBlock/PLAN.md): every height to within 0.01 DIP. Avalonia
 /// draws each line <c>LineHeight</c> tall, with the baseline the font's own ascent below the line's top, plus
 /// half of any height past the font's line (none if <c>LineHeight</c> is shorter: the line is cut from below).
-/// So the difference is all above the first line and below the last, and <c>Padding</c> takes it.</para>
+/// So the difference is all above the first line and below the last, and <c>Padding</c> takes it. It reads the
+/// <c>TextBlock</c>'s own face: a line whose fallback font (a script Selawik lacks) has a taller ascent moves
+/// Avalonia's baseline down by the difference.</para>
 /// <para><b>MaxHeight.</b> The line is the larger of WinRT's <c>LineHeight</c> and the phone's own line,
 /// 1.33 em (ADR 0003).</para>
 /// <para><b>CharacterSpacing</b>, in thousandths of an em, is <c>LetterSpacing</c> n × <c>FontSize</c> / 1000
@@ -26,7 +28,7 @@ namespace Cornflower.Themes.Wp81;
 /// worked out again whenever the <c>TextBlock</c>'s font or sizes change: a local <c>FontSize</c>, or a size an
 /// extension pack sets through the type ramp's keys, keeps the phone's line. A class handler does this, rather
 /// than a binding in each style, because bindings cost about 4 µs each per <c>TextBlock</c>
-/// (<c>TypeRampCostBenchmark</c>), where a handler that finds nothing to do costs a property read.</para>
+/// (<c>TypeRampCostBenchmark</c>), where a handler costs a <c>TextBlock</c> without a text style a property read or two when its font changes.</para>
 /// </remarks>
 internal static class PhoneTextLine
 {
@@ -66,6 +68,7 @@ internal static class PhoneTextLine
         TextBlock.FontFamilyProperty.Changed.AddClassHandler<TextBlock>((b, _) => UpdatePadding(b));
         TextBlock.FontWeightProperty.Changed.AddClassHandler<TextBlock>((b, _) => UpdatePadding(b));
         TextBlock.FontStyleProperty.Changed.AddClassHandler<TextBlock>((b, _) => UpdatePadding(b));
+        TextBlock.FontStretchProperty.Changed.AddClassHandler<TextBlock>((b, _) => UpdatePadding(b));
         MaxHeightLineHeightProperty.Changed.AddClassHandler<TextBlock>((b, _) => UpdateLineHeight(b));
         CharacterSpacingProperty.Changed.AddClassHandler<TextBlock>((b, _) => UpdateLetterSpacing(b));
         TextBlock.FontSizeProperty.Changed.AddClassHandler<TextBlock>((b, _) =>
@@ -113,7 +116,7 @@ internal static class PhoneTextLine
             return;
         }
 
-        var padding = Padding(block.FontSize, block.LineHeight, new Typeface(block.FontFamily, block.FontStyle, block.FontWeight));
+        var padding = Padding(block.FontSize, block.LineHeight, new Typeface(block.FontFamily, block.FontStyle, block.FontWeight, block.FontStretch));
         Put(block, Slot.Padding, TextBlock.PaddingProperty, padding);
     }
 
