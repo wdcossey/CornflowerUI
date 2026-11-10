@@ -51,7 +51,7 @@ before any control (2026-11-09). Each control's PR deletes its own lines from
 
 | Tier | Meaning |
 |---|---|
-| **0** | Tooling and acquisition. Nothing in Tier 1 starts until this is done |
+| **0** | Tooling and acquisition. Nothing in Tier 1 starts until this is done, except the type ramp ([#26](https://github.com/wdcossey/CornflowerUI/issues/26)), by [ADR 0005](decisions/0005-decisions-of-2026-11-09-and-10.md) |
 | **1** | Foundation controls, one PR each at full depth. Button first, then ProgressRing, then the rest |
 | **2** | The shell: what makes a screen look like a phone app. Page, app bar, Pivot, Hub, list |
 | **3** | Pickers and dialogs |
@@ -132,7 +132,10 @@ step, and a control that climbs a rung says so in its PR.
 
 ## Tier 0
 
-Nothing in Tier 1 starts until this list is done.
+Nothing in Tier 1 starts until this list is done, except the type ramp (#26), which may start once
+#20, #21, #22 and #24 are open and green (`D-tier1-start`,
+[ADR 0005](decisions/0005-decisions-of-2026-11-09-and-10.md)). The desktop sample (#9) doesn't hold up
+Tier 1.
 
 - [x] A reference VM with the Windows Phone 8.1 tools (2026-11-07). The RTM and Update 1
       emulators are installed. The Update 1 720p emulator was started over SSH and ran a test app
@@ -169,7 +172,7 @@ Nothing in Tier 1 starts until this list is done.
       storyboards read every frame, theme transitions from video (`run.ps1 -Record`). The numbers
       are in [`tools/refapp`](../tools/refapp/README.md) "Motion" and
       [ADR 0005](decisions/0005-decisions-of-2026-11-09-and-10.md#the-motion). Not yet: the pickers'
-      per-row swivel curves.
+      and the full Flyout's per-row swivel curves, and the turnstile's forward start angle.
 - [x] Read from the emulator: the item count at which ComboBox goes full screen, and the
       ToggleSwitch drag threshold ([#25](https://github.com/wdcossey/CornflowerUI/issues/25)), on 2026-11-09 (#58):
       5 items open inline and 6 full screen, by count, not by screen. A ToggleSwitch release is a tap
@@ -218,16 +221,18 @@ Nothing in Tier 1 starts until this list is done.
       sizes ([#19](https://github.com/wdcossey/CornflowerUI/issues/19)).
 - [x] The template glyph set, drawn as our own paths and tested
       ([#20](https://github.com/wdcossey/CornflowerUI/issues/20)), on 2026-11-10 (#63). 8.1's templates
-      draw three: the tick (CheckBox and list items), the selected item's earmark, and the app bar's
-      ellipsis, which the shell draws. The rest are rectangles and ellipses.
+      draw two: the tick (CheckBox and list items) and the selected item's earmark; the shell
+      draws a third, the app bar's ellipsis. The rest are rectangles and ellipses.
 - [x] The Lucide generator and icon control ([#21](https://github.com/wdcossey/CornflowerUI/issues/21)),
       on 2026-11-10 (#64): [`tools/lucide`](../tools/lucide), pinned to Lucide 1.71.0, and
       `LucideIcon`. 161 of WinRT's 193 `Symbol` values have a Lucide icon
       (`tools/lucide/symbols.tsv`).
 - [x] The tilt behaviour, measured and tested ([#22](https://github.com/wdcossey/CornflowerUI/issues/22)),
       on 2026-11-10 (#65): `Tilt.IsEnabled`, fitted to #60's 100 grid presses within 0.019°, the
-      screen-position bias included. Open: whether the eye distance scales with the screen, and
-      whether a press at the very edge clicks on the phone.
+      screen-position bias included. Open: whether the eye distance scales with the screen, the
+      fitted eye (1,055 view px) against PlaneProjection's measured camera (1000), and a press at
+      the very edge, which clicks on the phone and must click here too
+      ([ADR 0005](decisions/0005-decisions-of-2026-11-09-and-10.md#the-tilt)).
 
 ## What "done" means for Button
 

@@ -199,8 +199,9 @@ over SSH.
 - **A capture is a forced state on a fresh instance, without the motion into it.** Motion (the
   tilt, page transitions, the ToggleSwitch drag) comes from per-frame probes and screen
   recordings of the emulator ([#24](https://github.com/wdcossey/CornflowerUI/issues/24)), in
-  `tools/refapp/README.md` "Motion". Flyouts, dialogs and the app bar live in popups outside the
-  captured stage, so they are captured with the emulator's Screenshot tool
+  `tools/refapp/README.md` "Motion". Flyouts and dialogs live in popups outside the captured
+  stage, and the page's app bar is drawn by the shell, so all three are captured with the
+  emulator's Screenshot tool, and for the app bar the screenshots are the only reference
   ([#23](https://github.com/wdcossey/CornflowerUI/issues/23)).
 - **One emulator, one driver.** An agent in a worktree doesn't get the VM: two agents driving one
   emulator would collide. So each control's capture list is written at planning time and captured
