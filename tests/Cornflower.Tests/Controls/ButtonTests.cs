@@ -207,6 +207,44 @@ public class ButtonTests
         Assert.True(double.IsNaN(own.LineHeight));
     }
 
+    // Avalonia's access keys, as its own Button themes have them (the phone had none): "_Open" draws "Open", and Alt+O
+    // clicks it. The text still gets the phone's line.
+    [AvaloniaFact]
+    public void An_Access_Key_Is_Drawn_Without_Its_Underscore_And_Alt_Clicks_It()
+    {
+        var plain = new TextBlock { Text = "Open" };
+        var button = new Button { Content = "_Open" };
+        using var stage = new Stage(button: button);
+        var clicks = 0;
+        button.Click += (_, _) => clicks++;
+        var text = PresenterOf(button).GetVisualDescendants().OfType<TextBlock>().Single();
+        var styled = new TextBlock { Text = "Open", FontFamily = text.FontFamily, FontSize = text.FontSize, FontWeight = text.FontWeight };
+        styled.Measure(Size.Infinity);
+
+        Assert.IsType<AccessText>(text);
+        Assert.Equal(styled.DesiredSize.Width, text.DesiredSize.Width, 1.0);         // rounding apart; an "_" is about 9 wide
+        Assert.Equal(1.33 * FontSize, text.LineHeight, 0.01);
+
+        stage.Window.KeyPressQwerty(PhysicalKey.O, RawInputModifiers.Alt);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(1, clicks);
+    }
+
+    // The theme's PhoneContentLine taken off the presenter takes the phone's line off its text.
+    [AvaloniaFact]
+    public void Turning_The_Content_Line_Off_Takes_It_Back()
+    {
+        using var stage = new Stage();
+        var presenter = PresenterOf(stage.Button);
+        var text = presenter.GetVisualDescendants().OfType<TextBlock>().Single();
+        Assert.Equal(1.33 * FontSize, text.LineHeight, 0.01);
+
+        Cornflower.Themes.Wp81.PhoneContentLine.SetIsEnabled(presenter, false);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.True(double.IsNaN(text.LineHeight), $"LineHeight {text.LineHeight}");
+    }
+
     // The app's own ContentTemplate still decides how its content is shown.
     [AvaloniaFact]
     public void The_Apps_ContentTemplate_Wins_Over_The_Strings_Line()

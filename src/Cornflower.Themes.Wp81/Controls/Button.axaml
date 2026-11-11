@@ -66,6 +66,7 @@
                                 VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
                                 Content="{TemplateBinding Content}"
                                 ContentTemplate="{TemplateBinding ContentTemplate}"
+                                RecognizesAccessKey="True"
                                 wp81:PhoneContentLine.IsEnabled="True" />
             </Border>
           </Panel>
