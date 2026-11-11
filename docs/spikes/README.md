@@ -101,3 +101,24 @@ after every character, the last one included.
 **Consequence.** WinRT's `CharacterSpacing="n"` is `LetterSpacing = n × FontSize / 1000`, so a token for it has to be scaled by the
 font size. The trailing space after the last character also widens the measured text, which WinRT may not do. That hasn't been
 compared with the reference.
+
+## 6. A theme's values, unset when it goes
+
+**Question.** When a `ControlTheme` goes (a new `Theme`, or none), and a handler of one of the changes takes a value
+of another property away, does every property the theme set still go back?
+
+**Answer.** Not always. The value store unsets the values left without a source one property at a time, from the
+property registered last to the first, and stops when a handler leaves it fewer values than the index it is at. So a
+handler of the last such property's change that takes another value away stops the rest being unset: they keep the
+old theme's values, with no change raised, and a new theme that sets the same values raises none either. A value of
+a property registered after them, which the theme doesn't set, keeps it from happening.
+
+**Evidence.** `UnsetPassTests`: a theme's two values on a `Border`, the last one's handler taking a third value away;
+with nothing after them the first keeps its value through the swap and raises no change, and with a value of a later
+property it goes to its default and back.
+
+**Consequence.** `PhoneTextLine` takes its values back in such handlers (`CharacterSpacing` going takes the
+`LetterSpacing` it set), and its own properties are registered late. It keeps its bookkeeping in an attached property
+registered after them, set on every `TextBlock` it acts on, so a value of a property after them is always there.
+Moved to a table beside the `TextBlock`, a swap to a `ControlTheme` based on a text style keeps `PhoneTextLine`'s
+`Padding` over the derived theme's (`TextBlockTests.A_Value_A_Derived_ControlTheme_Sets_Wins_Over_The_Styles`).

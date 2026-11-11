@@ -60,8 +60,11 @@ distance between baselines, as on the phone.
 
 ## Resource keys: the hooks
 
-Every value a style reads is a resource reached by `DynamicResource`, so a key defined in a window's or the
-application's `Resources` overrides it ([ADR 0004](../../decisions/0004-larger-screens-as-an-extension-pack.md)):
+Every size, line height, character spacing, font family, brush, margin and opacity a style sets is a resource
+reached by `DynamicResource`, so a key defined in a window's or the application's `Resources` overrides it
+([ADR 0004](../../decisions/0004-larger-screens-as-an-extension-pack.md)). The rest are written in the style, as the
+phone's are: `FontWeight`, `TextWrapping` and `TextTrimming`, Cornflower's `ClipToBounds`, and
+`PhoneTextLine.BaselineToBaseline`. An app changes those with a `ControlTheme` based on the style. The resources:
 
 - the WinRT keys in `Tokens/Typography.axaml`: `TextStyleMediumFontSize`, `TextStyleLargeFontSize`,
   `ContentControlFontSize`, `TextStyleExtraLargeFontSize`, `TextStyleExtraLargePlusFontSize`;
@@ -85,15 +88,24 @@ substituted.
 
 - **Optical margin**: no `TrimSideBearings` in Avalonia. Header's "A" starts 1.25 DIP right of the phone's;
   most others 0 or 0.42.
-- **A `NoWrap` line past its slot isn't clipped**, as the styles turn `ClipToBounds` off to draw descenders as the
-  phone does. The container's own clip, `ClipToBounds` or `TextTrimming` on the `TextBlock` stop it.
+- **A `NoWrap` line past its slot isn't clipped**, where the phone clips it to the slot: the styles turn
+  `ClipToBounds` off to draw descenders below a short line as the phone does, and Avalonia's clip is the bounds,
+  both ways or neither, with no layout clip of its own. The container's own clip, `ClipToBounds` or `TextTrimming`
+  on the `TextBlock` stop it. A clip that followed the bounds across and not down would be a geometry per
+  `TextBlock`, made again on every resize, so it isn't done.
 - **Rounding**: laid-out heights within −0.15 and +0.47 DIP of the phone's (ADR 0003).
 - **MaxHeight styles' baseline** is 0.025 em high (ADR 0003).
 - **The phone's text-size setting** (`IsTextScaleFactorEnabled`) has no equivalent.
-- **Not captured on the phone**: the two MessageDialog styles, and two-line text.
+- **Not captured on the phone**: the two MessageDialog styles (their values are `generic.xaml`'s and their heights
+  the phone's line worked out from them; a reference app run owes a capture, gap register B18), and two-line text.
 - **Fallback fonts and larger runs**: the `Padding` reads the `TextBlock`'s own face and size, so a first line
   whose fallback font (a script Selawik lacks) or a larger `Run` has a taller ascent sits lower than the phone's
   line by the difference.
+- **Letter spacing on a `Run` of another size**: `LetterSpacing` is worked out from the `TextBlock`'s `FontSize`,
+  in DIPs, where WinRT's `CharacterSpacing` is in ems of each run's own size. A `Run` of another `FontSize` in a
+  spaced style (GroupHeader, FlyoutPickerTitle, MessageDialogTitle) is spaced for the `TextBlock`'s size.
+- **No `LineHeight`**: a BaselineToBaseline style whose `LineHeight` is taken away (a local `NaN`) gets no
+  `Padding`, so Avalonia's own line, as there is no line height for the phone's line to keep.
 - **A local `LineHeight` on a MaxHeight style** is taken as it is, where the phone would still keep the font's
   line if it were shorter.
 

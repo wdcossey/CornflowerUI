@@ -19,7 +19,8 @@ namespace Cornflower.Themes.Wp81;
 /// half of any height past the font's line (none if <c>LineHeight</c> is shorter: the line is cut from below).
 /// So the difference is all above the first line and below the last, and <c>Padding</c> takes it. It reads the
 /// <c>TextBlock</c>'s own face: a line whose fallback font (a script Selawik lacks) has a taller ascent moves
-/// Avalonia's baseline down by the difference.</para>
+/// Avalonia's baseline down by the difference. With no <c>LineHeight</c> there is no phone's line to keep, and no
+/// <c>Padding</c> is set.</para>
 /// <para><b>MaxHeight.</b> The line is the larger of WinRT's <c>LineHeight</c> and the phone's own line,
 /// 1.33 em (ADR 0003).</para>
 /// <para><b>CharacterSpacing</b>, in thousandths of an em, is <c>LetterSpacing</c> n × <c>FontSize</c> / 1000
@@ -29,7 +30,8 @@ namespace Cornflower.Themes.Wp81;
 /// worked out again whenever the <c>TextBlock</c>'s font or sizes change: a local <c>FontSize</c>, or a size an
 /// extension pack sets through the type ramp's keys, keeps the phone's line. A class handler does this, rather
 /// than a binding in each style, because bindings cost about 4 µs each per <c>TextBlock</c>
-/// (<c>TypeRampCostBenchmark</c>), where a handler costs a <c>TextBlock</c> without a text style a property read or two when its font changes.</para>
+/// (<c>TypeRampCostBenchmark</c>), where a handler costs a <c>TextBlock</c> without a text style a property read
+/// when its font changes.</para>
 /// </remarks>
 internal static class PhoneTextLine
 {
@@ -58,32 +60,60 @@ internal static class PhoneTextLine
     public static readonly AttachedProperty<int> CharacterSpacingProperty =
         AvaloniaProperty.RegisterAttached<TextBlock, int>("CharacterSpacing", typeof(PhoneTextLine));
 
-    // What each has set, to take back when it changes.
+    // What this has set on a TextBlock, to take back when it changes: set on each TextBlock the first time one of the
+    // three is set on it, so one without it has nothing set by this, and a change of its font or sizes stops at
+    // reading it. It is a property, not a ConditionalWeakTable beside the TextBlock, because its value keeps
+    // Avalonia's value store unsetting a theme's values when the theme goes: the store unsets them from the property
+    // registered last, and stops if a handler (Take, here) takes a value away while it is at the last one (spike 6,
+    // docs/spikes). Registered after the three, it is always after them.
+    // A_Value_A_Derived_ControlTheme_Sets_Wins_Over_The_Styles fails with a table.
     private static readonly AttachedProperty<Applied?> AppliedProperty =
         AvaloniaProperty.RegisterAttached<TextBlock, Applied?>("Applied", typeof(PhoneTextLine));
 
     static PhoneTextLine()
     {
-        BaselineToBaselineProperty.Changed.AddClassHandler<TextBlock>((b, _) => UpdatePadding(b));
+        BaselineToBaselineProperty.Changed.AddClassHandler<TextBlock>((b, e) =>
+        {
+            if (Track(b, e.GetNewValue<bool>()) is { } applied)
+                UpdatePadding(b, applied);
+        });
+        MaxHeightLineHeightProperty.Changed.AddClassHandler<TextBlock>((b, e) =>
+        {
+            if (Track(b, !double.IsNaN(e.GetNewValue<double>())) is { } applied)
+                UpdateLineHeight(b, applied);
+        });
+        CharacterSpacingProperty.Changed.AddClassHandler<TextBlock>((b, e) =>
+        {
+            if (Track(b, e.GetNewValue<int>() != 0) is { } applied)
+                UpdateLetterSpacing(b, applied);
+        });
         TextBlock.LineHeightProperty.Changed.AddClassHandler<TextBlock>((b, _) =>
         {
-            UpdateLineHeight(b);
-            UpdatePadding(b);
+            if (b.GetValue(AppliedProperty) is { } applied)
+            {
+                UpdateLineHeight(b, applied);
+                UpdatePadding(b, applied);
+            }
         });
         // Another source of a value this sets (the app's, a derived theme's) takes over, or gives it back.
         TextBlock.PaddingProperty.Changed.AddClassHandler<TextBlock>((b, _) => UpdatePadding(b));
-        TextBlock.LetterSpacingProperty.Changed.AddClassHandler<TextBlock>((b, _) => UpdateLetterSpacing(b));
+        TextBlock.LetterSpacingProperty.Changed.AddClassHandler<TextBlock>((b, _) =>
+        {
+            if (b.GetValue(AppliedProperty) is { } applied)
+                UpdateLetterSpacing(b, applied);
+        });
         TextBlock.FontFamilyProperty.Changed.AddClassHandler<TextBlock>((b, _) => UpdatePadding(b));
         TextBlock.FontWeightProperty.Changed.AddClassHandler<TextBlock>((b, _) => UpdatePadding(b));
         TextBlock.FontStyleProperty.Changed.AddClassHandler<TextBlock>((b, _) => UpdatePadding(b));
         TextBlock.FontStretchProperty.Changed.AddClassHandler<TextBlock>((b, _) => UpdatePadding(b));
-        MaxHeightLineHeightProperty.Changed.AddClassHandler<TextBlock>((b, _) => UpdateLineHeight(b));
-        CharacterSpacingProperty.Changed.AddClassHandler<TextBlock>((b, _) => UpdateLetterSpacing(b));
         TextBlock.FontSizeProperty.Changed.AddClassHandler<TextBlock>((b, _) =>
         {
-            UpdateLineHeight(b);
-            UpdateLetterSpacing(b);
-            UpdatePadding(b);
+            if (b.GetValue(AppliedProperty) is { } applied)
+            {
+                UpdateLineHeight(b, applied);
+                UpdateLetterSpacing(b, applied);
+                UpdatePadding(b, applied);
+            }
         });
     }
 
@@ -99,12 +129,9 @@ internal static class PhoneTextLine
 
     public static void SetCharacterSpacing(TextBlock block, int value) => block.SetValue(CharacterSpacingProperty, value);
 
-    /// <summary>The padding for one line's font, size and line height. Either edge can be negative.</summary>
+    /// <summary>The padding for one line's font, size and line height, both above 0. Either edge can be negative.</summary>
     internal static Thickness Padding(double fontSize, double lineHeight, Typeface typeface)
     {
-        if (!(fontSize > 0) || !(lineHeight > 0))
-            return default;
-
         var metrics = typeface.GlyphTypeface.Metrics;
         var scale = fontSize / metrics.DesignEmHeight;
         var ascent = -metrics.Ascent * scale;
@@ -116,40 +143,64 @@ internal static class PhoneTextLine
         return new Thickness(0, top, 0, bottom);
     }
 
+    /// <summary>
+    /// The bookkeeping for a change of one of the three, made the first time one is set to a value; null while none
+    /// has been, as then there is nothing to set or take back.
+    /// </summary>
+    private static Applied? Track(TextBlock block, bool set)
+    {
+        if (block.GetValue(AppliedProperty) is { } applied)
+            return applied;
+        if (!set)
+            return null;
+
+        applied = new Applied();
+        block.SetValue(AppliedProperty, applied);
+        return applied;
+    }
+
     private static void UpdatePadding(TextBlock block)
     {
-        if (!block.GetValue(BaselineToBaselineProperty))
+        if (block.GetValue(AppliedProperty) is { } applied)
+            UpdatePadding(block, applied);
+    }
+
+    private static void UpdatePadding(TextBlock block, Applied applied)
+    {
+        var fontSize = block.FontSize;
+        var lineHeight = block.LineHeight;
+        if (!block.GetValue(BaselineToBaselineProperty) || !(fontSize > 0) || !(lineHeight > 0))
         {
-            Take(block, Slot.Padding);
+            Take(block, applied, Slot.Padding);
             return;
         }
 
-        var padding = Padding(block.FontSize, block.LineHeight, new Typeface(block.FontFamily, block.FontStyle, block.FontWeight, block.FontStretch));
-        Put(block, Slot.Padding, TextBlock.PaddingProperty, padding);
+        var padding = Padding(fontSize, lineHeight, new Typeface(block.FontFamily, block.FontStyle, block.FontWeight, block.FontStretch));
+        Put(block, applied, Slot.Padding, TextBlock.PaddingProperty, padding);
     }
 
-    private static void UpdateLineHeight(TextBlock block)
+    private static void UpdateLineHeight(TextBlock block, Applied applied)
     {
         var lineHeight = block.GetValue(MaxHeightLineHeightProperty);
         if (double.IsNaN(lineHeight))
         {
-            Take(block, Slot.LineHeight);
+            Take(block, applied, Slot.LineHeight);
             return;
         }
 
-        Put(block, Slot.LineHeight, TextBlock.LineHeightProperty, Math.Max(lineHeight, FontLine * block.FontSize));
+        Put(block, applied, Slot.LineHeight, TextBlock.LineHeightProperty, Math.Max(lineHeight, FontLine * block.FontSize));
     }
 
-    private static void UpdateLetterSpacing(TextBlock block)
+    private static void UpdateLetterSpacing(TextBlock block, Applied applied)
     {
         var spacing = block.GetValue(CharacterSpacingProperty);
         if (spacing == 0)
         {
-            Take(block, Slot.LetterSpacing);
+            Take(block, applied, Slot.LetterSpacing);
             return;
         }
 
-        Put(block, Slot.LetterSpacing, TextBlock.LetterSpacingProperty, spacing * block.FontSize / 1000);
+        Put(block, applied, Slot.LetterSpacing, TextBlock.LetterSpacingProperty, spacing * block.FontSize / 1000);
     }
 
     /// <summary>
@@ -158,26 +209,33 @@ internal static class PhoneTextLine
     /// <c>ControlTheme</c>'s setters, so this one gives way to any value it finds, and is put back when that goes. A new
     /// <c>Theme</c> needs no handler of its own (A_Value_A_Derived_ControlTheme_Sets_Wins_Over_The_Styles holds it).
     /// </summary>
-    private static void Put<T>(TextBlock block, Slot slot, StyledProperty<T> property, T value)
+    /// <remarks>
+    /// A value of this one's that shows is replaced by setting the new one before taking the old one back, so the
+    /// property changes once. One that something else hides is taken back first, and the new one set only if nothing
+    /// else sets the property: set while hidden, it would go in above an app's untriggered <c>Style</c>, whose
+    /// priority it shares, and the later of the two wins.
+    /// </remarks>
+    private static void Put<T>(TextBlock block, Applied applied, Slot slot, StyledProperty<T> property, T value)
     {
-        var applied = block.GetValue(AppliedProperty);
-        if (applied is null)
-        {
-            applied = new Applied();
-            block.SetValue(AppliedProperty, applied);
-        }
-
-        if (applied.Busy)
+        if (applied.IsBusy(slot))
             return;
 
         ref var entry = ref applied[slot];
-        if (entry.Set is not null && Equals(entry.Value, value) && Equals(block.GetValue(property), value))
+        var current = block.GetValue(property);
+        if (entry.Set is not null && Equals(entry.Value, value) && Equals(current, value))
             return;
 
-        applied.Busy = true;
+        applied.SetBusy(slot, true);
         try
         {
             var previous = entry.Set;
+            if (previous is not null && Equals(current, entry.Value))
+            {
+                entry = (block.SetValue(property, value, BindingPriority.Style), value);
+                previous.Dispose();
+                return;
+            }
+
             entry = default;
             previous?.Dispose();
             if (!block.IsSet(property))
@@ -185,20 +243,20 @@ internal static class PhoneTextLine
         }
         finally
         {
-            applied.Busy = false;
+            applied.SetBusy(slot, false);
         }
     }
 
-    private static void Take(TextBlock block, Slot slot)
+    private static void Take(TextBlock block, Applied applied, Slot slot)
     {
-        if (block.GetValue(AppliedProperty) is not { Busy: false } applied)
+        if (applied.IsBusy(slot))
             return;
 
         ref var entry = ref applied[slot];
         if (entry.Set is not { } previous)
             return;
 
-        applied.Busy = true;
+        applied.SetBusy(slot, true);
         try
         {
             entry = default;
@@ -206,7 +264,7 @@ internal static class PhoneTextLine
         }
         finally
         {
-            applied.Busy = false;
+            applied.SetBusy(slot, false);
         }
     }
 
@@ -221,10 +279,16 @@ internal static class PhoneTextLine
     private sealed class Applied
     {
         private readonly (IDisposable? Set, object? Value)[] _entries = new (IDisposable?, object?)[3];
-
-        /// <summary>While this sets or takes back a value, the change it raises isn't handled again.</summary>
-        public bool Busy { get; set; }
+        private int _busy;
 
         public ref (IDisposable? Set, object? Value) this[Slot slot] => ref _entries[(int)slot];
+
+        /// <summary>
+        /// While this sets or takes back a slot's value, the change that raises isn't handled again for that slot,
+        /// and only for that slot: a <c>LineHeight</c> this sets or takes back still works the <c>Padding</c> out again.
+        /// </summary>
+        public bool IsBusy(Slot slot) => (_busy & (1 << (int)slot)) != 0;
+
+        public void SetBusy(Slot slot, bool busy) => _busy = busy ? _busy | 1 << (int)slot : _busy & ~(1 << (int)slot);
     }
 }

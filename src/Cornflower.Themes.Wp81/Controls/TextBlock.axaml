@@ -12,9 +12,13 @@
     that use it, where a class is a global rule every TextBlock in an app is checked against
     (docs/performance). They add nothing to the style budget.
 
-    Every value is a DynamicResource, so an app or an extension pack can override it by its key, in a
-    window's Resources or the application's (ADR 0004): the sizes through Typography.axaml's WinRT keys
-    and TextStyles.axaml's own, the brushes through Colors.axaml's, which also follow the theme variant.
+    Every size, line height, character spacing, font family, brush, margin and opacity is a
+    DynamicResource, so an app or an extension pack can override it by its key, in a window's Resources
+    or the application's (ADR 0004): the sizes through Typography.axaml's WinRT keys and TextStyles.axaml's
+    own, the families through Fonts.axaml's, the brushes and opacity through Colors.axaml's, which also
+    follow the theme variant, and the margin through Sizes.axaml's. FontWeight, TextWrapping, TextTrimming,
+    ClipToBounds and PhoneTextLine.BaselineToBaseline are literals, as the phone's are (ClipToBounds is
+    Cornflower's own): an app changes them with a ControlTheme based on the style.
     No width is set: a TextBlock takes its width from where it is put.
 
     How WinRT's text properties map (docs/controls/TextBlock/PLAN.md has the measurements):
