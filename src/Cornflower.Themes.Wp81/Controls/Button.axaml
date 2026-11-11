@@ -1,0 +1,95 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:cf="using:Cornflower.Controls"
+                    xmlns:wp81="using:Cornflower.Themes.Wp81">
+  <!--
+    The Windows Phone 8.1 Button: the default style of the 8.1 Update 1 runtime (button.json, which
+    equals the SDK's generic.xaml), re-expressed as an Avalonia ControlTheme. Every value is the phone's
+    resource key, by DynamicResource, so it follows the theme variant and an app or an extension pack can
+    override it by its key. docs/controls/Button/PLAN.md has the values and their sources.
+
+    The template is the phone's Grid, Border and ContentPresenter, with one more element around them:
+    - Root, untilted, with a transparent background, takes the hits. The tilt (Tilt.IsEnabled) is drawn on
+      the part marked Tilt.IsTarget, and Avalonia hit-tests through a RenderTransform: with the tilt on the
+      root, a press within about 3 px of an edge would miss the Button, where the phone's clicks (run
+      20261110-0822-dev11; CLAUDE.md, Tilt).
+    - Grid is the phone's Grid, the part its PointerDownThemeAnimation and PointerUpThemeAnimation target:
+      the whole Button, so the tilt's geometry is the phone's.
+    - Border draws the border and background inside PhoneTouchTargetOverhang, so the touch target is 9.5
+      taller above and below than what is drawn.
+    - PART_ContentPresenter, the part Avalonia's Button looks for, is the phone's ContentPresenter, placed
+      by the Button's Padding and content alignment.
+
+    The visual states: Pressed (Avalonia's :pressed) sets the accent background and the text over it, and
+    the tilt runs; Disabled (:disabled) dims the border and the text. PointerOver changes nothing on the
+    phone, so :pointerover has no style. There are no focus states on the phone, and the theme sets no focus adorner.
+
+    A string's TextBlock gets the phone's own line, 1.33 em, through PhoneTextLine (ADR 0003: a template
+    whose text sets no LineHeight gets the phone's line), so the content is as tall as on the phone and its
+    baseline 0.025 em above the phone's.
+  -->
+  <ControlTheme x:Key="{x:Type Button}" TargetType="Button">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource PhoneForegroundBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource PhoneForegroundBrush}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource PhoneBorderThickness}" />
+    <Setter Property="FontFamily" Value="{DynamicResource PhoneFontFamilyNormal}" />
+    <Setter Property="FontWeight" Value="{DynamicResource PhoneButtonFontWeight}" />
+    <Setter Property="FontSize" Value="{DynamicResource TextStyleLargeFontSize}" />
+    <Setter Property="Padding" Value="{DynamicResource PhoneButtonContentPadding}" />
+    <Setter Property="MinHeight" Value="{DynamicResource PhoneButtonMinHeight}" />
+    <Setter Property="MinWidth" Value="{DynamicResource PhoneButtonMinWidth}" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <!-- Not set by the phone's style: WinRT's own defaults for a Control, which Avalonia's are not. -->
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="cf:Tilt.IsEnabled" Value="True" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Panel x:Name="Root" Background="Transparent">
+          <Panel x:Name="Grid" cf:Tilt.IsTarget="True">
+            <Border x:Name="Border"
+                    Margin="{DynamicResource PhoneTouchTargetOverhang}"
+                    Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}">
+              <ContentPresenter x:Name="PART_ContentPresenter"
+                                Margin="{TemplateBinding Padding}"
+                                HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                Foreground="{TemplateBinding Foreground}"
+                                Content="{TemplateBinding Content}"
+                                ContentTemplate="{TemplateBinding ContentTemplate}">
+                <ContentPresenter.DataTemplates>
+                  <DataTemplate DataType="x:String">
+                    <TextBlock Text="{Binding}" wp81:PhoneTextLine.MaxHeightLineHeight="0" />
+                  </DataTemplate>
+                </ContentPresenter.DataTemplates>
+              </ContentPresenter>
+            </Border>
+          </Panel>
+        </Panel>
+      </ControlTemplate>
+    </Setter>
+
+    <Style Selector="^:pressed">
+      <Style Selector="^ /template/ Border#Border">
+        <Setter Property="Background" Value="{DynamicResource ButtonPressedBackgroundThemeBrush}" />
+      </Style>
+      <Style Selector="^ /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Foreground" Value="{DynamicResource ButtonPressedForegroundThemeBrush}" />
+      </Style>
+    </Style>
+
+    <Style Selector="^:disabled">
+      <Style Selector="^ /template/ Border#Border">
+        <Setter Property="Background" Value="{DynamicResource ButtonDisabledBackgroundThemeBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource ButtonDisabledBorderThemeBrush}" />
+      </Style>
+      <Style Selector="^ /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Foreground" Value="{DynamicResource ButtonDisabledForegroundThemeBrush}" />
+      </Style>
+    </Style>
+  </ControlTheme>
+</ResourceDictionary>

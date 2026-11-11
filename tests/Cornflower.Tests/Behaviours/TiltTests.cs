@@ -11,6 +11,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Styling;
+using Avalonia.Themes.Simple;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Cornflower.Controls;
@@ -69,7 +70,8 @@ public class TiltTests
                 Layouts[layout.Name] = layout;
             }
 
-            _scene = new Scene(canvas, width: width, height: height, scaling: scaling);
+            // Simple's Button, whose template root is what tilts: these tests are about the behaviour, not Wp81's Button.
+            _scene = new Scene(canvas, width: width, height: height, scaling: scaling, themes: [new SimpleTheme()]);
         }
 
         public Dictionary<string, Button> Buttons { get; } = [];

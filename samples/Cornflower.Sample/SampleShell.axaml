@@ -30,8 +30,9 @@
     </ContentControl>
 
     <Border x:Name="Rail" Grid.Column="1" Background="#FF000000">
+      <!-- MinWidth and MinHeight 0: the rail's Back must not take the phone Button's minimum size. -->
       <Button x:Name="BackButton" IsVisible="False" Click="OnBack"
-              AutomationProperties.Name="Back" Width="40" Height="40" Padding="0"
+              AutomationProperties.Name="Back" Width="40" Height="40" MinWidth="0" MinHeight="0" Padding="0"
               HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,12"
               Background="Transparent" BorderThickness="0">
         <Path Data="M 15,4 L 7,12 L 15,20 M 7,12 L 21,12" Stroke="#FFFFFFFF" StrokeThickness="2"
