@@ -168,6 +168,10 @@ public partial class SampleShell : UserControl
 
         _opening = null;
         var elapsed = Stopwatch.GetElapsedTime(opening.Started);
+        // A frame callback runs before its pass's layout, so a view or safe area that changed since the page's first
+        // frame (as a phone's does while it starts) is already in the facts but not yet in the page's size. Lay the page
+        // out now, as this pass was about to, so that page= agrees with view= and safe=.
+        opening.Page.UpdateLayout();
         Report(ReadyLine(elapsed, DeviceFacts.Of(top, opening.Page), opening.Title));
 #if DEBUG
         var cost = opening.Read(elapsed);

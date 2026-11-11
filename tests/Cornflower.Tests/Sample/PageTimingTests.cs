@@ -185,6 +185,42 @@ public class PageTimingTests
         Assert.Empty(lines);
     }
 
+    // On the Pixel, the first device run after #74 reported page=412x720 in a view of 411.43x914.29 with a safe area of
+    // 0,50.29,0,24, where the page settles at 840 tall: the safe area (or the view) changed after the page's first frame,
+    // and the line was read before the layout that followed, with the page's old size beside the new view and safe area.
+    // Avalonia gives the safe area to the top level's content, the shell on a phone, as its Padding at style priority;
+    // the headless window has no insets manager, so the test sets that Padding as Avalonia would.
+    [AvaloniaFact]
+    public void A_Safe_Area_That_Changes_After_The_First_Frame_Is_In_The_Pages_Size()
+    {
+        var lines = new List<string>();
+        var shell = ShellOf(lines);
+        shell.HasBackRail = false;
+        using var scene = new Scene(shell);
+
+        // A callback asked for with the shell's first runs in the same render pass, after it: once it has, that pass's
+        // layout and frame are done, and the shell's second callback waits for the next.
+        var firstRan = false;
+        shell.Open("plain");
+        scene.Window.RequestAnimationFrame(_ => firstRan = true);
+        for (var frame = 0; frame < 8 && !firstRan; frame++)
+        {
+            Dispatcher.UIThread.RunJobs();
+            if (!firstRan)
+                AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+        }
+
+        Assert.True(firstRan);
+        Assert.Empty(lines);
+        shell.SetValue(Avalonia.Controls.Primitives.TemplatedControl.PaddingProperty, new Thickness(0, 50.29, 0, 24), Avalonia.Data.BindingPriority.Style);
+        Draw();
+
+        var page = Assert.IsType<Plain>(shell.Shown);
+        // The padding, each side rounded to the raw pixel grid at 2.4, is in the page's size, and the line says so.
+        Assert.Equal(new Size(450, 725.42), new Size(page.Bounds.Width, Math.Round(page.Bounds.Height, 2)));
+        Assert.Matches("^CORNFLOWER ready open=[0-9]+ms scaling=2.4 view=450x800 raw=1080x1920 safe=0,0,0,0 page=450x725.42 title=plain$", Assert.Single(Ready(lines)));
+    }
+
     // As on a phone: App opens the start page before Avalonia puts the shell in its view.
     [AvaloniaFact]
     public void A_Page_Opened_Before_The_Shell_Is_In_A_Window_Reports_Once_Drawn()
