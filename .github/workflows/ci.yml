@@ -62,3 +62,37 @@ jobs:
 
       - name: Build the Android sample
         run: dotnet build samples/Cornflower.Sample.Android --configuration Release -p:AndroidSdkDirectory="$ANDROID_HOME"
+
+  # The repo's tools on Linux and macOS (#83): every PowerShell script parses under pwsh, and the portable tools'
+  # self-tests pass. Windows-only scripts (tools/real-window, and those that run on the reference VM) are parsed,
+  # not run. pwsh, Python 3 and Node come with the runner images.
+  tools:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Parse every PowerShell script
+        shell: pwsh
+        run: |
+          $files = @(git ls-files '*.ps1')
+          $failed = 0
+          foreach ($f in $files) {
+              $errors = $null
+              [void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $f).Path, [ref]$null, [ref]$errors)
+              foreach ($e in $errors) { Write-Host "::error file=$f,line=$($e.Extent.StartLineNumber)::$($e.Message)"; $failed++ }
+          }
+          Write-Host "$($files.Count) scripts parsed with PowerShell $($PSVersionTable.PSVersion), $failed errors"
+          if ($failed) { exit 1 }
+
+      - name: Compile the Python tools
+        run: python3 -I -m py_compile $(git ls-files 'tools/*.py')
+
+      - name: Check the Node tools' syntax
+        run: for f in $(git ls-files 'tools/*.js'); do node --check "$f"; done
+
+      - name: The motion scripts' self-test
+        run: python3 -I tools/motion/selftest.py

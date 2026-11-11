@@ -2,7 +2,8 @@
 # saves a frame of every page, and exits 1 if a check fails. See README.md here.
 #
 # It takes over the cursor and focus for a few seconds a page, so ask before running it on someone's PC.
-# Windows only, and PowerShell 5.1 or later: powershell -ExecutionPolicy Bypass -File tools\real-window\drive.ps1
+# Windows only, by nature: Win32 input, UI Automation and the screen. PowerShell 7 (Windows PowerShell 5.1 runs it too):
+#   pwsh -File tools/real-window/drive.ps1
 #
 # Ported from Avonic's tools/real-window/drive.ps1 (wdcossey/Avonic, v2 at edf87b8): the window, the input,
 # the frames and the every-page loop. Avonic's per-control sections come back here as Cornflower's controls do.

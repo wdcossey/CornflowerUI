@@ -1,9 +1,13 @@
+#Requires -Version 7.4
 <#
 .SYNOPSIS
   Builds the Cornflower reference app on the reference VM, runs it in the Windows Phone 8.1
   emulator, and pulls every capture back to this PC.
 
 .DESCRIPTION
+  Runs on this PC under PowerShell 7.4 or later, on Linux, macOS or Windows, with OpenSSH's ssh and
+  scp; what runs on the VM (vm\*.ps1, and each step's remote command) is Windows PowerShell there.
+
   Each step is its own SSH command; one long remote script that also polled a scheduled task
   once hung the session.
     1. copy app\ and vm\ to C:\cornflower\refapp on the VM
@@ -11,12 +15,16 @@
     3. register and start a scheduled task in the signed-in desktop that deploys the app, waits
        for its done.txt and pulls its local folder with ISETool (vm\session.ps1)
     4. poll C:\cornflower\refapp\status.txt until done or failed
-    5. copy the results to -Out\<timestamp>-dev<Device>, write index.html, remove the task
+    5. copy the results to <-Out>/<timestamp>-dev<Device>, write index.html, remove the task
+
+  -Out is where run folders go: by default $env:CORNFLOWER_REFERENCE/refapp, or on Windows, with that
+  unset, R:\cornflower-reference\refapp. Elsewhere, give one or the other.
 
 .EXAMPLE
-  powershell -ExecutionPolicy Bypass -File tools\refapp\run.ps1
-  powershell -ExecutionPolicy Bypass -File tools\refapp\run.ps1 -Device 13
-  powershell -ExecutionPolicy Bypass -File tools\refapp\run.ps1 -Device 11 -Only 'Flyout|Dialog|ComboBox'
+  pwsh -File tools/refapp/run.ps1
+  pwsh -File tools/refapp/run.ps1 -Device 13
+  pwsh -File tools/refapp/run.ps1 -Device 11 -Only 'Flyout|Dialog|ComboBox'
+  pwsh -File tools/refapp/run.ps1 -Out ~/cornflower-reference/refapp
 
   -Only keeps the specimens and popups whose name matches the regex, for a quick run.
   -Popups also or -Popups only adds the popups (flyouts, dialogs, pickers), which are left out by default.
@@ -41,7 +49,7 @@
   ToggleSwitch (app\Suite.Native.cs). They come back as native.json. It captures nothing.
 
   Device indexes come from AppDeployCmd /EnumerateDevices: 7 to 13 are the 8.1 Update 1 profiles,
-  10 is 720p 4.7", 13 is qHD 5". See R:\cornflower-reference\wp81-emulator-profiles.md.
+  10 is 720p 4.7", 13 is qHD 5". See wp81-emulator-profiles.md in the reference folder.
 #>
 param(
     [int]$Device = 11,
@@ -54,27 +62,34 @@ param(
     [switch]$Record,
     [switch]$Native,
     [string]$HostAlias = 'cornflower-ref',
-    [string]$Out = 'R:\cornflower-reference\refapp',
+    # Where the run folders go; see the description.
+    [string]$Out = '',
     [int]$TimeoutMinutes = 40
 )
 
 $ErrorActionPreference = 'Stop'
+# ssh's and scp's exit codes are what count, checked after each call.
+$PSNativeCommandUseErrorActionPreference = $false
 if ($Record -and -not $Probe) { throw '-Record goes with -Probe' }
 if ($Native -and ($Probe -or $Demo -or $Grab -or $Popups -or $Only)) { throw '-Native runs on its own' }
+if (-not $Out) {
+    if ($env:CORNFLOWER_REFERENCE) { $Out = Join-Path $env:CORNFLOWER_REFERENCE 'refapp' }
+    elseif ($IsWindows) { $Out = 'R:\cornflower-reference\refapp' }
+    else { throw 'Give -Out, or set CORNFLOWER_REFERENCE to the reference folder: run folders go in its refapp folder.' }
+}
 $here = $PSScriptRoot
+# Paths on the VM, which runs Windows.
 $remote = 'C:\cornflower\refapp'
 $task = 'cornflower-refapp'
-[xml]$manifest = Get-Content -Raw (Join-Path $here 'app\Package.appxmanifest')
+[xml]$manifest = Get-Content -Raw (Join-Path $here 'app' 'Package.appxmanifest')
 $productId = $manifest.Package.PhoneIdentity.PhoneProductId
 
+# Runs a script on the VM, in its Windows PowerShell.
 function Remote([string]$Script) {
     $full = "`$ProgressPreference = 'SilentlyContinue'`n" + $Script
     $b64 = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($full))
-    $previous = $ErrorActionPreference
-    $ErrorActionPreference = 'Continue'
     $output = & ssh -o LogLevel=ERROR $HostAlias "powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand $b64"
     $code = $LASTEXITCODE
-    $ErrorActionPreference = $previous
     if ($code -ne 0) {
         $output | ForEach-Object { Write-Host "  $_" }
         throw "remote step failed with exit code $code"
@@ -84,17 +99,14 @@ function Remote([string]$Script) {
 }
 
 function Copy-Scp([string[]]$Arguments) {
-    $previous = $ErrorActionPreference
-    $ErrorActionPreference = 'Continue'
     & scp -q -o LogLevel=ERROR -r @Arguments
     $code = $LASTEXITCODE
-    $ErrorActionPreference = $previous
     if ($code -ne 0) { throw "scp failed with exit code $code" }
 }
 
 Write-Host "1/5 copying the app to ${HostAlias}:$remote"
 Remote "Remove-Item '$remote\app','$remote\vm','$remote\out','$remote\status.txt' -Recurse -Force -ErrorAction SilentlyContinue; New-Item -ItemType Directory -Force '$remote' | Out-Null" | Out-Null
-$options = Join-Path $here 'app\run-options.txt'
+$options = Join-Path $here 'app' 'run-options.txt'
 $lines = @()
 if ($Only) { $lines += "only=$Only" }
 if ($Popups) { $lines += "popups=$Popups" }
@@ -172,7 +184,7 @@ $dest = Join-Path $Out ("{0}-dev{1}" -f (Get-Date -Format 'yyyyMMdd-HHmm'), $Dev
 Write-Host "5/5 copying the results to $dest"
 New-Item -ItemType Directory -Force $dest | Out-Null
 Copy-Scp @("${HostAlias}:C:/cornflower/refapp/out", "${HostAlias}:C:/cornflower/refapp/session.log", $dest)
-$store = Join-Path $dest 'out\IsolatedStore'
+$store = Join-Path $dest 'out' 'IsolatedStore'
 Get-ChildItem $store | Move-Item -Destination $dest
 Remove-Item (Join-Path $dest 'out') -Recurse -Force
 

@@ -7,8 +7,12 @@ Avonic, the first run of its version of this found a control bug that 1,486 test
 back and closes only the window it opened.
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File tools\real-window\drive.ps1
+pwsh -File tools/real-window/drive.ps1
 ```
+
+**Windows only**, by nature: it moves the real cursor through Win32 and finds the window through UI
+Automation. Under PowerShell 7 (`pwsh`, [`tools/README.md`](../README.md#powershell)); Windows
+PowerShell 5.1 still runs it too.
 
 It builds the sample first, from the repo so that `global.json` picks the SDK, as
 `tools/android/run.ps1` does: a stale build runs the old code, and fails checks the new code passes.

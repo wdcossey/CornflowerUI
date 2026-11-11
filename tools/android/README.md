@@ -3,16 +3,19 @@
 The device run: the sample on a real phone, over ADB (ADR 0002, "Platforms";
 [`PROCESS.md`](../../docs/PROCESS.md#4-review), "The device run").
 
-```powershell
-powershell -ExecutionPolicy Bypass -File tools\android\run.ps1             # build, install, start, capture
-powershell -ExecutionPolicy Bypass -File tools\android\run.ps1 -NoBuild    # reuse the last build
-powershell -ExecutionPolicy Bypass -File tools\android\run.ps1 -Page theme # open a page of the catalogue
+```sh
+pwsh -File tools/android/run.ps1             # build, install, start, capture
+pwsh -File tools/android/run.ps1 -NoBuild    # reuse the last build
+pwsh -File tools/android/run.ps1 -Page theme # open a page of the catalogue
 ```
+
+It runs on Linux, macOS and Windows, under PowerShell 7.4 or later (`pwsh`; see
+[`tools/README.md`](../README.md#powershell) to install it), with the .NET SDK and its `android`
+workload for the build.
 
 The phone shows the sample's catalogue, as the desktop does, with no rail for Back: the phone's
 back button or gesture is Back, to the list, and from the list out of the app. `-Page <title>`
-opens a page of the catalogue at start, by its title in any case (quote a title with a space; a
-title with a double quote is refused, as PowerShell 5.1 can't pass one to adb intact); it is
+opens a page of the catalogue at start, by its title in any case (quote a title with a space); it is
 passed to the app as the intent's `page` extra (`am start --es page <title>`), which
 `MainActivity` gives `App.StartPage` before Avalonia makes the view (the app fails if Avalonia
 ever made it first, rather than ignore the page). Without it, the app opens the first page,
@@ -57,8 +60,8 @@ start, naming the titles it has, and the script stops with the app's crash repor
    The script checks that the title is the page `-Page` asked for, in any case. A Debug build also
    writes `CORNFLOWER cost <line>` after the ready line, what the page cost to open
    ([`docs/performance`](../../docs/performance/README.md#in-a-debug-build)).
-6. Saves the screen with `screencap` on the phone and pulls it, so the PNG's bytes aren't
-   re-encoded by PowerShell 5.1.
+6. Saves the screen with `adb exec-out screencap -p`, its PNG redirected to `frame.png` byte for
+   byte (PowerShell 7.4 keeps a native command's bytes when it redirects them to a file).
 
 It writes one folder per run, `artifacts/device/<yyyyMMdd-HHmmss>-<model>/` unless `-Out` says
 otherwise. `artifacts/` is ignored by git.
@@ -69,8 +72,9 @@ otherwise. `artifacts/` is ignored by git.
 | `run.json` | The device, the APK, `launchState` and `totalTimeMs` from `am start -W`, the page opened (`page`) and the shell's time to open it (`openMs`), the ready line's facts (`ready`), and in a Debug build the cost line (`cost`) |
 | `logcat.txt` | The run's whole log, also written when the ready line never comes |
 
-The ADB path is taken from `ANDROID_HOME`, `ANDROID_SDK_ROOT`, `%LOCALAPPDATA%\Android\Sdk`, then
-`PATH`.
+`adb` is taken from `$ANDROID_SDK_ROOT/platform-tools`, then `$ANDROID_HOME/platform-tools`, then
+`PATH`, then the SDK's default folder, where Android Studio puts it: `%LOCALAPPDATA%\Android\Sdk`
+on Windows, `~/Library/Android/sdk` on macOS, `~/Android/Sdk` on Linux.
 
 ## The phone
 

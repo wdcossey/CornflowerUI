@@ -1,3 +1,4 @@
+# Windows only: runs on the reference VM, in its Windows PowerShell, not on the machine that drives it.
 # Runs on the reference VM, in the signed-in desktop session, as a scheduled task that ..\run.ps1
 # registers over SSH. The emulator, AppDeployCmd and ISETool only see each other from that session:
 # run from an SSH session, ISETool starts a hidden second emulator instead.
