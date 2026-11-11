@@ -77,22 +77,28 @@ public class HolePartsTests
         Assert.Contains("PipsPager.PART_NextButton", fellBack);
     }
 
-    // A Calendar's header and arrows, laid out as with Simple alone: as wide (the text, Wp81's font through Simple's
-    // keys, makes the header 1.25 shorter either way, so heights aren't compared), and narrower than the phone's minimum.
+    // A Calendar's arrows as wide as with Simple alone, and its header, arrows and all narrower than the phone's
+    // minimum and in Simple's Button theme. (The header's width is its text's, in whichever font each scene has, so
+    // it isn't compared across scenes.)
     [AvaloniaFact]
-    public void A_Calendars_Header_And_Arrows_Keep_Simples_Size()
+    public void A_Calendars_Header_And_Arrows_Keep_Simples_Button()
     {
         var alone = new Calendar();
-        using var simple = new Scene(alone, themes: [new SimpleTheme()]);
-        var expected = PlainButtons(alone).Select(b => (b.Name, b.Bounds.Width)).ToList();
+        using var only = new Scene(alone, themes: [new SimpleTheme()]);
+        var arrows = PlainButtons(alone).Where(b => b.Name != "PART_HeaderButton").Select(b => (b.Name, b.Bounds.Size)).ToList();
 
+        var simple = new SimpleTheme();
         var calendar = new Calendar();
-        using var scene = new Scene(calendar);
-        var got = PlainButtons(calendar).Select(b => (b.Name, b.Bounds.Width)).ToList();
+        using var scene = new Scene(calendar, themes: [simple, new Wp81Theme()]);
+        var buttons = PlainButtons(calendar);
 
-        Assert.Equal(["PART_PreviousButton", "PART_HeaderButton", "PART_NextButton"], got.Select(b => b.Name));
-        Assert.Equal(expected, got);
-        Assert.All(got, b => Assert.True(b.Width < 109, $"{b.Name} is {b.Width} wide: the phone's minimum"));
+        Assert.Equal(["PART_PreviousButton", "PART_HeaderButton", "PART_NextButton"], buttons.Select(b => b.Name));
+        Assert.Equal(arrows, buttons.Where(b => b.Name != "PART_HeaderButton").Select(b => (b.Name, b.Bounds.Size)).ToList());
+        Assert.All(buttons, b =>
+        {
+            Assert.Same(ButtonThemeOf(simple), b.Theme);
+            Assert.True(b.Bounds.Width < 109, $"{b.Name} is {b.Bounds.Width} wide: the phone's minimum");
+        });
     }
 
     // An app's own templated control isn't a hole: a plain Button in its template is the phone's.
