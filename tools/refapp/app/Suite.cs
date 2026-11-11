@@ -50,13 +50,7 @@ namespace RefApp
 
         public async Task RunAsync()
         {
-            var started = DateTimeOffset.Now;
-            _out = ApplicationData.Current.LocalFolder;
-            foreach (var old in await _out.GetFilesAsync())
-            {
-                await old.DeleteAsync();
-            }
-
+            var started = await BeginAsync();
             _width = Window.Current.Bounds.Width;
             var options = await Options.LoadAsync();
             _holdMs = options.HoldMs;
@@ -116,17 +110,10 @@ namespace RefApp
             index.Prop("specimens", specimens.Count);
             index.Prop("popupSpecimens", popups.Count);
             index.Prop("captureCount", _count);
-            index.Key("errors").Arr();
-            foreach (var e in _errors)
-            {
-                index.Val(e);
-            }
-
-            index.EndArr();
+            WriteErrors(index);
             index.Key("captures");
             var text = index.ToString() + _captures.ToString() + "}";
-            await Write("index.json", text);
-            await Write("done.txt", string.Format(CultureInfo.InvariantCulture, "captures {0} errors {1}", _count, _errors.Count));
+            await FinishAsync("index.json", text, string.Format(CultureInfo.InvariantCulture, "captures {0} errors {1}", _count, _errors.Count));
             _log.Text = string.Format(CultureInfo.InvariantCulture, "done: {0} captures, {1} errors", _count, _errors.Count);
         }
 
@@ -280,18 +267,63 @@ namespace RefApp
             await FileIO.WriteTextAsync(f, text);
         }
 
-        private async Task WriteEnvironment(Json j)
+        /// <summary>Empties the app's local folder, where a run writes everything, and returns when the run started.</summary>
+        private async Task<DateTimeOffset> BeginAsync()
+        {
+            var started = DateTimeOffset.Now;
+            _out = ApplicationData.Current.LocalFolder;
+            foreach (var old in await _out.GetFilesAsync())
+            {
+                await old.DeleteAsync();
+            }
+
+            return started;
+        }
+
+        private void WriteErrors(Json j)
+        {
+            j.Key("errors").Arr();
+            foreach (var e in _errors)
+            {
+                j.Val(e);
+            }
+
+            j.EndArr();
+        }
+
+        /// <summary>Writes the run's results, then done.txt, which vm\session.ps1 waits for and quotes as the app's summary.</summary>
+        private async Task FinishAsync(string file, string text, string done)
+        {
+            await Write(file, text);
+            await Write("done.txt", done);
+        }
+
+        /// <summary>
+        /// The display, as index.json has it (run.ps1 and the tokens tools read it, so its shape stays); <paramref name="more"/>
+        /// adds keys after these, inside the same object.
+        /// </summary>
+        private static void WriteDisplay(Json j, Action<Json> more = null)
         {
             var di = DisplayInformation.GetForCurrentView();
             var bounds = Window.Current.Bounds;
-            j.Key("display").Obj()
+            j.Obj()
                 .Prop("resolutionScale", (int)di.ResolutionScale)
                 .Prop("rawPixelsPerViewPixel", di.RawPixelsPerViewPixel)
                 .Prop("logicalDpi", di.LogicalDpi)
                 .Prop("rawDpiX", di.RawDpiX)
                 .Prop("rawDpiY", di.RawDpiY)
-                .Key("windowBounds").Arr().Val(bounds.Width).Val(bounds.Height).EndArr()
-                .EndObj();
+                .Key("windowBounds").Arr().Val(bounds.Width).Val(bounds.Height).EndArr();
+            if (more != null)
+            {
+                more(j);
+            }
+
+            j.EndObj();
+        }
+
+        private async Task WriteEnvironment(Json j)
+        {
+            WriteDisplay(j.Key("display"));
             j.Prop("appTheme", Application.Current.RequestedTheme.ToString());
 
             // Theme resources resolve against the theme of the tree they're in, so each probe is mounted first.

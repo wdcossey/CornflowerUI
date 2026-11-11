@@ -22,6 +22,14 @@ namespace RefApp
             }
 
             _started = true;
+            var options = await Options.LoadAsync();
+            if (options.Native)
+            {
+                // The native readings show and hide the tray themselves, and read it first as the app launched.
+                await new Suite(StageHost, Log).RunNativeAsync();
+                return;
+            }
+
             try
             {
                 await StatusBar.GetForCurrentView().HideAsync();
@@ -31,7 +39,6 @@ namespace RefApp
                 // Not fatal: each stage is rendered on its own, not read from the screen.
             }
 
-            var options = await Options.LoadAsync();
             if (options.Probe != null)
             {
                 Log.Visibility = Windows.UI.Xaml.Visibility.Collapsed;
