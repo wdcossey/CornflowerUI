@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The desktop head: the sample in a phone-sized window, to watch progress (#9). It holds only
+       the entry point; the app, its window and its pages are Cornflower.Sample's. In the solution,
+       as it needs no workload, so CI builds it. tools/real-window/drive.ps1 drives it. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <!-- An app, not a library: on the current runtime, as the tests and the Android head are. -->
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Desktop" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Cornflower.Sample\Cornflower.Sample.csproj" />
+  </ItemGroup>
+
+</Project>

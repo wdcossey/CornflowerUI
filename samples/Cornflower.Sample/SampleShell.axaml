@@ -1,0 +1,42 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Cornflower.Sample.SampleShell"
+             Background="{DynamicResource ApplicationPageBackgroundThemeBrush}"
+             Foreground="{DynamicResource PhoneForegroundBrush}"
+             FontFamily="{DynamicResource PhoneFontFamilyNormal}"
+             FontSize="{DynamicResource TextStyleLargeFontSize}">
+  <!--
+    The catalogue: a list of the pages marked [SamplePage], one per control, and Back. MainWindow
+    holds it on desktop. The list's buttons and Back are SimpleTheme's until Button is themed.
+    Back is also Avalonia's own back request (Alt+Left on desktop, the back button on a phone).
+  -->
+  <!--
+    Back sits in a rail of its own to the right of the page, as the phone's navigation bar does in landscape,
+    so that a page has the whole view, 450 x 800 in the reference profile, with nothing drawn over it.
+    The rail is the sample's chrome, not the phone's: MainWindow is 40 wider for it, a whole number of pixels at every common scaling (1.25, 1.5, 1.75, 2, 2.4), so the page keeps exactly 450.
+  -->
+  <Grid ColumnDefinitions="*,40">
+    <ContentControl x:Name="Host">
+      <ScrollViewer x:Name="Index">
+        <StackPanel Margin="19,12,19,24" Spacing="6">
+          <TextBlock Text="CORNFLOWER" FontFamily="{DynamicResource PhoneFontFamilySemiBold}"
+                     FontSize="{DynamicResource TextStyleMediumFontSize}" />
+          <TextBlock Text="samples" Margin="-2,0,0,12"
+                     FontFamily="{DynamicResource PhoneFontFamilySemiLight}"
+                     FontSize="{DynamicResource PivotHeaderItemFontSize}" />
+          <StackPanel x:Name="PageList" Spacing="9.6" />
+        </StackPanel>
+      </ScrollViewer>
+    </ContentControl>
+
+    <Border x:Name="Rail" Grid.Column="1" Background="#FF000000">
+      <Button x:Name="BackButton" IsVisible="False" Click="OnBack"
+              AutomationProperties.Name="Back" Width="40" Height="40" Padding="0"
+              HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,12"
+              Background="Transparent" BorderThickness="0">
+        <Path Data="M 15,4 L 7,12 L 15,20 M 7,12 L 21,12" Stroke="#FFFFFFFF" StrokeThickness="2"
+              StrokeLineCap="Round" StrokeJoin="Round" Width="24" Height="24" />
+      </Button>
+    </Border>
+  </Grid>
+</UserControl>

@@ -17,7 +17,9 @@ namespace Cornflower.Sample;
 /// drawn, it writes one <c>CORNFLOWER ready</c> line to standard output (logcat's <c>DOTNET</c> tag on Android), which
 /// <c>tools/android/run.ps1</c> waits for. In a Debug build, a line along the bottom says what the page
 /// cost to open, the first time it's shown (<see cref="Diagnostics.PerformanceMonitor"/>).
+/// First in the desktop sample's catalogue (<see cref="SampleShell"/>), under the title it shows.
 /// </summary>
+[SamplePage("theme", Order = 0)]
 public partial class MainView : UserControl
 {
     internal const string ReadyMarker = "CORNFLOWER ready";
@@ -58,6 +60,7 @@ public partial class MainView : UserControl
         _performance.Begin();
 #endif
         AvaloniaXamlLoader.Load(this);
+        this.GetControl<TextBlock>("PageTitle").Text = SamplePageCatalog.TitleOf(GetType());
 
         var accents = this.GetControl<WrapPanel>("NamedAccents");
         foreach (var name in NamedAccentNames)
@@ -170,11 +173,12 @@ public partial class MainView : UserControl
 
         var size = top.ClientSize;
         var safe = _insets?.SafeAreaPadding ?? default;
+        // view is the window's client area; page is this page's own size, which a shell's chrome would take from.
         DeviceFacts = string.Format(CultureInfo.InvariantCulture,
-            "scaling={0:0.###} view={1:0.##}x{2:0.##} raw={3:0}x{4:0} safe={5:0.##},{6:0.##},{7:0.##},{8:0.##}",
+            "scaling={0:0.###} view={1:0.##}x{2:0.##} raw={3:0}x{4:0} safe={5:0.##},{6:0.##},{7:0.##},{8:0.##} page={9:0.##}x{10:0.##}",
             top.RenderScaling, size.Width, size.Height,
             size.Width * top.RenderScaling, size.Height * top.RenderScaling,
-            safe.Left, safe.Top, safe.Right, safe.Bottom);
+            safe.Left, safe.Top, safe.Right, safe.Bottom, Bounds.Width, Bounds.Height);
         this.GetControl<TextBlock>("DeviceFactsText").Text = DeviceFacts.Replace(' ', '\n');
     }
 

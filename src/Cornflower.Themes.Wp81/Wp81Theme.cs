@@ -5,7 +5,7 @@ namespace Cornflower.Themes.Wp81;
 
 /// <summary>
 /// The Windows Phone 8.1 theme. Add to <c>Application.Styles</c> in place of <c>FluentTheme</c>.
-/// It merges every file under <c>Tokens/</c> and <c>Controls/</c>, found at build time, so a
+/// It merges every file under <c>Tokens/</c>, <c>Glyphs/</c> and <c>Controls/</c>, found at build time, so a
 /// control's theme is added by adding its file.
 /// </summary>
 /// <example>
