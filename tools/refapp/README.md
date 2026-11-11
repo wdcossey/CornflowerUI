@@ -550,8 +550,8 @@ Three numbers for the travel, each something else:
   control computes it in native code from its layout, a whole number of raw pixels, so it moves
   with the profile (55.83 to 56.67). A slide set from code (the `OffToOn` and `OnToOff`
   transitions) starts from it, the animation's `FromHorizontalOffset`; a slide after a drag
-  (`DraggingToOn`, `DraggingToOff`) starts from the `Current` offsets instead. On these two
-  profiles the drag's halfway line is half of it (above).
+  (`DraggingToOn`, `DraggingToOff`) starts from the `Current` offsets instead. On the reference and 720p
+  profiles (the two read) the drag's halfway line is half of it (above).
 - **56.56, the recording's**: the slide's travel as measured on the screen, the distance between
   the knob's left edge at rest Off and at rest On in the recording (`knob.py`). It falls between
   the other two; they are 0.17 view px apart, a fifth of a recording pixel at 0.83 view px each,
