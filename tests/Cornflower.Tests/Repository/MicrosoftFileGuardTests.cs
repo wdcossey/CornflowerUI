@@ -90,6 +90,29 @@ public class MicrosoftFileGuardTests
         Assert.Contains("Microsoft's generic.xaml", problem);
     }
 
+    [Theory]
+    [InlineData("﻿<Style>\r\n  <Setter />\r\n</Style>\r\n")] // as pulled: BOM and CRLF
+    [InlineData("<Style>\n  <Setter />\n</Style>\n")]               // as git stores it and a Linux checkout has it
+    [InlineData("<Style>\r\n  <Setter />\r\n</Style>\r\n")]         // as a Windows checkout writes it
+    public void A_Pulled_Text_File_Fails_Whatever_Its_Line_Endings(string committed)
+    {
+        // The list holds the pulled file's hash as it is and its text form's, as hash-reference.js writes them.
+        var pulled = Encoding.UTF8.GetBytes("﻿<Style>\r\n  <Setter />\r\n</Style>\r\n");
+        var hashes = new Dictionary<string, string>
+        {
+            [Convert.ToHexStringLower(SHA256.HashData(pulled))] = "button.xaml",
+            [Convert.ToHexStringLower(SHA256.HashData(MicrosoftFileGuard.TextForm(pulled)!))] = "button.xaml",
+        };
+
+        var problem = Assert.Single(
+            MicrosoftFileGuard.Check([InMemory("src/Button.axaml", committed)], hashes, NoHashes));
+        Assert.Contains("Microsoft's button.xaml", problem);
+    }
+
+    [Fact]
+    public void A_Binary_File_Has_No_Text_Form() =>
+        Assert.Null(MicrosoftFileGuard.TextForm([0x4D, 0x5A, 0x00, 0x0D, 0x0A]));
+
     [Fact]
     public void The_Hash_List_Is_Embedded_And_Well_Formed()
     {

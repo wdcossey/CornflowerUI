@@ -7,8 +7,9 @@ namespace Cornflower.Tests.Repository;
 /// <summary>
 /// Rule 6 of CLAUDE.md, made mechanical: no Microsoft fonts, templates or SDK files in the repository.
 /// A file fails if it is a font that isn't on <see cref="AllowedFonts"/> with the bytes listed there, if
-/// it has the name of an SDK file we read as a specification, or if its bytes are one of the files
-/// pulled from the reference VM.
+/// it has the name of an SDK file we read as a specification, or if its content is one of the Microsoft files
+/// in the reference folder (pulled from the VM or an emulator image, or decompiled or converted from them),
+/// byte for byte or, for text, with its line endings and BOM as git stores them.
 /// </summary>
 internal static class MicrosoftFileGuard
 {
@@ -46,9 +47,17 @@ internal static class MicrosoftFileGuard
             var name = Path.GetFileName(path);
             var extension = Path.GetExtension(path);
 
-            string hash;
+            byte[] bytes;
             using (var stream = open())
-                hash = Convert.ToHexStringLower(SHA256.HashData(stream));
+            using (var copy = new MemoryStream())
+            {
+                stream.CopyTo(copy);
+                bytes = copy.ToArray();
+            }
+
+            var hash = Convert.ToHexStringLower(SHA256.HashData(bytes));
+            var text = TextForm(bytes);
+            var textHash = text is null ? null : Convert.ToHexStringLower(SHA256.HashData(text));
 
             if (FontExtensions.Contains(extension))
             {
@@ -61,11 +70,30 @@ internal static class MicrosoftFileGuard
             if (SdkFileNames.Contains(name) || extension.Equals(".winmd", StringComparison.OrdinalIgnoreCase))
                 problems.Add($"{path}: the name of a Windows Phone SDK file");
 
-            if (hashes.TryGetValue(hash, out var original))
-                problems.Add($"{path}: the same bytes as Microsoft's {original}, pulled from the reference VM");
+            if (hashes.TryGetValue(hash, out var original)
+                || (textHash is not null && hashes.TryGetValue(textHash, out original)))
+                problems.Add($"{path}: the same content as Microsoft's {original}, from the reference folder");
         }
 
         return problems;
+    }
+
+    /// <summary>
+    /// The text form git stores under <c>* text=auto</c>, as <c>tools/guard/hash-reference.js</c> hashes it: a
+    /// UTF-8 BOM dropped and CRLF turned into LF. Null for a binary file (a NUL in the first 8,000 bytes, git's test).
+    /// </summary>
+    internal static byte[]? TextForm(byte[] bytes)
+    {
+        if (Array.IndexOf(bytes, (byte)0, 0, Math.Min(bytes.Length, 8000)) >= 0)
+            return null;
+
+        var start = bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF ? 3 : 0;
+        var output = new List<byte>(bytes.Length - start);
+        for (var i = start; i < bytes.Length; i++)
+            if (!(bytes[i] == 0x0D && i + 1 < bytes.Length && bytes[i + 1] == 0x0A))
+                output.Add(bytes[i]);
+
+        return output.Count == 0 ? null : [.. output];
     }
 
     /// <summary>The files git would commit: tracked, plus untracked files that aren't ignored.</summary>
