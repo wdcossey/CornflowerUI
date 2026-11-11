@@ -36,7 +36,12 @@ as an 8.1 page does. A Button that must be smaller than the phone's minimum (chr
 - **The pointer over it** changes nothing, as on the phone.
 - **Dark and light**: every brush follows the theme variant; the pressed background follows the app's accent
   (`SystemColorControlAccentColor`).
-- **A string's line** is the phone's, 1.33 × `FontSize`, so the content is as tall as on the phone at any size.
+- **Data's line** (a string, a number) is the phone's, 1.33 × `FontSize`, so the content is as tall as on the phone
+  at any size. An app's `ContentTemplate` or `DataTemplate` keeps its own.
+- **Keyboard focus** draws nothing, as the phone's template has no focus states.
+- **Other controls' templates**: a plain Button in the template of a control Wp81 doesn't theme yet (Simple's
+  CalendarItem, CalendarDatePicker, CommandBar, NavigationPage, PipsPager, the file dialogs) keeps the Button theme
+  under Wp81, the one that template was written for.
 
 ## Resource keys
 
@@ -55,9 +60,9 @@ looks for). A style that reaches into the template uses these names.
 
 ## The ladder
 
-Rung 1 (theme) for the setters, the states and the untilted root; rung 2 (attached behaviour) for the tilt
-(`Tilt`, `Cornflower.Controls`) and the phone's line (`PhoneTextLine`, internal to the theme). No type is
-substituted.
+Rung 1 (theme) for the setters, the states, the cleared focus adorner and the untilted root; rung 2 (attached
+behaviour) for the tilt (`Tilt`, `Cornflower.Controls`), the phone's line (`PhoneContentLine` and `PhoneTextLine`,
+internal to the theme) and the holes' Buttons (`HoleParts`, internal to the theme). No type is substituted.
 
 ## Extensions
 
@@ -66,7 +71,7 @@ None.
 ## Known gaps
 
 - **The text is Selawik**, its baseline 0.44 DIP above the phone's at 18.14 (ADR 0003), and "button" 0.83 wider.
-- **Only a string gets the phone's line.** Other content (an app's own `TextBlock`) keeps Selawik's 1.2 em unless
+- **Only data gets the phone's line.** Content that is an element (an app's own `TextBlock`) keeps Selawik's 1.2 em unless
   it has a text style.
 - **Sliding off while pressed**: Avalonia's Button stays `:pressed` until the finger lifts; whether the phone's
   leaves `Pressed` isn't measured yet. The tilt returns as the phone's does.

@@ -58,7 +58,7 @@ the frames.
 | 1 | The style's values | **Match** | Each setter equals `button.json`'s key's value and the dump's reading, dark and light |
 | 2 | Bounds | **Match** | Above; the 109 minimum rounds to 262 px on both sides |
 | 3 | Content centred | **Match** | Centred across within 0.5 in a 300-wide Button; 5.4167 below the Border's top |
-| 4 | A string's line | **Match**, with ADR 0003's baseline | 24.1276 at 18.14; 39.90 at 30 |
+| 4 | Data's line (a string, a number) | **Match**, with ADR 0003's baseline | 24.1276 at 18.14; 39.90 at 30 |
 | 5 | The border's pixels | **Match** | 32 pixels per frame, dark and light |
 | 6 | Disabled | **Match** | Above; an app's background is taken away, as `ButtonDisabledBackgroundThemeBrush` does |
 | 7 | Pressed | **Match** for the colours; the tilt, see below | Above |
@@ -75,8 +75,8 @@ the frames.
   instead, which match. A real-touch capture of Pressed is owed for the picture.
 - **The text's baseline** is 0.44 DIP (1 px) above the phone's: ADR 0003's recorded deviation for the 1.33 em line.
 - **The text is Selawik**, so its width differs: 0.83 DIP wider for "button" (ADR 0001).
-- **Content that isn't a string** keeps its own line: only the `TextBlock` the presenter makes for a string gets
-  the phone's 1.33 em. An app's `TextBlock` inside a Button has Selawik's 1.2 em unless it has a text style.
+- **Content that is an element** keeps its own line: only the `TextBlock` the presenter makes of data gets the
+  phone's 1.33 em. An app's `TextBlock` inside a Button has Selawik's 1.2 em unless it has a text style.
 - **Sliding off while pressed** isn't measured on the phone. Avalonia's Button stays `:pressed` until release; the
   tilt returns as the phone's does (run 2118). Owed: a probe.
 - **Rounding**: none shows here; the minimum width rounds to the same 262 px on both sides (ADR 0003).
