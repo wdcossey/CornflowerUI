@@ -54,6 +54,10 @@ distance between baselines, as on the phone.
 - **A `TextBlock`'s own values.** A local `FontSize` keeps the phone's line and letter spacing at the new size. A
   `Padding`, `LineHeight` or `LetterSpacing` the app sets, on the `TextBlock`, in a style or in a `ControlTheme`
   based on a text style, wins over the style's.
+- **When the font or sizes change**, the `Padding`, `LineHeight` and `LetterSpacing` are worked out again at once;
+  when a value goes (the style is taken away, a value cleared), from the dispatcher, before the next layout. A value
+  worked out again changes twice, to the value below it and then to the new one, as only with its own value gone
+  can `PhoneTextLine` see whether something else sets the property.
 - **Dark and light.** The brushes follow the theme variant, as the phone's `ThemeResource`s do.
 - **No global rule.** The styles add nothing to the style budget: a `ControlTheme`'s setters cost only the
   `TextBlock`s that use it.

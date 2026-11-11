@@ -117,8 +117,11 @@ a property registered after them, which the theme doesn't set, keeps it from hap
 with nothing after them the first keeps its value through the swap and raises no change, and with a value of a later
 property it goes to its default and back.
 
-**Consequence.** `PhoneTextLine` takes its values back in such handlers (`CharacterSpacing` going takes the
-`LetterSpacing` it set), and its own properties are registered late. It keeps its bookkeeping in an attached property
-registered after them, set on every `TextBlock` it acts on, so a value of a property after them is always there.
-Moved to a table beside the `TextBlock`, a swap to a `ControlTheme` based on a text style keeps `PhoneTextLine`'s
-`Padding` over the derived theme's (`TextBlockTests.A_Value_A_Derived_ControlTheme_Sets_Wins_Over_The_Styles`).
+**Consequence.** `PhoneTextLine` takes its values back when the properties it reads change (`CharacterSpacing` going
+takes the `LetterSpacing` it set), and its own properties are registered late, so it would be such a handler. It
+doesn't act inside a change at `Unset` or `Inherited` priority, which is what the store raises while it unsets: it
+works its values out from the dispatcher instead, at `Normal` priority, ahead of layout. Acting inside the change, with
+its bookkeeping beside the `TextBlock`, a swap to a `ControlTheme` based on a text style kept `PhoneTextLine`'s
+`Padding` over the derived theme's (`TextBlockTests.A_Value_A_Derived_ControlTheme_Sets_Wins_Over_The_Styles` and
+`A_Theme_Setting_MaxHeight_And_BaselineToBaseline_Goes_Cleanly` go red). An attached property of its own, registered
+after the three, had kept that working only by being the value after them.

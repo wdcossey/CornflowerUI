@@ -17,7 +17,8 @@ namespace Cornflower.Tests.Spikes;
 /// of the last such property's change that takes a value of another property away stops the rest being unset: they
 /// keep the old theme's values, with no change raised, and a new theme that sets the same values raises none either.
 /// A value of a property registered after them, which the theme doesn't set, keeps that from happening.
-/// <c>PhoneTextLine</c> keeps its bookkeeping in such a property.
+/// <c>PhoneTextLine</c> doesn't act inside such changes (those at <c>Unset</c> or <c>Inherited</c> priority): it works its
+/// values out from the dispatcher.
 /// </remarks>
 [Collection(SpikeCollection.Name)]
 public class UnsetPassTests

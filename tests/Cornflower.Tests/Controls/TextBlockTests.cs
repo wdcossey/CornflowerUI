@@ -457,9 +457,12 @@ public class TextBlockTests
         Assert.Equal(PhoneLine.Height(16, 17.5), Unrounded(block), 0.01);
     }
 
-    // A value worked out again replaces the one before in a single change, not by way of the value below it.
+    // A value worked out again goes by way of the value below it: the old one is taken back before the new one is set,
+    // as only then can PhoneTextLine see whether something else sets the property (Avalonia tells an immediate value
+    // from a style's at the same priority by neither value nor priority). So each changes twice, old to the fallback
+    // to new: the cost of giving way to an app's equal value and to a ControlTheme's below it (the next two tests).
     [AvaloniaFact]
-    public void A_Value_Worked_Out_Again_Is_One_Change()
+    public void A_Value_Worked_Out_Again_Goes_By_Way_Of_The_Value_Below_It()
     {
         using var spaced = new Specimens("GroupHeaderTextBlockStyle");
         using var listed = new Specimens("ListViewItemSubheaderTextBlockStyle");
@@ -481,11 +484,118 @@ public class TextBlockTests
 
         Assert.Equal(
             [
-                (TextBlock.LetterSpacingProperty, spacing, spaced.Block.LetterSpacing),
-                (TextBlock.LineHeightProperty, lineHeight, listed.Block.LineHeight),
-                (TextBlock.PaddingProperty, padding, spaced.Block.Padding),
+                (TextBlock.LetterSpacingProperty, spacing, 0.0),
+                (TextBlock.LetterSpacingProperty, 0.0, spaced.Block.LetterSpacing),
+                (TextBlock.PaddingProperty, padding, default(Thickness)),
+                (TextBlock.PaddingProperty, default(Thickness), spaced.Block.Padding),
+                (TextBlock.LineHeightProperty, lineHeight, double.NaN),
+                (TextBlock.LineHeightProperty, double.NaN, listed.Block.LineHeight),
             ],
-            changes.Order(Comparer<(AvaloniaProperty Property, object? From, object? To)>.Create((a, b) => string.CompareOrdinal(a.Property.Name, b.Property.Name))));
+            changes.Select(c => (c.Property, c.From, c.To)).Cast<(AvaloniaProperty, object?, object?)>());
+    }
+
+    // An app's untriggered Style that sets the value PhoneTextLine had worked out: equal, so no change shows that it
+    // took over, but it did, and when the font changes it keeps the property.
+    [AvaloniaFact]
+    public void An_Apps_Style_With_An_Equal_Value_Keeps_It_When_The_Font_Changes()
+    {
+        using var specimen = new Specimens("GroupHeaderTextBlockStyle");
+        var padding = specimen.Block.Padding;
+        var spacing = specimen.Block.LetterSpacing;
+        var rule = new Style(x => x.OfType<TextBlock>());
+        rule.Setters.Add(new Setter(TextBlock.PaddingProperty, padding));
+        rule.Setters.Add(new Setter(TextBlock.LetterSpacingProperty, spacing));
+        specimen.Window.Styles.Add(rule);
+        Dispatcher.UIThread.RunJobs();
+
+        specimen.Block.FontSize = 30;
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(padding, specimen.Block.Padding);
+        Assert.Equal(spacing, specimen.Block.LetterSpacing);
+    }
+
+    // A ControlTheme's value below PhoneTextLine's, set after it (as a new theme's is): when PhoneTextLine works its
+    // value out again, it finds the theme's, and gives way to it.
+    [AvaloniaFact]
+    public void A_ControlThemes_Value_Below_Shows_When_The_Value_Is_Worked_Out_Again()
+    {
+        var block = new TextBlock { Text = Specimen, FontSize = 16 };
+        using var scene = new Scene(block);
+        PhoneTextLine.SetMaxHeightLineHeight(block, 20);
+        Dispatcher.UIThread.RunJobs();
+        var below = new ControlTheme(typeof(TextBlock));
+        below.Setters.Add(new Setter(TextBlock.LineHeightProperty, 17.5));
+        block.Theme = below;
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(PhoneLine.FontLine * 16, block.LineHeight, 9);
+
+        block.FontSize = 30;
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(17.5, block.LineHeight);
+    }
+
+    // A theme that sets both MaxHeightLineHeight and BaselineToBaseline, so taking its LineHeight back also takes the
+    // Padding back. When it goes, every value it set goes with it, and PhoneTextLine's too; a theme based on it that
+    // sets a Padding of its own gets that Padding.
+    [AvaloniaFact]
+    public void A_Theme_Setting_MaxHeight_And_BaselineToBaseline_Goes_Cleanly()
+    {
+        var both = new ControlTheme(typeof(TextBlock));
+        both.Setters.Add(new Setter(TextBlock.FontSizeProperty, 16.0));
+        both.Setters.Add(new Setter(PhoneTextLine.MaxHeightLineHeightProperty, 20.0));
+        both.Setters.Add(new Setter(PhoneTextLine.BaselineToBaselineProperty, true));
+        both.Setters.Add(new Setter(PhoneTextLine.CharacterSpacingProperty, 10));
+        var padded = new ControlTheme(typeof(TextBlock)) { BasedOn = both };
+        padded.Setters.Add(new Setter(TextBlock.PaddingProperty, new Thickness(12, 0)));
+        padded.Setters.Add(new Setter(TextBlock.LetterSpacingProperty, 2.0));
+        var block = new TextBlock { Text = Specimen, Theme = both };
+        using var scene = new Scene(block);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(PhoneLine.FontLine * 16, block.LineHeight, 9);
+        Assert.Equal(PhoneLine.FirstBaseline * 16, FirstBaseline(block), 0.001);
+        Assert.Equal(0.16, block.LetterSpacing, 9);
+
+        block.Theme = padded;
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(new Thickness(12, 0), block.Padding);
+        Assert.Equal(2, block.LetterSpacing);
+        Assert.Equal(PhoneLine.FontLine * 16, block.LineHeight, 9);
+
+        block.Theme = null;
+        Dispatcher.UIThread.RunJobs();
+        Assert.False(PhoneTextLine.GetBaselineToBaseline(block));
+        Assert.True(double.IsNaN(block.LineHeight));
+        Assert.Equal(default, block.Padding);
+        Assert.Equal(0, block.LetterSpacing);
+        Assert.False(block.IsSet(TextBlock.FontSizeProperty));
+    }
+
+    // Not a size: an infinite LineHeight sets no Padding, as a NaN one doesn't (Avalonia refuses an infinite
+    // FontSize itself), and an infinite MaxHeight line sets no LineHeight. Out of a window: Avalonia's own layout
+    // fails on an infinite LineHeight.
+    [AvaloniaFact]
+    public void An_Infinite_Line_Height_Sets_Nothing()
+    {
+        var body = new TextBlock { Text = Specimen, FontSize = 16 };
+        PhoneTextLine.SetBaselineToBaseline(body, true);
+        body.LineHeight = double.PositiveInfinity;
+        var listed = new TextBlock { Text = Specimen, FontSize = 16 };
+        PhoneTextLine.SetMaxHeightLineHeight(listed, double.PositiveInfinity);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.False(body.IsSet(TextBlock.PaddingProperty));
+        Assert.False(listed.IsSet(TextBlock.LineHeightProperty));
+    }
+
+    [AvaloniaFact]
+    public void The_Padding_Of_No_Size_Is_None()
+    {
+        var typeface = new Typeface(FontFamily.Default);
+        Assert.Equal(default, PhoneTextLine.Padding(0, 20, typeface));
+        Assert.Equal(default, PhoneTextLine.Padding(16, double.NaN, typeface));
+        Assert.Equal(default, PhoneTextLine.Padding(double.PositiveInfinity, 20, typeface));
     }
 
     // With no LineHeight there is no phone's line to keep: BaselineToBaseline sets no Padding, not a zero one.
