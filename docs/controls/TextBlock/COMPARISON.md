@@ -61,7 +61,7 @@ Sizes, positions and colours are compared by measurement, in [PLAN.md](PLAN.md#t
 | 7 | Descenders below a short line | **Match** | Header's ink ends 75.833 below its top; the phone's 75.417, one pixel apart |
 | 8 | Colour, dark and light | **Match** | Brushes equal the dumps' `foreground` (#FFFFFFFF, #99FFFFFF; #FF000000, #73000000), ComboBoxPlaceholder's `Opacity` 0.6 and 0.45. The farthest ink pixel equals the phone's (255, 153; 0, 140) at 18 DIP and up; at 16 DIP it falls up to 3 short, as no Selawik stem covers a whole pixel there |
 | 9 | Local `FontSize`, the app's own values, taking the style away | **Match** (WinRT's behaviour, as each setter is a style value) | Tests |
-| 10 | The hooks | Cornflower's (ADR 0004) | Every value by `DynamicResource`; a key in a 1280-wide window's `Resources` changes the style, and another window keeps the phone's |
+| 10 | The hooks | Cornflower's (ADR 0004) | Every size, line height, spacing, family, brush, margin and opacity by `DynamicResource` (the weights, wrapping, trimming and flags are written in); a key in a 1280-wide window's `Resources` changes the style, and another window keeps the phone's |
 | 11 | No phone width | Cornflower's (ADR 0004) | No width setter; in a 1280-wide window, wrapped text fills 1,242 DIP |
 
 ## Gaps and deliberate differences

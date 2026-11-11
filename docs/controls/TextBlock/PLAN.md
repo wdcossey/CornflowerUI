@@ -114,8 +114,10 @@ style: bindings were measured at about 4 µs each per `TextBlock` (below).
 
 ## The hooks (ADR 0004)
 
-Every value a style reads is a resource reached by `DynamicResource`, so a key defined in a window's
-`Resources`, or the application's, wins over the theme's. A pack changes a size by its key: the WinRT keys in
+Every resource a style reads is reached by `DynamicResource`, so a key defined in a window's `Resources`, or the
+application's, wins over the theme's: the sizes, line heights, character spacing, font families, brushes, and
+ComboBoxPlaceholder's margin and opacity. `FontWeight`, `TextWrapping`, `TextTrimming`, `ClipToBounds` and
+`PhoneTextLine.BaselineToBaseline` are written in the style, as the phone's are. A pack changes a size by its key: the WinRT keys in
 `Tokens/Typography.axaml` (`TextStyleLargeFontSize` and the rest), and, for the values the phone's styles
 wrote as literals, the new keys in `Tokens/TextStyles.axaml`, named for the style:
 

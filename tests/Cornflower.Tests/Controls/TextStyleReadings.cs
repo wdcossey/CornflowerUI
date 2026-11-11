@@ -51,6 +51,11 @@ internal sealed record TextStyleReading(
 }
 
 /// <summary>The phone's line, read from the captures: see <c>PhoneTextLine</c> in the theme.</summary>
+/// <remarks>
+/// These repeat <c>PhoneTextLine</c>'s Segoe WP numbers (2210, 514, 2048) on purpose, written out here rather than
+/// read from it: they are the tests' own oracle, so a wrong number in the theme fails against them rather than
+/// passing by agreeing with itself.
+/// </remarks>
 internal static class PhoneLine
 {
     /// <summary>The first baseline below the top, in ems: Segoe WP's ascent, 2210 of 2048 units.</summary>
