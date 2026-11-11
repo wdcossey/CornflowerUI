@@ -83,6 +83,10 @@ Each is held by a test, most of them spikes ([docs/spikes](docs/spikes/README.md
 Microsoft's Windows Phone 8.1 SDK files (default templates, theme resources, API metadata, design
 files, fonts) are the reference. They are read as a specification and **never enter this
 repository**. They live outside it, in `R:\cornflower-reference\` on the maintainer's machine.
+The files taken from the emulator's image are in `flash-update1\` (8.1 Update 1, `6.3.9651.0`, the image the
+reference profiles run: its DLLs, its registry and its runtime templates as XBF, XAML and JSON); that is
+the reference. `flash-vhd\` is the 8.1 RTM image, not the reference. Update 1's runtime templates and theme
+resources equal the SDK's design files. `tools/guard/hash-reference.js` hashes both images.
 
 ## Rules
 

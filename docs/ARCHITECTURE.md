@@ -56,9 +56,9 @@ What 8.0 has that 8.1 replaced (reported, from Microsoft's archived documentatio
 |---|---|---|
 | Text font | Segoe WP | Segoe UI |
 | Icon font | Segoe UI Symbol | Segoe MDL2 Assets |
-| Typical border | 8.1: 2.5 (`PhoneBorderThickness`, read in the SDK file and on device 11, 2026-11-08). 8.0: 3 (reported) | 2 (`ButtonBorderThemeThickness`, read in 19041) |
-| Spacing unit | Multiples of 12 (reported) | 4, on a 44 then 40 px control grid (reported) |
-| App bar | Fixed 72 high, lowercase menu (reported) | CommandBar, compact height 40 (`AppBarThemeCompactHeight`, read in 19041) |
+| Typical border | 8.1: 2.5 (`PhoneBorderThickness`, read in the SDK file and on device 11, 2026-11-08). 8.0: 3 (`PhoneBorderThickness`, read in the 8.0 SDK's `Design\ThemeResources.xaml`) | 2 (`ButtonBorderThemeThickness`, read in 19041) |
+| Spacing unit | 8.0: 12 (`PhoneMargin` 12, `PhoneHorizontalMargin` 12,0, read in the 8.0 SDK file). 8.1: no unit is defined; several of its resources use 9.5 (`PhoneTouchTargetOverhang` 0,9.5, `PhoneButtonContentPadding` 9.5,0,9.5,3.5, read in the 8.1 Update 1 runtime) | 4, on a 44 then 40 px control grid (reported) |
+| App bar | 8.1: `AppBarThemeMinHeight` 54.5 (read in the SDK file and the 8.1 Update 1 runtime); the shell draws the bar and its menu. 8.0: 72 high, lowercase menu (reported; no 8.0 design file sets it) | CommandBar, compact height 40 (`AppBarThemeCompactHeight`, read in 19041) |
 | Navigation | Pivot, Hub, back button | Hamburger and SplitView, Pivot |
 | Press feedback | Tilt | `PointerDownThemeAnimation` in 38 places in 19041; what it draws on each control is unconfirmed |
 | Accent | 20 named colours, the same names in the 8.0 and 8.1 SDK design files; only Cobalt's value differs (read). The emulator's default, `#FF3E65FF`, is none of the 20 | The system accent; palette size unconfirmed |

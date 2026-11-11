@@ -2,9 +2,12 @@
 // repository guard test (tests/Cornflower.Tests/Repository/). Hashes and file names only: no content.
 // Usage: node tools/guard/hash-reference.js <reference folder> > tests/Cornflower.Tests/Repository/microsoft-sha256.txt
 // Hashes everything under <folder>/*/reference/ (collect-vm.ps1 -CopyReferenceFiles) and
-// <folder>/vm-extras/, except vm-extras/captures/, which are our own screenshots. The reference
-// app's output (<folder>/refapp/) is ours too and is not hashed. Empty files are skipped: their
-// hash would match any empty file.
+// <folder>/vm-extras/, except vm-extras/captures/, which are our own screenshots, and everything
+// under the folders taken from the emulator images and their decompiled templates (IMAGES below):
+// flash-update1/ (8.1 Update 1, the image the reference profiles run), flash-vhd/ (8.1 RTM),
+// xbfdecompiler-dump/ and sdk-json/. A missing one is skipped. The reference app's output
+// (<folder>/refapp/) is ours and is not hashed. Empty files are skipped: their hash would match any
+// empty file.
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -27,6 +30,11 @@ const extras = path.join(root, 'vm-extras');
 if (fs.existsSync(extras)) {
   const captures = path.join(extras, 'captures') + path.sep;
   sources.push(...walk(extras).filter(p => !p.startsWith(captures)));
+}
+const IMAGES = ['flash-update1', 'flash-vhd', 'xbfdecompiler-dump', 'sdk-json'];
+for (const name of IMAGES) {
+  const dir = path.join(root, name);
+  if (fs.existsSync(dir)) sources.push(...walk(dir));
 }
 
 const byHash = new Map();
