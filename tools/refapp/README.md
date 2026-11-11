@@ -83,7 +83,8 @@ the signed-in desktop. Run from an SSH session, `ISETool` starts a hidden second
 - **`TreeDump.cs`** writes the visual tree. Bounds are relative to the specimen, and the stage
   offset is recorded, so a JSON rectangle maps to PNG pixels as
   `(elementInStage + bounds) × rawPixelsPerViewPixel`. Not `resolutionScale`: it reports 180 on
-  every profile read so far, including the 1080p ones at 2.4 and 2.2.
+  the profiles at 1.8 to 2.4 and 140 on the three at 1.2, devices 7 and 8 (WVGA) and 13 (qHD)
+  ([Native readings](#native-readings-2026-11-11-devices-7-to-13)).
 - **`Suite.Native.cs`** (`run.ps1 -Native`) captures nothing: it reads the values the phone computes
   in native code through the public API and writes them to `native.json`. The display's scale and
   DPI; the system tray's `OccludedRect`, `BackgroundOpacity` and colours, the view's
@@ -321,13 +322,18 @@ on all seven. The `SizeStates` (`Large`, `Small`) don't change them.
 `CurtainCurrentToOffOffset`) are 0 at rest, straight after `IsOn` is set from code and once the
 slide is over. The knob's offset is a whole number of raw pixels, so it moves with the profile:
 on the reference it is 56.67, where the template's `On` state sets 56.5 and the recording measured
-a travel of 56.56 ([the knob's slide](#toggleswitch-the-knobs-slide)).
+a travel of 56.56; [the knob's slide](#toggleswitch-the-knobs-slide) says which is which. The
+drag's halfway line, 28.33, is half of 56.67 and not of 56.5, on the two profiles read, both at
+56.67 ([tap or drag](#toggleswitch-tap-or-drag-2026-11-09-device-11-25)).
 
 ### What this didn't read
 
 - **The `Current` offsets during a drag.** They are what a drag's release animates from, so they
   can only be non-zero mid-drag; reading them needs a touch probe (`toggleswitch` drags, but
   doesn't read them).
+- **The drag's halfway line on another offset.** Devices 10 and 11 both have a knob offset of
+  56.67, so their line, 28.33, could be half the offset or a constant. A `toggleswitch` probe on
+  WVGA or qHD (devices 7, 8 or 13, offset 55.83) tells them apart: half the offset is 27.92 there.
 - **The tray's pixels.** Whether its background is opaque, and what colour, is the shell's
   drawing: the API reports only the app's own `BackgroundOpacity` (0). A `-Grab` screenshot
   with the tray shown would settle it.
@@ -396,8 +402,13 @@ and those are what is quoted. In view pixels on the reference profile:
   and 1,022 ms: tap; 1,020, 1,021, 1,033 and 1,060: not. The two limits act on their own: a still press
   of 1,124 ms doesn't toggle, nor does a quick 20 px drag of 548 ms.
 - **Otherwise the knob's position decides**: released at 28.32 it goes back Off, at 29.18 it goes
-  On. The knob travels 56.5 (the template's `On` state), so the line is its halfway point, 28.25,
-  as near as a 0.83 px step can tell.
+  On. The line is 28.33, not half the template's `On` value, 56.5 (28.25), which 28.32 passes and
+  still goes back Off. On the 720p profile 28.34 goes On (below): the two profiles' releases fall
+  either side of 28.33, within 0.01. 28.33 is half the knob's offset as the control computes it,
+  `KnobOnToOffOffset` 56.67 ([Native readings](#templatesettings)), but both profiles have that
+  offset, so these runs can't tell half the offset from a fixed 28.33. Unconfirmed beyond these
+  two profiles: a drag on a profile with another offset is owed
+  ([What this didn't read](#what-this-didnt-read)).
 - **After a tap**, `ToggleStates` goes `Dragging` > `Off` at once, and `Off` > `On` about 380 ms
   later. After a drag, `Dragging` > `On` or `Off` comes about 380 ms after the release. That is
   the knob's slide into place.
@@ -528,9 +539,27 @@ The slide is the template's `RepositionThemeAnimation`: `KnobTranslateTransform.
 once, and `ToggleStates` reaches `On` or `Off` about 380 ms later, when the slide is over (all of
 #58's runs, and on the 720p profile). From the recording (`20261110-0819-dev11`, 20 slides, the
 switch set from code): the knob travels 56.56 view px, the same way in both directions, through the
-same positions every time. The 21 distinct positions, one per 15.625 ms step, fit the
-`KeySpline` 0.1,0.9 0.2,1 over 370 ms, the first frame one step in, within 0.001 of the travel
-(0.06 px); an exponential ease-out (k 6 to 8) fits ten times worse, the power ease-outs twenty.
+same positions every time.
+
+Three numbers for the travel, each something else:
+
+- **56.5, the template's literal**: the `On` state sets `KnobTranslateTransform.X` to 56.5, where
+  the knob rests when On; the probes read 56.5 there every time.
+- **56.67, the control's own** (`-Native`, [`TemplateSettings`](#templatesettings)):
+  `KnobOnToOffOffset` 56.67 and `KnobOffToOnOffset` −56.67 on the reference, 136 raw px. The
+  control computes it in native code from its layout, a whole number of raw pixels, so it moves
+  with the profile (55.83 to 56.67). A slide set from code (the `OffToOn` and `OnToOff`
+  transitions) starts from it, the animation's `FromHorizontalOffset`; a slide after a drag
+  (`DraggingToOn`, `DraggingToOff`) starts from the `Current` offsets instead. On the reference and 720p
+  profiles (the two read) the drag's halfway line is half of it (above).
+- **56.56, the recording's**: the slide's travel as measured on the screen, the distance between
+  the knob's left edge at rest Off and at rest On in the recording (`knob.py`). It falls between
+  the other two; they are 0.17 view px apart, a fifth of a recording pixel at 0.83 view px each,
+  so the recording doesn't separate them.
+
+The 21 distinct positions, one per 15.625 ms step, fit the `KeySpline` 0.1,0.9 0.2,1 over
+370 ms, the first frame one step in, within 0.001 of the measured travel, 56.56 (0.06 px); an
+exponential ease-out (k 6 to 8) fits ten times worse, the power ease-outs twenty.
 370 ms and a step or two is the 380 ms to the state change.
 
 ### Flyouts, pickers and the dialog
