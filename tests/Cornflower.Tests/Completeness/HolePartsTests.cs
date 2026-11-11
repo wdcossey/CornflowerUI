@@ -145,6 +145,21 @@ public class HolePartsTests
         Assert.Contains(inner.GetVisualDescendants(), v => v is Border { Name: "Under" });
     }
 
+    // A control Wp81 themes isn't a hole, even where the theme under Wp81 themes it too: its parts keep Wp81's Button.
+    [AvaloniaFact]
+    public void A_Button_In_A_Control_Wp81_Themes_Keeps_Wp81s()
+    {
+        var host = new AppControl();
+        var template = new FuncControlTemplate<AppControl>((_, _) => new Button { Name = "Inner", Content = "inner" });
+        var wp81 = new Wp81Theme();
+        wp81.Resources[typeof(AppControl)] = new ControlTheme(typeof(AppControl)) { Setters = { new Setter(TemplatedControl.TemplateProperty, template) } };
+        var under = new SimpleTheme();
+        under.Resources[typeof(AppControl)] = new ControlTheme(typeof(AppControl)) { Setters = { new Setter(TemplatedControl.TemplateProperty, template) } };
+        using var scene = new Scene(host, themes: [under, wp81]);
+
+        Assert.True(CfTilt.GetIsEnabled(PlainButtons(host).Single()));
+    }
+
     /// <summary>A templated control of an app's own, which no theme knows.</summary>
     public class AppControl : TemplatedControl;
 }
