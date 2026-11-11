@@ -1,0 +1,13 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Cornflower.Sample.SamplePageHeader">
+  <!-- A sample page's header, as the phone's apps write one: the app's name small, then the page's title, which is
+       the page's own [SamplePage] title. -->
+  <StackPanel>
+    <TextBlock Text="CORNFLOWER" FontFamily="{DynamicResource PhoneFontFamilySemiBold}"
+               FontSize="{DynamicResource TextStyleMediumFontSize}" />
+    <TextBlock x:Name="PageTitle" Margin="-2,0,0,12"
+               FontFamily="{DynamicResource PhoneFontFamilySemiLight}"
+               FontSize="{DynamicResource PivotHeaderItemFontSize}" />
+  </StackPanel>
+</UserControl>

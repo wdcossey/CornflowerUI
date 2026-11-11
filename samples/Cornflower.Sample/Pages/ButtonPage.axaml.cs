@@ -13,7 +13,6 @@ public partial class ButtonPage : UserControl
     public ButtonPage()
     {
         InitializeComponent();
-        PageTitle.Text = SamplePageCatalog.TitleOf(typeof(ButtonPage));
     }
 
     private void OnClick(object? sender, RoutedEventArgs e) =>
