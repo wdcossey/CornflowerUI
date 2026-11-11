@@ -3,7 +3,8 @@
 Usage: python -I selftest.py
 
 Each check builds data from a known curve, camera or outline, runs the code the scripts use, and asserts it gets the
-answer back. Prints one line a check and exits non-zero on the first failure. Takes about half a minute.
+answer back; and that the scripts stop, rather than go on with mispaired or missing data, where they should.
+Prints one line a check and exits non-zero on the first failure. Takes about half a minute.
 """
 import math
 import os
@@ -73,7 +74,7 @@ def easings():
     f = ml.key_spline(0.1, 0.9, 0.2, 1)
     near(f(0.0), 0.0, 1e-9, 'spline at 0')
     near(f(1.0), 1.0, 1e-9, 'spline at 1')
-    # On the Bezier itself: the point at parameter 0.5 is (0.3625, 0.8 - 0.0125).
+    # On the Bezier itself: the point at parameter 0.5 is (0.2375, 0.8375).
     near(f(3 * 0.1 / 8 + 3 * 0.2 / 8 + 1 / 8), 3 * 0.9 / 8 + 3 / 8 + 1 / 8, 1e-6, 'spline at s = 0.5')
     near(ml.key_spline(0.25, 0.25, 0.75, 0.75)(0.3), 0.3, 1e-6, 'a straight spline')
 
@@ -146,6 +147,147 @@ def turnstile_axis():
     e, xa, za = ml.fit_axis(segs, d, cx)
     near(xa, -44, 0.25, 'axis x')
     near(za, -99, 0.25, 'axis z')
+
+
+def exits(fn, *args, **kw):
+    """True if fn stops the script (SystemExit), as the scripts do on data they can't trust."""
+    try:
+        fn(*args, **kw)
+    except SystemExit:
+        return True
+    return False
+
+
+@check
+def pairing_steps_to_transitions():
+    # Steps 1.3 s apart; each transition starts 27.8 s earlier on the recording's clock, give or take 20 ms; two other
+    # transitions in between. Each step gets its own, in order.
+    times = [32.0 + 1.3 * k for k in range(18)]
+    jitter = [0.02 * ((k * 7) % 5 - 2) / 2 for k in range(18)]
+    starts = sorted([t - 27.8 + j for t, j in zip(times, jitter)] + [4.85, 30.0])
+    lag, pairs, lags = ml.match_steps(starts, times)
+    near(lag, -27.8, 0.02, 'lag')
+    assert [starts[j] for j in pairs] == [t - 27.8 + j for t, j in zip(times, jitter)]
+    # A transition missing: the scripts stop rather than pair the rest one off.
+    assert exits(ml.match_steps, starts[:5] + starts[6:], times)
+    # Steps out of step with the transitions altogether.
+    assert exits(ml.match_steps, starts, [t + 0.4 * (k % 2) for k, t in enumerate(times)])
+
+
+@check
+def segments_need_rest_first():
+    still = [19.0, 431.0, 680.0, 680.0]
+    rows = [(0, 0.0, still, 255), (1, 0.1, [30.0, 420.0, 600.0, 650.0], 255), (2, 0.2, still, 255),
+            (3, 0.3, [0.0, 300.0, None, None], 255), (4, 0.4, still, 255), (5, 0.5, [25.0, 425.0, 670.0, 690.0], 255)]
+    assert [[r[0] for r in s] for s in ml.segments(rows)] == [[1], [3], [5]]
+    assert [[r[0] for r in s] for s in ml.segments(iter(rows), limit=2)] == [[1], [3]]
+    assert exits(ml.segments, rows[3:])  # clipped first: no rest to compare with
+    assert exits(ml.segments, [])
+
+
+@check
+def median_ratio():
+    # Ratios 0.5, 0.6, 0.7, 0.8: the median is 0.65, not the upper middle value.
+    vals = [100, 50, 30, 21, 16.8]
+    near(ml.tick_numbers(vals)[0], 0.65, 1e-9, 'median ratio')
+
+
+@check
+def camera_off_the_grid():
+    # A camera between the grid's points: the refinement, around the grid's best, finds it.
+    states = [(10, 0, 0), (-10, 0, 0), (-30, 0, 0), (-60, 0, 0), (10, 0.5, 0), (30, 0.5, 0), (0, 0, -100), (30, 0, -100)]
+    held = [(st, ml.project_plane(st[0], st[1], st[2], 1003, 221.75)) for st in states]
+    e, d, cx, sgn = ml.fit_camera(held)
+    assert (d, cx) == (1003, 221.75), (d, cx)
+
+
+@check
+def axis_needs_frames():
+    clipped = [[(0, 0.0, [0.0, 300.0, None, None], 255)]]
+    assert exits(ml.axis_rms, clipped, -44, -99, 1000, 225)
+
+
+@check
+def missing_tick_on_a_curve():
+    # The knob's check: positions a tick apart land about a tick apart on the curve; one tick left out, two.
+    f = ml.key_spline(0.1, 0.9, 0.2, 1)
+    ticks = [0, 1, 2, 3, 5, 6, 7]
+    fracs = [1 - f((1 + k) * ml.TICK / 370) for k in ticks]
+    at = ml.ticks_on_curve(fracs, f, 370, 1.0)
+    gaps = [b - a for a, b in zip(at, at[1:])]
+    for g, (a, b) in zip(gaps, zip(ticks, ticks[1:])):
+        near(g, b - a, 1e-6, 'ticks apart')
+    rms, d, ph = ml.fit_fraction(fracs, f, ticks=ticks)
+    assert (d, ph) == (370, 1.0) and rms < 1e-9
+
+
+@check
+def arguments():
+    saved = sys.argv
+    try:
+        sys.argv = ['x.py', 'run', '--lag', '29.15', '--no-search']
+        assert ml.parse_args('doc', options=('--gray', '--lag'), flags=('--no-search', '--other')) == (
+            ['run'], {'--gray': None, '--lag': '29.15', '--no-search': True, '--other': False})
+        sys.argv = ['x.py', 'run', '--unknown', '1']
+        assert exits(ml.parse_args, 'doc', options=('--gray',))
+        sys.argv = ['x.py']
+        assert exits(ml.parse_args, 'doc')
+        sys.argv = ['x.py', 'run', '--gray']
+        assert exits(ml.parse_args, 'doc', options=('--gray',))
+    finally:
+        sys.argv = saved
+
+
+@check
+def recording_files():
+    # A run folder of three 10 x 4 frames: the size from rect.log, the frames found by their size, a row read
+    # alone, and the file closed by `with`.
+    import tempfile
+    with tempfile.TemporaryDirectory() as run:
+        os.mkdir(os.path.join(run, 'analysis'))
+        with open(os.path.join(run, 'frames.csv'), 'w') as f:
+            f.write('0.000000,\n0.025000\n0.050000\n')
+        with open(os.path.join(run, 'rect.log'), 'w') as f:
+            f.write('12:00:00.000 display window at 1,2, 10 x 4\n')
+        with open(os.path.join(run, 'analysis', 'record.gray'), 'wb') as f:
+            f.write(bytes(range(120)))
+        with open(os.path.join(run, 'analysis', 'small.gray'), 'wb') as f:
+            f.write(bytes(60))
+        with ml.Recording(run) as rec:
+            assert rec.gray.endswith('record.gray')
+            assert (rec.w, rec.h) == (10, 4)
+            assert rec.row(2, 1) == bytes(range(90, 100))
+            assert rec.frame(1) == bytes(range(40, 80))
+            assert rec.index_at(0.03) == 2
+        assert rec._f.closed
+
+
+def run_script(name, run):
+    import subprocess
+    out = subprocess.run([sys.executable, '-I', os.path.join(os.path.dirname(os.path.abspath(__file__)), name), run],
+                         capture_output=True, text=True)
+    return out.returncode, out.stdout + out.stderr
+
+
+@check
+def scripts_on_partial_logs():
+    # A tilt press with no tilt logged is left out, not a crash; a MenuFlyout rise cut off by the end of the log
+    # still counts.
+    import tempfile
+    with tempfile.TemporaryDirectory() as run:
+        with open(os.path.join(run, 'probe.txt'), 'w', encoding='utf-8') as f:
+            f.write('0.0\tlayout\tbutton A 19 120 120 60 root Grid\n')
+            f.write('1.0\tpressed\tA 0 0 0 60 30\n2.0\tvalue\tprojection A rot ' + ' '.join(['0'] * 14) + ' -25\n3.0\treleased\tA\n')
+            f.write('4.0\tpressed\tA 0 0 0 6 30\n5.0\treleased\tA\n')
+        code, out = run_script('tiltcurve.py', run)
+        assert code == 0 and 'presses 1, and 1 left out' in out, out
+    with tempfile.TemporaryDirectory() as run:
+        with open(os.path.join(run, 'probe.txt'), 'w', encoding='utf-8') as f:
+            for k in range(25):
+                f.write('%.1f\ttree\tpopup1/0 Border#OuterBorder | transform scale %g 1 centre 0 0 origin 0.5 0\n'
+                        % (100 + 15.625 * k, round(k * 0.0411, 3)))
+        code, out = run_script('menuflyout.py', run)
+        assert code == 0 and 'OuterBorder ScaleX: 1 rises' in out and '24.3 steps' in out, out
 
 
 for fn in checks:

@@ -16,9 +16,8 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import motionlib as ml
 
-if len(sys.argv) < 2:
-    raise SystemExit(__doc__)
-for run in sys.argv[1:]:
+runs, _ = ml.parse_args(__doc__, nargs=(1, 99))
+for run in runs:
     print('==', run)
     rows, cur = [], None
     for t, what, det in ml.probe(run):
@@ -49,7 +48,13 @@ for run in sys.argv[1:]:
             r['held'], r['moved'], r['knob'], 'toggled' if r['on'] else '-', ' '.join(r['states'])))
     short = [r for r in rows if not any(s.startswith('Dragging>On') for s in r['states'])]
     still = [r for r in rows if r['moved'] == 0]
-    print('  moved: %.2f toggled, %.2f didn\'t' % (
-        max(r['moved'] for r in short if r['on']), min(r['moved'] for r in short if not r['on'] and r['held'] < 900)))
-    print('  held, not moving: %.0f ms toggled, %.0f ms didn\'t' % (
-        max(r['held'] for r in still if r['on']), min(r['held'] for r in still if not r['on'])))
+
+    def limit(f, vals, fmt):
+        vals = list(vals)
+        return fmt % f(vals) if vals else 'none'
+    print("  moved: %s toggled, %s didn't" % (
+        limit(max, (r['moved'] for r in short if r['on']), '%.2f'),
+        limit(min, (r['moved'] for r in short if not r['on'] and r['held'] < 900), '%.2f')))
+    print("  held, not moving: %s ms toggled, %s ms didn't" % (
+        limit(max, (r['held'] for r in still if r['on']), '%.0f'),
+        limit(min, (r['held'] for r in still if not r['on']), '%.0f')))

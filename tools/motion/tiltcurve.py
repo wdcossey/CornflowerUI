@@ -5,11 +5,12 @@ Usage: python -I tiltcurve.py <run folder>
 
 The tilt grid presses four Buttons at a 5 x 5 grid of points each and logs every frame the PlaneProjection the tilt
 gives the button. For each press, the last projection before the release against #60's curve: RotationX g(dy) and
-RotationY -g(dx), with dx, dy the press point's offset from the button's centre as a fraction of its size and
-g(d) = 17.19 deg x d x (1 + 0.08 |d|); and GlobalOffsetZ against -25 (1 - (|RotationX| + |RotationY|) / 0.3 rad).
-Prints the angles' rms and worst residual, each button's mean residual (its offset) and rms after it, the rms with
-each button's offset taken out, and the depth's worst residual and rms. (#65's model, through the drawn tilt and
-PlaneProjection's camera, is tested in tests/Cornflower.Tests/Behaviours/, not here.)
+RotationY -g(dx), with dx, dy the press point's offset from the button's centre as a fraction of its size and g(d) =
+17.19 deg x d x (1 + 0.08 |d|); and GlobalOffsetZ against -25 (1 - (|RotationX| + |RotationY|) / 0.3 rad). A press
+with no tilt logged before its release is left out, and counted. Prints the angles' rms and worst residual, each
+button's mean residual (its offset) and rms after it, the rms with each button's offset taken out, and the depth's
+worst residual and rms. (#65's model, through the drawn tilt and PlaneProjection's camera, is tested in
+tests/Cornflower.Tests/Behaviours/, not here.)
 """
 import collections
 import math
@@ -19,10 +20,9 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import motionlib as ml
 
-if len(sys.argv) != 2:
-    raise SystemExit(__doc__)
-sizes, presses, cur, last = {}, [], None, {}
-for t, what, det in ml.probe(sys.argv[1]):
+(run,), _ = ml.parse_args(__doc__)
+sizes, presses, skipped, cur, last = {}, [], 0, None, {}
+for t, what, det in ml.probe(run):
     p = det.split()
     if what == 'layout' and p[0] == 'button':  # button A x y w h ...
         sizes[p[1]] = (float(p[4]), float(p[5]))
@@ -32,8 +32,13 @@ for t, what, det in ml.probe(sys.argv[1]):
     elif what == 'value' and p[0] == 'projection' and cur and p[1] == cur[0] and p[2] == 'rot':
         last = dict(rx=float(p[3]), ry=float(p[4]), gz=float(p[17]))
     elif what == 'released' and cur:
-        presses.append((cur[0], cur[1], cur[2], last['rx'], last['ry'], last['gz']))
+        if last and cur[0] in sizes:
+            presses.append((cur[0], cur[1], cur[2], last['rx'], last['ry'], last['gz']))
+        else:  # no tilt logged during the press, or a button with no layout line
+            skipped += 1
         cur = None
+if not presses:
+    raise SystemExit('no press with a tilt in the log')
 
 G = 17.19
 RAD = math.degrees(0.3)
@@ -55,7 +60,7 @@ for b, ix, iy, rx, ry, gz in presses:
     res[b].append((rx - ex, ry - ey))
     allr += [rx - ex, ry - ey]
     zres.append(gz + 25 * (1 - (abs(rx) + abs(ry)) / RAD))
-print('presses %d' % len(presses))
+print('presses %d%s' % (len(presses), ', and %d left out: no tilt logged, or no layout for the button' % skipped if skipped else ''))
 print('angles: rms %.3f deg, worst %.3f' % (rms(allr), max(abs(x) for x in allr)))
 cent = []
 for b in sorted(res):

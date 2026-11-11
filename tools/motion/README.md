@@ -18,6 +18,16 @@ python -I tools/motion/decode.py <run>
 python -I tools/motion/turnstile.py <run>
 ```
 
+To reproduce the published popup table, give `popups.py` the lag the 2026-11-10 table used:
+
+```sh
+python -I tools/motion/popups.py R:/cornflower-reference/refapp/20261110-0819-dev11 --lag 29.15
+```
+
+That 29.15 s (recording time = app time − 29.15 s) was typed in by hand on 2026-11-10. Without `--lag`, the script
+uses its own lag, the median over the knob's 20 moves, 29.158 s, and says so; that 8 ms moves the ListPickerFlyout's
+close row (see the table below).
+
 The other scripts find the decoded frames in `<run>\analysis\` by their size (any `*.gray` there of the recording's
 width × height × frames), or take `--gray <file>`. The 2026-11-10 runs were decoded on the reference VM with the
 command `decode.py` runs (`ffmpeg -i record.mkv -vf format=gray -fps_mode passthrough -f rawvideo`), and their
@@ -27,8 +37,8 @@ frames are already in their `analysis\` folders; `decode.py` itself has not been
 |---|---|---|
 | `decode.py` | a recorded run | writes `analysis\record.gray` |
 | `camera.py` | a `-Probe projections -Record` run | each held projection's outline, and the pinhole camera that fits them |
-| `turnstile.py` | a `-Probe pages -Record` run | the turnstile's axis, each forward turn's first angle, the distinct angles of the forward and back turns and the curves fitted to them. The axis search takes a few minutes; `--no-search` skips it |
-| `slide.py` | a `-Probe pages -Record` run | the slide's offsets in and out and their fits; the continuum's scale in and fade back |
+| `turnstile.py` | a `-Probe pages -Record` run | the turnstile's axis, each forward turn's first angle, the distinct angles of the forward and back turns and the curves fitted to them. The axis search takes a few minutes; `--no-search` skips it, `--axis <x>,<z>` sets the axis the angles are solved about (−44,−99) |
+| `slide.py` | a `-Probe pages -Record` run | the slide's offsets in and out and their fits; the continuum's scale in and fade back. `--lag <s>` gives the lag (27.815 for `20261110-0810-dev11`) instead of finding it from the turnstile turns |
 | `knob.py` | a `-Probe motion -Record` run | the ToggleSwitch knob's positions through its slide, and KeySplines and ease-outs fitted to them |
 | `popups.py` | a `-Probe motion -Record` run | each popup's opening and closing times (50%, 90%, 99%, and by band), and the top Flyout's bottom edge as it opens |
 | `menuflyout.py` | `-Probe motion` runs | the MenuFlyout's storyboard steps, from the app's log |
@@ -38,11 +48,19 @@ frames are already in their `analysis\` folders; `decode.py` itself has not been
 | `motionlib.py` | | what they share: the run, the frame measurements, the projection, the easing curves and the fits |
 | `selftest.py` | nothing | checks the measurements and fits on synthetic data with known answers |
 
-Each script's docstring says what it measures and how. Two things they share:
+Each script's docstring says what it measures and how. Three things they share:
+
+- **Pairing the recording with the log.** A transition in the recording is paired with the probe step that started
+  it by time: each starts a fixed lag after its step (`motionlib.match_steps`). A step with no transition near that
+  lag, or two steps on one transition, stops the script with the steps named, rather than pair the rest one off.
+  `camera.py`, `turnstile.py`, `slide.py` and `popups.py` (through the knob) pair this way.
 
 - **The 64 Hz clock.** An animation's values move one step per 15.625 ms, the same steps every run, so the values
   of many runs, each counted once, are its steps in order. The fits work on those *distinct values*: a value a step,
-  with a step skipped where the ratio to the one before says no run showed it.
+  with a step skipped where the ratio to the one before says no run showed it (`motionlib.tick_numbers`). That
+  ratio test assumes an exponential. The knob's KeySpline shrinks faster at its end, where the test would see gaps
+  that aren't there, so `knob.py` takes its positions as consecutive and then checks that on the fitted curve: each
+  position over 1% of the travel lands 0.53 to 1.32 ticks after the one before, where a missing tick would land two.
 - **The camera.** `camera.py` finds PlaneProjection's eye 999 view px from the screen, looking at (224, 400). The
   turnstile was solved, on 2026-11-10, with 1000 and (225, 400); `turnstile.py` keeps those, so its numbers are the
   published ones. The difference moves the angles by less than the fit's residual.
@@ -55,8 +73,12 @@ python -I tools/motion/selftest.py
 
 It builds data from known curves, a known camera and a known outline, runs the code the scripts use on it, and
 asserts the answer comes back: the edge crossings, the sheet's outline, the easings, the distinct values and their
-ticks, the exponential, ExponentialEase and KeySpline fits, the camera fit and the turnstile's angle and axis. It is
-not run by CI, which builds and tests the .NET solution only.
+ticks (and a true median ratio), the exponential, ExponentialEase and KeySpline fits, the camera fit (on and off its
+grid) and the turnstile's angle and axis, the knob's missing-tick check, the arguments, and reading a run folder.
+It also checks that the scripts stop where they should: a transition missing or out of step with the log, a first
+frame that isn't at rest, an axis with no frame to fit; and that they carry on past a tilt press with nothing
+logged and a MenuFlyout rise cut off by the end of the log. It is not run by CI, which builds and tests the .NET
+solution only.
 
 ## What they reproduce
 
@@ -85,6 +107,19 @@ Each published number, run again on its original run on 2026-11-11. The runs are
 | ToggleSwitch on the 720p profile: moved 17.76 taps, 18.85 doesn't (17.47 and 18.33 on the reference); held 984 ms taps, 1,018 doesn't; `ToggleStates` changes about 380 ms after the release | README, ADR | `toggle.py` | `20261110-0733-dev10`, `20261109-2128-dev11` | Yes: 17.76 / 18.85 and 984 / 1018 ms; 17.47 / 18.33 and 993 / 1019 ms on the reference; the state changes 374 to 391 ms after the release |
 | #60's tilt curve on the reference profile: rms 0.08° once each button's offset is out, 0.38° raw, worst 1.26°; the depth within 0.002 px | README "Tilt: the model", ADR | `tiltcurve.py` | `20261109-2307-dev11` | Yes: 0.083°, 0.379°, 1.256°; depth worst 0.0015 px |
 | #60's tilt curve on the 720p profile: within 0.08° once each button's offset is out, 0.33° raw, worst 1.04°; the depth within 0.002 px | README | `tiltcurve.py` | `20261110-0851-dev10` | Yes: 0.076°, 0.326°, 1.042°; depth worst 0.0017 px |
+
+### Published and reproduced, where they differ
+
+Not corrected here; the docs are corrected separately.
+
+| Number | Published | Reproduced | Why they differ |
+|---|---|---|---|
+| Slide out, how long it accelerates | about 220 ms | 188 ms (the eased fit ends at tick 12) | 2026-11-10's offsets were picked by hand, with 1.0 px and without 4.2; the script takes every offset of 2 px or more |
+| Slide out, how far the page goes before the one under it shows | about 140 to 200 px | 64.6 to 137.3 px, the last offset seen in each run | |
+| Continuum forward, the black | 60 to 100 ms | 94 to 125 ms | measured from the first black frame to the first of the new page, so an upper bound, at about 31 ms a frame |
+| ProgressRing, the dots apart | 150 to 167 ms | 150 to 165 ms in the first cycle; 129 to 167 ms over all nine | the published range is the first cycle's |
+| ProgressRing, when a dot hides | 3.10 s into the cycle | 3.090 s after the dot shows again (median of 47) | |
+| Popups, ListPickerFlyout close | 242 / 375 / 425 ms | 284 / 392 / 434 ms without `--lag`; the published values with `--lag 29.15` | the lag (29.158 s from the knob, 29.15 s typed in on 2026-11-10) moves this row's window by 8 ms |
 
 Not covered, with no script here:
 

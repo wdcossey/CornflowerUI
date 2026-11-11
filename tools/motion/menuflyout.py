@@ -16,13 +16,12 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import motionlib as ml
 
-if len(sys.argv) < 2:
-    raise SystemExit(__doc__)
+runs, _ = ml.parse_args(__doc__, nargs=(1, 99))
 parts = {'OuterBorder': (re.compile(r'Border#OuterBorder \| transform scale (\S+) (\S+)(?: centre \S+ \S+)?(?: origin (\S+) (\S+))?'), 0),
          'InnerBorder': (re.compile(r'StackPanel#InnerBorder \| transform scale (\S+) (\S+)'), 1)}
 for name, (pattern, axis) in parts.items():
     rises, origins = [], set()
-    for run in sys.argv[1:]:
+    for run in runs:
         cur = None
         for t, what, d in ml.probe(run):
             if what != 'tree' or name not in d:
@@ -42,6 +41,11 @@ for name, (pattern, axis) in parts.items():
                 cur = []
             if cur is not None:
                 cur.append((t, v))
+        if cur:  # a rise still going when the log ends
+            rises.append(cur)
+    if not rises or len(set(v for r in rises for _, v in r)) < 3:
+        print('%s: no rise in the logs' % name)
+        continue
     # Every rise shows the same values, one a step: the distinct values above 0, in order, against a straight line.
     vals = sorted(set(v for r in rises for _, v in r))
     pts = list(enumerate(vals[1:]))
@@ -50,7 +54,7 @@ for name, (pattern, axis) in parts.items():
     mv = sum(v for _, v in pts) / n
     step = sum((k - mk) * (v - mv) for k, v in pts) / sum((k - mk) ** 2 for k, _ in pts)
     worst = max(abs(v - (mv + step * (k - mk))) for k, v in pts)
-    gaps = [(r[-1][0] - r[1][0]) / (len(r) - 2) for r in rises if len(r) > 2]
+    gaps = [(r[-1][0] - r[1][0]) / (len(r) - 2) for r in rises if len(r) > 2] or [float('nan')]
     print('%s Scale%s: %d rises, %d distinct values (%s ... %s)' % (
         name, 'XY'[axis], len(rises), len(vals), ', '.join('%g' % v for v in vals[:4]), ', '.join('%g' % v for v in vals[-2:])))
     print('  +%.4f a step, within %.4f of a straight line: 0 to 1 in %.1f steps, %.0f ms at %.3f ms a step%s' % (

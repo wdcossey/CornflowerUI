@@ -5,8 +5,12 @@ Usage: python -I knob.py <run folder> [--gray <file>]
 The motion probe first sets a ToggleSwitch On and Off from code, ten times each. The knob's left edge is read in
 every frame of the first 30 s (motionlib.knob_edges). Off and On at rest are the commonest positions on each side of
 the middle; the travel is their difference. Each position the knob passes through going On is a distance short of
-On; the distinct ones over 0.02 px, largest first, as fractions of the travel, are one per 15.625 ms tick. Fitted
-to them: KeySplines and ease-outs over a duration, the first value a phase into it (motionlib.fit_fraction).
+On; the distinct ones over 0.02 px, largest first, as fractions of the travel, are taken as one per 15.625 ms tick.
+Fitted to them: KeySplines and ease-outs over a duration, the first value a phase into it (motionlib.fit_fraction).
+Then a check that no tick is missing: on the best curve, each position over 1% of the travel should land about one
+tick after the one before (motionlib.ticks_on_curve); a warning if one lands more than 1.5 ticks after. (The ratio
+test turnstile.py and slide.py use, motionlib.tick_numbers, assumes an exponential: on this curve's tail, where
+each step shrinks faster, it would put gaps where there are none.)
 """
 import math
 import os
@@ -16,18 +20,12 @@ from collections import Counter
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import motionlib as ml
 
-args = sys.argv[1:]
-gray = None
-if '--gray' in args:
-    i = args.index('--gray')
-    gray = args[i + 1]
-    del args[i:i + 2]
-if len(args) != 1:
-    raise SystemExit(__doc__)
-run = args[0]
-
-edges = ml.knob_edges(ml.Recording(run, gray))
+(run,), opts = ml.parse_args(__doc__, options=('--gray',))
+with ml.Recording(run, opts['--gray']) as rec:
+    edges = ml.knob_edges(rec)
 xs = [x for _, x in edges if x is not None]
+if not xs or max(xs) - min(xs) < 10:
+    raise SystemExit('the knob was not found moving in the first 30 s')
 lo, hi = min(xs), max(xs)
 mid = (lo + hi) / 2
 off = Counter(x for x in xs if x < mid).most_common(1)[0][0]
@@ -66,3 +64,12 @@ curves = {
 res = sorted((ml.fit_fraction(fracs, f) + (name,)) for name, f in curves.items())
 for rms, d, ph, name in res:
     print('  %-34s over %3d ms, the first value %.1f ticks in: rms %.4f of the travel (%.2f px)' % (name, d, ph, rms, rms * travel))
+
+# The fits take the positions as consecutive ticks. Check that on the best curve: each position over 1% of the
+# travel lands about a tick after the one before; a tick no run showed would land two.
+rms, d, ph, name = res[0]
+at = ml.ticks_on_curve(fracs, curves[name], d, ph)
+gaps = [b - a for a, b, v in zip(at, at[1:], fracs[1:]) if v >= 0.01]
+print('on the best curve, positions over 1%% of the travel are %.2f to %.2f ticks apart' % (min(gaps), max(gaps)))
+if max(gaps) > 1.5:
+    print('  warning: a gap of %.2f ticks: a tick no run showed, so the fits above are off' % max(gaps))

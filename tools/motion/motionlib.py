@@ -13,6 +13,7 @@ import glob
 import math
 import os
 import statistics
+import sys
 
 TICK = 15.625  # ms: the emulator animates on a 64 Hz clock
 VIEW_W = 450.0  # the reference profile's view width; the recording is 540 px wide, so 0.83 view px a pixel
@@ -38,8 +39,31 @@ def steps(run):
     return [(t, d) for t, w, d in probe(run) if w == 'step']
 
 
+def parse_args(doc, options=(), flags=(), nargs=(1, 1)):
+    """The script's arguments: options that take a value (None when not given), flags (False when not given), and the
+    positional arguments, between nargs[0] and nargs[1] of them. Exits with the script's docstring on anything else.
+    Returns (positional, {option or flag: value})."""
+    args, opts = sys.argv[1:], {}
+    for k in options:
+        opts[k] = None
+        if k in args:
+            i = args.index(k)
+            if i + 1 >= len(args):
+                raise SystemExit(doc)
+            opts[k] = args[i + 1]
+            del args[i:i + 2]
+    for k in flags:
+        opts[k] = k in args
+        if opts[k]:
+            args.remove(k)
+    if any(a.startswith('--') for a in args) or not nargs[0] <= len(args) <= nargs[1]:
+        raise SystemExit(doc)
+    return args, opts
+
+
 class Recording:
-    """A run's recording, as raw 8-bit gray frames (w x h bytes each, in the order of frames.csv)."""
+    """A run's recording, as raw 8-bit gray frames (w x h bytes each, in the order of frames.csv). A context manager:
+    `with Recording(run) as rec:` closes the file."""
 
     def __init__(self, run, gray=None, view_w=VIEW_W):
         self.run = run
@@ -67,9 +91,23 @@ class Recording:
         w, h = last.rsplit(',', 1)[1].split(' x ')
         return int(w), int(h)
 
+    def close(self):
+        self._f.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        self.close()
+
     def frame(self, i):
         self._f.seek(i * self.w * self.h)
         return self._f.read(self.w * self.h)
+
+    def row(self, i, y):
+        """Row y of frame i."""
+        self._f.seek(i * self.w * self.h + y * self.w)
+        return self._f.read(self.w)
 
     def frames(self, t0=-1e9, t1=1e9):
         """(index, time, frame) for every frame between t0 and t1 s."""
@@ -102,15 +140,20 @@ def cross(vals, thr, rev=False):
 # Frame measurements
 
 
-def outline(rec):
+def outline(rec, t0=-1e9, t1=1e9):
+    """outline_rows as a list."""
+    return list(outline_rows(rec, t0, t1))
+
+
+def outline_rows(rec, t0=-1e9, t1=1e9):
     """The pages probe's sheet (412 x 680 view px, 19 in and 60 down) in every frame: [XL, XR, HL, HR] in view px,
     XL and XR its edges on the middle row, HL and HR each edge's height, from two columns just inside it (3 and 13
     view px) extrapolated to the edge, where the gray level crosses half the sheet's. HL and HR are None when an edge
     leaves the frame ("clipped"); frames with nothing lit (level < 60) are left out. Values rounded to 0.001 px, as
-    written to measure.tsv on 2026-11-10. Returns (index, time, [XL, XR, HL, HR], level)."""
+    written to measure.tsv on 2026-11-10. Yields (index, time, [XL, XR, HL, HR], level) for each frame between t0
+    and t1 s."""
     w, h, s = rec.w, rec.h, rec.s
-    rows = []
-    for i, t, frame in rec.frames():
+    for i, t, frame in rec.frames(t0, t1):
         mid = frame[(h // 2) * w:(h // 2 + 1) * w]
         level = max(mid)
         if level < 60:
@@ -131,12 +174,11 @@ def outline(rec):
         o1, o2 = 3 / s, 13 / s
         l1, l2, r1, r2 = height(xl + o1), height(xl + o2), height(xr - o1), height(xr - o2)
         if None in (l1, l2, r1, r2) or xl <= 0.5 or xr >= w - 0.5:
-            rows.append((i, round(t, 3), [round(xl * s, 3), round(xr * s, 3), None, None], level))
+            yield i, round(t, 3), [round(xl * s, 3), round(xr * s, 3), None, None], level
             continue
         hl = (l1 + (l1 - l2) * o1 / (o2 - o1)) * s
         hr = (r1 + (r1 - r2) * o1 / (o2 - o1)) * s
-        rows.append((i, round(t, 3), [round(v, 3) for v in (xl * s, xr * s, hl, hr)], level))
-    return rows
+        yield i, round(t, 3), [round(v, 3) for v in (xl * s, xr * s, hl, hr)], level
 
 
 def bbox(frame, rec):
@@ -166,8 +208,7 @@ def knob_edges(rec, row=64.0, x0=330.0, x1=449.0, t1=30.0):
     for i, t in enumerate(rec.times):
         if t > t1:
             break
-        rec._f.seek(i * w * rec.h + y * w)
-        r = rec._f.read(w)
+        r = rec.row(i, y)
         x = None
         for k in range(a + 1, b):
             if r[k - 1] < 128 <= r[k]:
@@ -179,7 +220,7 @@ def knob_edges(rec, row=64.0, x0=330.0, x1=449.0, t1=30.0):
 
 def knob_lag(edges, run):
     """Recording time - app time, from the knob: each `toggle` step of the probe against the first frame that the
-    knob jumped (over 0.5 px, at least 0.6 s after the last jump). Returns (median, the lags)."""
+    knob jumped (over 0.5 px, at least 0.6 s after the last jump), paired by match_steps. Returns (median, the lags)."""
     moves, prev = [], None
     for t, x in edges:
         if x is None:
@@ -189,24 +230,62 @@ def knob_lag(edges, run):
             moves.append(t)
         prev = x
     toggles = [t / 1000 for t, d in steps(run) if d.startswith('toggle')]
-    lags = [m - t for t, m in zip(toggles, moves)]
-    return median(lags), lags
+    lag, pairs, lags = match_steps(moves, toggles, what='ToggleSwitch steps')
+    return lag, lags
 
 
-def segments(rows, tol=0.4):
-    """Runs of consecutive outline rows that differ from the first row (rest) by more than tol px, or are clipped."""
-    rest = rows[0][2]
-    segs, cur = [], []
+def segments(rows, tol=0.4, limit=None):
+    """Runs of consecutive outline rows that differ from rest by more than tol px, or are clipped. Rest is the first
+    row, which must be unclipped (the sheet still, before the probe's first step). rows may be a generator; with a
+    limit, it is read only until that many runs have ended."""
+    segs, cur, rest = [], [], None
     for r in rows:
         m = r[2]
+        if rest is None:
+            if m[2] is None:
+                raise SystemExit('the first frame with the sheet in it (%d, %.3f s) is clipped, so it is not at rest' % (r[0], r[1]))
+            rest = m
         if m[2] is None or any(abs(a - b) > tol for a, b in zip(m, rest) if a is not None):
             cur.append(r)
         elif cur:
             segs.append(cur)
             cur = []
+            if limit is not None and len(segs) >= limit:
+                return segs
+    if rest is None:
+        raise SystemExit('no frame shows the sheet')
     if cur:
         segs.append(cur)
     return segs
+
+
+def match_steps(starts, times, tol=0.15, what='steps'):
+    """Pairs each of the probe's steps (app time, s) with the run of moving frames that starts a fixed lag after it
+    (recording time, s): the lag that pairs the most steps with a start within tol, then each step with the start
+    nearest its time + the median lag. Exits, naming them, if a step has no start or two steps share one. Starts left
+    over (other transitions) are left out. Returns (lag, for each step the index of its start, the lags)."""
+    best = None
+    for s0 in starts:
+        for t0 in times:
+            lag = s0 - t0
+            devs = [min(abs(s - t - lag) for s in starts) for t in times]
+            score = (sum(1 for d in devs if d <= tol), -sum(d for d in devs if d <= tol))
+            if best is None or score > best[0]:
+                best = (score, lag)
+    lag = best[1]
+    for _ in range(2):
+        pairs = [min(range(len(starts)), key=lambda j: abs(starts[j] - t - lag)) for t in times]
+        good = [k for k, (t, j) in enumerate(zip(times, pairs)) if abs(starts[j] - t - lag) <= tol]
+        if good:
+            lag = median([starts[pairs[k]] - times[k] for k in good])
+    lost = [k for k, (t, j) in enumerate(zip(times, pairs)) if abs(starts[j] - t - lag) > tol]
+    shared = sorted(set(j for j in pairs if pairs.count(j) > 1))
+    if lost or shared:
+        raise SystemExit('%s: with a lag of %.3f s, %s%s%s' % (
+            what, lag, 'no transition starts within %.2f s of step %s' % (tol, ', '.join(str(k) for k in lost)) if lost else '',
+            '; ' if lost and shared else '',
+            'the transitions starting at %s s each pair with two steps' % ', '.join('%.3f' % starts[j] for j in shared) if shared else ''))
+    return lag, pairs, [starts[j] - t for t, j in zip(times, pairs)]
 
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -243,7 +322,7 @@ def project_plane(theta, c, gz, d, cx, sgn=1):
 
 def fit_camera(held, d_range=range(300, 3001, 10), cx_range=range(150, 301, 5)):
     """The camera distance d and vanishing point cx that fit the held states ((theta, c, gz), [XL, XR, HL, HR]) best:
-    a grid, then 1 px and 0.25 px. Returns (rms px, d, cx, sign)."""
+    a grid, then 1 px and 0.25 px around the grid's best. Returns (rms px, d, cx, sign)."""
     def err(d, cx, sgn):
         se = 0.0
         for (theta, c, gz), m in held:
@@ -257,9 +336,10 @@ def fit_camera(held, d_range=range(300, 3001, 10), cx_range=range(150, 301, 5)):
                 e = err(d, cx, sgn)
                 if best is None or e < best[0]:
                     best = (e, d, cx, sgn)
-    e, d, cx, sgn = best
-    for dd in range(d - 10, d + 11):
-        for cc in [cx + i * 0.25 for i in range(-20, 21)]:
+    e, d0, cx0, sgn = best
+    d, cx = d0, cx0
+    for dd in range(d0 - 10, d0 + 11):
+        for cc in [cx0 + i * 0.25 for i in range(-20, 21)]:
             e2 = err(dd, cc, sgn)
             if e2 < e:
                 e, d, cx = e2, dd, cc
@@ -294,6 +374,8 @@ def axis_rms(segs, xa, za, d, cx):
             _, e, k = solve_angle(m, xa, za, d, cx)
             se += e
             n += k
+    if n == 0:
+        raise SystemExit('no unclipped frame to fit the axis to')
     return math.sqrt(se / n)
 
 
@@ -368,8 +450,7 @@ def distinct(vals, decimals=1, tol=0.25, min_abs=0.0):
 def tick_numbers(vals):
     """Each distinct value's tick: consecutive, unless the ratio to the one before is near a power of the median
     ratio, which means a step no run showed. Returns (median ratio, ticks)."""
-    ratios = sorted(vals[i + 1] / vals[i] for i in range(len(vals) - 1))
-    r0 = ratios[len(ratios) // 2]
+    r0 = median([vals[i + 1] / vals[i] for i in range(len(vals) - 1)])
     n = [0]
     for i in range(1, len(vals)):
         q = vals[i] / vals[i - 1]
@@ -413,20 +494,51 @@ def fit_scaled(vals, ticks, f, durations=range(200, 801, 5), phases=[i / 5 for i
     return math.sqrt(se / len(vals)), d, ph, A
 
 
-def fit_fraction(fracs, f, durations=range(200, 701, 5), phases=[i / 5 for i in range(30)]):
-    """The remaining fraction 1 - f((phase + k) TICK / duration) at consecutive ticks k, for the duration and phase on
-    their grids. Returns (rms, duration ms, phase ticks)."""
+def fit_fraction(fracs, f, durations=range(200, 701, 5), phases=[i / 5 for i in range(30)], ticks=None):
+    """The remaining fraction 1 - f((phase + k) TICK / duration) at ticks k (consecutive unless given), for the
+    duration and phase on their grids. Returns (rms, duration ms, phase ticks)."""
+    ticks = list(range(len(fracs))) if ticks is None else ticks
     best = None
     for d in durations:
         for ph in phases:
             se = 0.0
-            for k, v in enumerate(fracs):
+            for k, v in zip(ticks, fracs):
                 u = (ph + k) * TICK / d
                 se += ((0.0 if u >= 1 else 1 - f(u)) - v) ** 2
             if best is None or se < best[0]:
                 best = (se, d, ph)
     se, d, ph = best
     return math.sqrt(se / len(fracs)), d, ph
+
+
+def ticks_on_curve(fracs, f, duration, phase):
+    """Where each remaining fraction falls on a fitted curve, in ticks from the first value: f inverted by bisection,
+    1 - f(u) = v, u = (phase + tick) TICK / duration. A value one tick after another lands about one tick later; a tick
+    no run showed, two."""
+    out = []
+    for v in fracs:
+        lo, hi = 0.0, 1.0
+        for _ in range(60):
+            mid = (lo + hi) / 2
+            if 1 - f(mid) > v:
+                lo = mid
+            else:
+                hi = mid
+        out.append((lo + hi) / 2 * duration / TICK - phase)
+    return out
+
+
+def print_fits(vals, ticks, curves=(), unit=''):
+    """Prints the exponential fits to distinct values on their ticks, pure and eased (fit_exponential), then each
+    (name, f) of curves with a free start (fit_scaled)."""
+    for eased in (False, True):
+        rms, r, N, A, tau, k = fit_exponential(vals, ticks, eased)
+        print('  %-6s from %8.3f, x%.4f a tick (time constant %.1f ms)%s, rms %.3f%s' % (
+            'eased' if eased else 'pure', A, r, tau,
+            '' if N is None else ', ending at tick %d (%.0f ms), exponent %.2f' % (N, N * TICK, k), rms, unit))
+    for name, f in curves:
+        rms, d, ph, A = fit_scaled(vals, ticks, f)
+        print('  %s: from %.2f over %d ms, the first value %.1f ticks in, rms %.3f%s' % (name, A, d, ph, rms, unit))
 
 
 def median(vals):

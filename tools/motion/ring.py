@@ -15,9 +15,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import motionlib as ml
 
-if len(sys.argv) != 2:
-    raise SystemExit(__doc__)
-run = sys.argv[1]
+(run,), _ = ml.parse_args(__doc__)
 rings, events = {}, {}
 dot = re.compile(r'^(\w+)/0/1/(\d+)/0 Ellipse#\w+ \| (opacity 0|rest)$')
 for t, what, d in ml.probe(run):
@@ -34,7 +32,10 @@ for t, what, d in ml.probe(run):
 for name, (w, h) in rings.items():
     dots = events.get(name, {})
     hides = {k: [t for t, shown in ev if not shown and t > 0] for k, ev in dots.items()}
-    first = hides[0]
+    first = hides.get(0, [])
+    if len(first) < 2:
+        print('%s: %g x %g view px, %d dots; the first dot hides fewer than twice, so no cycle' % (name, w, h, len(dots)))
+        continue
     cycle = (first[-1] - first[0]) / (len(first) - 1)
     # The dots one after another, within each cycle of the first dot.
     gaps, cycles = [], []
@@ -53,6 +54,7 @@ for name, (w, h) in rings.items():
                 into.append(t - shown)
                 shown = None
     print('%s: %g x %g view px, %d dots; the cycle %.3f s (%d cycles); a dot hides %.3f s after it shows (median of %d)'
-          % (name, w, h, len(dots), cycle / 1000, len(first) - 1, ml.median(into) / 1000, len(into)))
-    print('  the dots hide %.0f to %.0f ms apart (median %.0f); in the first cycle %s ms' % (
-        min(gaps), max(gaps), ml.median(gaps), ', '.join('%.0f' % g for g in cycles[0])))
+          % (name, w, h, len(dots), cycle / 1000, len(first) - 1, ml.median(into) / 1000 if into else float('nan'), len(into)))
+    if gaps:
+        print('  the dots hide %.0f to %.0f ms apart (median %.0f); in the first cycle %s ms' % (
+            min(gaps), max(gaps), ml.median(gaps), ', '.join('%.0f' % g for g in cycles[0])))

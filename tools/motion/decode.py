@@ -11,16 +11,11 @@ import shutil
 import subprocess
 import sys
 
-args = sys.argv[1:]
-ffmpeg = 'ffmpeg'
-if '--ffmpeg' in args:
-    i = args.index('--ffmpeg')
-    ffmpeg = args[i + 1]
-    del args[i:i + 2]
-if len(args) != 1:
-    raise SystemExit(__doc__)
-run = args[0]
-exe = shutil.which(ffmpeg)
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import motionlib as ml
+
+(run,), opts = ml.parse_args(__doc__, options=('--ffmpeg',))
+exe = shutil.which(opts['--ffmpeg'] or 'ffmpeg')
 if exe is None:
     raise SystemExit('ffmpeg not found; give it with --ffmpeg')
 out_dir = os.path.join(run, 'analysis')
