@@ -22,6 +22,7 @@ powershell -ExecutionPolicy Bypass -File tools\refapp\run.ps1 -Only 'CheckBox|Ra
 powershell -ExecutionPolicy Bypass -File tools\refapp\run.ps1 -Popups only -Grab               # the popups, with a screenshot of each, in about 4 minutes
 powershell -ExecutionPolicy Bypass -File tools\refapp\run.ps1 -Demo                            # the demo page, left open in the emulator
 powershell -ExecutionPolicy Bypass -File tools\refapp\run.ps1 -Probe tilt                        # one probe, with real touches (see Probes)
+powershell -ExecutionPolicy Bypass -File tools\refapp\run.ps1 -Probe pages -Record               # a probe, with a recording of the screen (see Motion)
 ```
 
 Results go to `R:\cornflower-reference\refapp\<yyyyMMdd-HHmm>-dev<n>\`: one PNG and one JSON per
@@ -86,8 +87,8 @@ the signed-in desktop. Run from an SSH session, `ISETool` starts a hidden second
 What a capture is and isn't:
 
 - It is what the template draws in that state, on a fresh instance. It is not the motion into
-  the state: `useTransitions` is false. The tilt and other theme animations come from screen
-  recordings with `ffmpeg`.
+  the state: `useTransitions` is false. The motion is read by the probes, and recorded with
+  `-Record` where the app can't read it ([Motion](#motion-2026-11-10-device-11-24)).
 - A state is forced, not reached by input. Where `stateApplied` is false, the template has no
   state of that name and the PNG shows the rest state.
 - **`RenderTargetBitmap` can't see popups on the phone,** so a popup's PNG comes from the screen (`-Grab`):
@@ -191,7 +192,8 @@ last touch has settled. `touch.log` says where each step landed on the VM's scre
 - **Moves arrive in bursts about 100 ms apart.** The emulator delivers the mouse's moves to the
   phone in batches, so a probe reads a position, not a speed. Press and release times are kept.
 
-Probes: `toggleswitch` (#25), `tilt` and `tiltgrid` (#22). Each frame's value is read on the UI thread in
+Probes: `toggleswitch` (#25), `tilt` and `tiltgrid` (#22), and for #24 `motion`, `pages`,
+`projections` and `ring` ([Motion](#motion-2026-11-10-device-11-24)). Each frame's value is read on the UI thread in
 `CompositionTarget.Rendering`. That reads the animated values of the theme animations too: the
 tilt's `PlaneProjection` moves every 15 ms in the log.
 
@@ -215,8 +217,15 @@ and those are what is quoted. In view pixels on the reference profile:
 - **After a tap**, `ToggleStates` goes `Dragging` > `Off` at once, and `Off` > `On` about 380 ms
   later. After a drag, `Dragging` > `On` or `Off` comes about 380 ms after the release. That is
   the knob's slide into place.
-- The probe hasn't been run on another profile, so whether the 18 px is in view pixels or a
-  physical distance is open.
+- **On the 720p profile** (device 10, 1.8 raw px per view px, `20261110-0733-dev10`, the same 32
+  touches) the limits are the same in view pixels: moved 17.76 taps and 18.85 doesn't (17.47 and
+  18.33 on the reference); held 984 ms taps and 1,018 doesn't; released at 27.19 goes back Off and
+  at 28.34 goes On; the slide still ends about 380 ms after the release. So the 18 px limit isn't
+  in raw pixels (32.0 to 33.9 raw here, 41.9 to 44.0 on the reference). In millimetres it is 2.60
+  to 2.76 here (a view pixel is 0.147 mm at 312 dpi) and 2.66 to 2.79 on the reference (0.152 mm,
+  about 400 dpi from its 5.5 inch diagonal): the two profiles' view pixels differ by 4%, which a
+  0.83 px step can't separate, so view pixels and a physical distance both fit. View pixels are
+  the simpler reading.
 
 ### Tilt: first readings (2026-11-09, device 11, for #22)
 
@@ -237,10 +246,11 @@ px down. The template root's `PlaneProjection`, read every frame:
 | bottom right, 288.3, 108.3 | 6.71 | −8.28 | −3.19 |
 
 `CenterOfRotation` is 0.5, 0.5, 0 throughout, and the root also gets a `CompositeTransform`
-translating 112 down with a `GlobalOffsetY` of −112 against it. The press reaches its values in
-about 45 ms (three frames). On release nothing moves for about 180 ms, then the tilt eases back
-to rest by about 345 ms. Dragged after the press, the tilt follows the finger. These are readings,
-not yet the model: #22 fits them (next section).
+translating 112 down with a `GlobalOffsetY` of −112 against it. The press seemed to reach its
+values in about 45 ms (three frames); the grid run below reads it closer, as a jump (see its
+Timing). On release nothing moves for about 180 ms, then the tilt eases back to rest by about
+345 ms. Dragged after the press, the tilt follows the finger. These are readings, not yet the
+model: #22 fits them (next section).
 
 ### Tilt: the model (2026-11-09, device 11, for #22)
 
@@ -252,12 +262,12 @@ centre as a fraction of its width and height (−0.5 to 0.5):
 
 | Value | Rule | Fit |
 |---|---|---|
-| `RotationY` | −g(`dx`): a press left of centre tilts positive | over the four sizes, rms 0.05° |
+| `RotationY` | −g(`dx`): a press left of centre tilts positive | over the four sizes, rms 0.08° once each button's offset (the bias below) is taken out; against the raw readings rms 0.38°, worst 1.26° (button A) |
 | `RotationX` | g(`dy`): a press above centre tilts negative | |
 | g(d) | 17.19° × d × (1 + 0.08 \|d\|); 17.19° is 0.3 rad | |
-| `GlobalOffsetZ` | −25 × (1 − (\|`RotationX`\| + \|`RotationY`\|) / 17.19°) | worst residual 0.016 over 100 presses |
+| `GlobalOffsetZ` | −25 × (1 − (\|`RotationX`\| + \|`RotationY`\|) / 17.19°), in view px | from the angles read: worst residual 0.002 px over 100 presses, with 17.19° as 0.3 rad exactly |
 | `CenterOfRotation` | 0.5, 0.5, 0 | always |
-| `RenderTransform` | a `CompositeTransform` translating by 0.8 × (the screen's centre − the button's centre), with `GlobalOffsetX` and `GlobalOffsetY` the opposite | exact for all four buttons and the first run's |
+| `RenderTransform` | a `CompositeTransform` translating by 0.8 × (the screen's centre − the button's centre), with `GlobalOffsetX` and `GlobalOffsetY` the opposite | exact for all four buttons and the first run's, and on the 720p profile (`20261110-0738-dev10`, `-Probe tilt`: translate −20, 76.44) |
 
 - **Size doesn't matter.** The angles depend on the fractions `dx` and `dy`, not on pixels: a
   press 25% from the centre gives 4.33° to 4.45° on all four buttons. Each axis is independent:
@@ -277,13 +287,133 @@ centre as a fraction of its width and height (−0.5 to 0.5):
   | C (225, 400), at the screen's centre | 0.00° | 0.00° |
   | D (119, 570), below and left | +0.28° | +0.18° |
 
-  It is under 1° everywhere measured, and goes with the perspective translation above. Not yet
-  modelled.
+  It is under 1° everywhere measured, and goes with the perspective translation above. #65 models
+  it (an eye 1,055 view px away, placed 0.8 of the way from the control's centre to the screen's);
+  a test of the rule above alone needs a tolerance of about 1.3° away from the screen's centre, or
+  the bias taken out.
 - **Timing.** The press is a jump: the first frame after the press already shows 96% to 100% of
   the held values (99% on average, at 30 to 40 ms, the first frame the emulator draws). On release
   the values hold for about 180 ms, then ease back to rest over about 195 ms: a sine ease-out fits
   1,199 frames with an rms of 0.03 of the full value (quadratic 0.036, linear 0.037, cubic 0.059).
   Every press was within 1% of rest by 335 to 372 ms.
+- **A tap at the very edge clicks** (`-Probe tiltedge`, `20261110-0822-dev11`): a Button 300 × 120,
+  tapped for 150 ms at the middle of each edge, 0.84, 1.7 and 3.35 view px inside it (the nearest the
+  cursor gets to 1, 2 and 3), three times each: all 36 taps clicked. The tilt sinks the edge away
+  from the finger, but the phone still counts the press as on the button.
+- **On the 720p profile** (`20261110-0851-dev10`, `-Probe tiltgrid`, C narrowed to 362 to fit the
+  400 wide view; 100 presses, no errors): the same rule fits within 0.08° once each button's offset
+  is taken out (0.33° raw, worst 1.04°), the depth within 0.002 px. The offsets are the bias again,
+  for the buttons' places on a smaller screen (A −0.72° on `RotationX`, D +0.35°): #65 can check
+  whether its eye distance scales with the screen.
+
+## Motion (2026-11-10, device 11, #24)
+
+How the theme moves: the ToggleSwitch's slide, the flyouts and pickers opening and closing, the
+page transitions and the ProgressRing. Two ways of reading it:
+
+- **In the app, every frame** (`-Probe motion`, `ring`): the probes watch a control's tree, and every
+  open popup's, from `CompositionTarget.Rendering`, logging each element's opacity, render
+  transform, projection and clip whenever they change. This reads a template's own storyboards (the
+  MenuFlyout's, the ProgressRing's), as it read the tilt.
+  Each popup is labelled `popup<n>` in the order it was first seen, so it keeps its label when
+  another closes (each opening is a new popup, so the numbers climb through a run). A tree over 400
+  elements is read up to the cut, and its readings past the cut carry over rather than read as rest;
+  the log says so once for each tree.
+- **On the screen** (`-Record`): the theme *transitions* (`PopupThemeTransition`,
+  `NavigationThemeTransition`, the ToggleSwitch's `RepositionThemeAnimation`) run in the compositor
+  and change nothing the app can read: their trees stay at rest every frame. `-Record` has
+  `vm\session.ps1` record the emulator's display with `ffmpeg gdigrab` (lossless, each frame at the
+  time it was grabbed), from before the probe's one tap, which starts its sequence, until it is done.
+  It grabs about 40 frames a second (25 ms apart, ±10 ms), at 0.83 view px a pixel. The frames were
+  measured with throwaway scripts, outside the repo.
+
+**The emulator animates on a 64 Hz clock.** Every value moves in steps of 15.625 ms: the MenuFlyout's
+`ScaleX` goes up by 0.041 a frame, 380 ms in 24.3 steps. An animation shows the same values in every
+run, so the distinct values of many runs, in order, are its steps, one per 15.625 ms, at a finer
+timing than the recording's.
+
+**A PlaneProjection's camera** (`-Probe projections`, `20261110-0756-dev11`): a full-window panel given
+known projections (`RotationY` ±10°, ±30°, ±60° about `CenterOfRotationX` 0, 0.5 and −0.25, and
+`GlobalOffsetZ` ±100) fits a pinhole 999 view px in front of the screen, looking at the element's
+centre (224, 400), within 0.53 px over the 13 states that stay on the screen. A positive `RotationY`
+brings the right side nearer. The page transitions below are solved with it.
+
+### ToggleSwitch: the knob's slide
+
+The slide is the template's `RepositionThemeAnimation`: `KnobTranslateTransform.X` jumps to 56.5 at
+once, and `ToggleStates` reaches `On` or `Off` about 380 ms later, when the slide is over (all of
+#58's runs, and on the 720p profile). From the recording (`20261110-0819-dev11`, 20 slides, the
+switch set from code): the knob travels 56.56 view px, the same way in both directions, through the
+same positions every time. The 21 distinct positions, one per 15.625 ms step, fit the
+`KeySpline` 0.1,0.9 0.2,1 over 370 ms, the first frame one step in, within 0.001 of the travel
+(0.06 px); an exponential ease-out (k 6 to 8) fits ten times worse, the power ease-outs twenty.
+370 ms and a step or two is the 380 ms to the state change.
+
+### Flyouts, pickers and the dialog
+
+`20261110-0819-dev11` (`-Probe motion -Record`): each opened from code four times, held 1.2 s, and
+closed with `Hide()` (the ComboBoxes with `IsDropDownOpen`). The app's values show none of it, except
+the MenuFlyout's template. Times are from the first frame that changed until the screen is 50%, 90%
+and 99% of the way to its final look (mean absolute difference), the median of four runs, ±25 ms;
+"top to bottom" gives when the top and the bottom 100 px band are half done.
+
+| Popup | Opening | ms | Closing | ms |
+|---|---|---|---|---|
+| Flyout, top | swings down from its top edge (its bottom edge at 46, 55, 69, then 77 of 78 px) | 50 / 100 / 142 | gone in one frame, about 100 ms after `Hide()` | 0 |
+| Flyout, full | sweeps in top to bottom (74 to 208) | 141 / 208 / 208 | sweeps out top to bottom (117 to 275) | 200 / 291 / 334 |
+| MenuFlyout | the template's storyboard (below) | 483 / 516 / 516 | the menu goes in one frame; the full-window layer under it about 300 ms later | 0 / 0 / 317 |
+| ListPickerFlyout | the header, then each item, swing in one after another, then the background fills downwards (75 to 367) | 209 / 325 / 367 | top to bottom (100 to 375) | 242 / 375 / 425 |
+| DatePickerFlyout | the three columns and header (83 to 200); the last 1%, the app bar, by 400 | 117 / 200 / 400 | 117 to 325 | 150 / 242 / 358 |
+| TimePickerFlyout | as the date picker (100 to 183; 408) | 125 / 183 / 408 | 125 to 333 | 167 / 234 / 358 |
+| ComboBox, 6 items (the full-screen picker) | as the ListPickerFlyout (109 to 342) | 200 / 333 / 342 | top to bottom (116 to 408) | 291 / 408 / 458 |
+| ComboBox, 5 items (inline) | opens in one frame, about 140 ms after the call; in the app, the items' `TranslateY` eases from −8.5 to 0 over 4 frames | 142 / 142 / 208 | closes in one frame | 0 |
+| ContentDialog | about 200 ms | 34 / 192 / 209 | gone in one frame, about 125 ms after `Hide()` | 0 |
+
+**MenuFlyout, from the app's values** (`20261110-0745-dev11` and `-0753`): `OuterBorder`'s `ScaleX` goes
+0 to 1 linearly over 380 ms, origin (0.5, 0); then `InnerBorder`'s `ScaleY` 0 to 1 linearly over
+120 ms. That is the template's `TopPortrait` storyboard, run as written. Its close has no storyboard.
+
+### Page transitions
+
+`20261110-0748-dev11` and `20261110-0810-dev11` (`-Probe pages -Record`): a Frame with a
+`NavigationThemeTransition` (what the root frame has) navigates between two pages, a white and a blue
+sheet inset 19, 60. The second run did each transition eight times. The sheet's outline in each frame
+is solved for the page's rotation with the camera above.
+
+- **The default transition is the turnstile**, and `CommonNavigationTransitionInfo` is the same. Only
+  the page coming in moves: the page going out disappears at once. It turns about a vertical axis
+  44 px left of the page's left edge and 99 px behind the screen (a PlaneProjection with
+  `CenterOfRotationX` about −0.1 and `CenterOfRotationZ` −100): with that one axis, every frame of
+  nine forward turns fits within 0.24 px. Forward it comes in from a negative `RotationY` (the right
+  side away), back from a positive one (the right side nearer).
+- **Its angle falls by a factor of 0.803 every 15.625 ms step** (a time constant of 71 ms), both
+  ways: an exponential ease-out. Back, an `ExponentialEase` (exponent 6, ease-out) from +42.0° over
+  430 ms, starting on the first frame shown, fits the 16 distinct angles within 0.07°. Forward, the
+  first frame shown is at −67.0° (in 4 of 9 runs; else −53.8° or −43.1°), and an exponential
+  ease-out from there ending 391 ms later (exponent 5.5) fits the 19 distinct angles within 0.05°;
+  exponent 6 over 430 ms fits only with a start far off the screen. It is within 1° of rest after
+  about 300 ms.
+- **`SlideNavigationTransitionInfo`**: forward, the new page rises from below, first seen 200 px down;
+  its offset falls by 0.765 a step (58 ms): an `ExponentialEase` (exponent 6, ease-out) from 200 px
+  over 350 ms, starting on the first frame shown, fits the 16 distinct offsets within 0.05 px. Back, the page going out slides down, faster each step (×1.4 to 1.46, an ease-in)
+  for about 220 ms, to about 140 to 200 px, and then the page under it shows at once.
+- **`ContinuumNavigationTransitionInfo`**: forward, the old page fades out in two frames (about 60 ms),
+  the screen stays black for 60 to 100 ms, then the new page grows about the screen's centre from a
+  scale of 0.94 to 1 in about 280 ms. Back, the page going out slides down as in the slide's back,
+  then the page under it fades in: what is left of its opacity falls by about 0.84 a step, over
+  about 340 ms.
+
+### ProgressRing: Active
+
+The suite's forced `Active` state captures no dots: they show only while the storyboard runs. Read
+every frame instead (`20261110-0829-dev11`, `-Probe ring`, 6 s, with a recording): a ring at its
+default size, 57.5 view px, shows five dots, and one 120 px wide shows six. Each dot's `Canvas`
+rotates and its `Ellipse` hides and shows as the template's storyboard says, the dots 150 to 167 ms
+apart (the template's `BeginTime`s are 0.167 s apart). One cycle takes 4.13 s by the app's clock
+(nine cycles), and a dot hides 3.10 s into it. The template's keyframes give 4.31 s (the last dot's
+`BeginTime` and its 3.47 s) and 3.22 s: the same shape, 4% faster. Whether that is the emulator or
+the storyboard's clock is open; #28 should compare its own timing with the template's keyframes and
+with this log.
 
 ## The page's app bar (2026-11-09, device 11, #23)
 

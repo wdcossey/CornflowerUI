@@ -12,7 +12,8 @@ param(
     [switch]$Demo,
     [switch]$Grab,
     [switch]$Probe,
-    [ValidateSet('post', 'real')][string]$TouchMode = 'real'
+    [ValidateSet('post', 'real')][string]$TouchMode = 'real',
+    [switch]$Record
 )
 
 $ErrorActionPreference = 'Continue'
@@ -58,6 +59,26 @@ function Pull {
     & $ise ts "deviceindex:$Device" $ProductId $out 2>&1 | Add-Content -Path $log
 }
 
+# Stops ffmpeg (a 'q' on its input, then the kill if it hasn't gone in a minute) and lists the frames' times.
+$recorder = $null
+function Stop-Recorder {
+    if (-not $recorder) { return }
+    if (-not $recorder.HasExited) {
+        try { $recorder.StandardInput.Write('q'); $recorder.StandardInput.Close() } catch { }
+        if (-not $recorder.WaitForExit(60000)) { $recorder.Kill() }
+    }
+
+    if (Test-Path $video) {
+        & (Join-Path $links 'ffprobe.exe') -v error -select_streams v -show_entries frame=pts_time -of csv=p=0 $video | Set-Content (Join-Path $Root 'frames.csv') -Encoding ASCII
+        Add-Content -Path $log -Value "$(Get-Date -Format s) recorded $((Get-Item $video).Length) bytes, $((Get-Content (Join-Path $Root 'frames.csv')).Count) frames"
+    }
+    else {
+        Add-Content -Path $log -Value "$(Get-Date -Format s) ffmpeg wrote no recording"
+    }
+
+    $script:recorder = $null
+}
+
 if ($Probe) {
     # A probe that can't run (an unknown name, a template without the part) writes done.txt and no ready.txt.
     Status 'probing: waiting for the app to write ready.txt'
@@ -85,10 +106,38 @@ if ($Probe) {
         exit 1
     }
 
+    # -Record: ffmpeg's gdigrab records the emulator's display window from before the touches until done.txt, at the
+    # times the frames were grabbed (record.mkv, lossless), and ffprobe lists each frame's time (frames.csv).
+    if ($Record) {
+        $rect = & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $Root 'vm\touch.ps1') -Gestures none -Log (Join-Path $Root 'rect.log') -Title $name -RectOnly | Where-Object { $_ -match '^rect ' }
+        if (-not $rect) {
+            Status "failed: no display window to record for '$name'; see rect.log"
+            exit 1
+        }
+
+        $l, $t, $w, $h = ($rect -split ' ')[1..4]
+        $video = Join-Path $Root 'record.mkv'
+        Remove-Item $video, (Join-Path $Root 'frames.csv') -ErrorAction SilentlyContinue
+        $links = Join-Path $env:LOCALAPPDATA 'Microsoft\WinGet\Links'
+        $psi = New-Object Diagnostics.ProcessStartInfo (Join-Path $links 'ffmpeg.exe')
+        $psi.Arguments = "-hide_banner -nostats -loglevel error -f gdigrab -framerate 60 -draw_mouse 0 -offset_x $l -offset_y $t -video_size ${w}x${h} -i desktop -c:v libx264 -preset ultrafast -qp 0 -pix_fmt yuv444p -fps_mode passthrough -y `"$video`""
+        $psi.UseShellExecute = $false
+        $psi.RedirectStandardInput = $true
+        try { $recorder = [Diagnostics.Process]::Start($psi) } catch { $recorder = $null; Add-Content -Path $log -Value "$(Get-Date -Format s) ffmpeg: $_" }
+        Start-Sleep -Seconds 2
+        if (-not $recorder -or $recorder.HasExited) {
+            Status "failed: ffmpeg didn't start recording $rect; see session.log"
+            exit 1
+        }
+
+        Add-Content -Path $log -Value "$(Get-Date -Format s) recording $rect, pid $($recorder.Id)"
+    }
+
     Status "probing: playing the touches on '$name'"
     & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $Root 'vm\touch.ps1') -Gestures (Join-Path $in 'IsolatedStore\gestures.txt') -Log (Join-Path $Root 'touch.log') -Title $name -Mode $TouchMode
     if ($LASTEXITCODE -ne 0) {
         $code = $LASTEXITCODE
+        Stop-Recorder
         Pull
         Status "failed: touch.ps1 exit $code; see touch.log; partial results pulled"
         exit 1
@@ -110,8 +159,10 @@ $done = $false
 $stalled = $false
 $lastPngs = -1
 $lastChange = Get-Date
+# Every 20 s, or every 5 s while recording, so that ffmpeg stops soon after the probe is done.
+$poll = if ($recorder) { 5 } else { 20 }
 while ((Get-Date) -lt $deadline) {
-    Start-Sleep -Seconds 20
+    Start-Sleep -Seconds $poll
     $listing = (& $ise dir "deviceindex:$Device" $ProductId 2>&1) -join "`n"
     if ($listing -match 'done\.txt') {
         $done = $true
@@ -129,6 +180,8 @@ if ($grabber) {
     Set-Content -Path $stopGrab -Value stop
     $grabber.WaitForExit(30000) | Out-Null
 }
+
+Stop-Recorder
 
 Status "pulling the app's local folder"
 Pull

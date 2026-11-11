@@ -1,0 +1,11 @@
+{
+  "version": "1.71.0",
+  "icons": {
+    "url": "https://github.com/lucide-icons/lucide/releases/download/1.71.0/lucide-icons-1.71.0.zip",
+    "sha256": "9877bc7408ebb71ba20537c5430cbcfdf58a3ff1a7954ca4c9178ce6fcfb1718"
+  },
+  "licence": {
+    "url": "https://raw.githubusercontent.com/lucide-icons/lucide/1.71.0/LICENSE",
+    "sha256": "b495047bd93a9b06913511076f504daba17d5bbeb3e0650f3bb53a4220329c57"
+  }
+}
