@@ -30,8 +30,7 @@ contradicted "faithful" and were never revisited
 
    **Amended 2026-11-08.** This item first named the WVGA profile (device 8), on the assumption
    that it ran at a scale of 1.0 and so would compare pixel for pixel with our frames. That was
-   never read (it runs at 1.2: the amendment of 2026-11-11, below), and the maintainer chose 1080p
-   instead. The reference app then read three profiles:
+   never read, and the maintainer chose 1080p instead. The reference app then read three profiles:
 
    | Device | Profile | `RawPixelsPerViewPixel` | View | `ResolutionScale` |
    |---|---|---|---|---|
@@ -39,8 +38,7 @@ contradicted "faithful" and were never revisited
    | **11** | **U1 1080P 5.5"** | **2.4** | **450 × 800** | 180 |
    | 12 | U1 1080P 6" | 2.2 | 490.91 × 872.73 | 180 |
 
-   - **`ResolutionScale` reports 180 on all three** (not on every profile: 140 on the three at
-     1.2, below), so it isn't the scale. The scale is
+   - **`ResolutionScale` reports 180 on every profile** (corrected 2026-11-11, below), so it isn't the scale. The scale is
      `RawPixelsPerViewPixel`, and the capture PNGs agree with it: a 100-pixel-tall stage is 180,
      240 and 220 pixels tall.
    - **Phones don't all lay out about 400 view pixels wide**, as was assumed: the 1080p profiles
@@ -72,8 +70,8 @@ contradicted "faithful" and were never revisited
    - **WVGA runs at 1.2, not 1.0**: its 480 × 800 pixels are a 400 × 666.67 view. So the first
      choice, WVGA, wouldn't have compared pixel for pixel with our frames either. qHD runs at 1.2
      too: its 540 × 960 pixels are the reference's 450 × 800 view.
-   - **`ResolutionScale` is 140 on the three profiles at 1.2** (WVGA and qHD), and 180 on the
-     rest. It still isn't the scale; `RawPixelsPerViewPixel` is.
+   - **`ResolutionScale` is 140 on the three profiles at 1.2** (devices 7 and 8, WVGA, and 13,
+     qHD), and 180 on the rest. It still isn't the scale; `RawPixelsPerViewPixel` is.
 
    The reference stays device 11.
 
