@@ -1,0 +1,12 @@
+<Page
+    x:Class="RefApp.ProbePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Background="Black">
+    <!-- The two pages of the page-transition probe (Probe.Motion.cs, Pages): A white, B the accent blue. -->
+    <Grid>
+        <Border x:Name="Sheet" Margin="19,60,19,60">
+            <TextBlock x:Name="Label" FontSize="40" Margin="19" Foreground="Black" />
+        </Border>
+    </Grid>
+</Page>

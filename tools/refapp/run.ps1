@@ -24,7 +24,11 @@
   open in the emulator, for screenshots by hand. It captures nothing.
   -Probe <name> runs one of the app's probes (app\Probe.cs) instead of the suite: the app lays a control out and
   writes the touches it wants, vm\touch.ps1 plays them on the emulator's display with the mouse, and the app's
-  log of what the control did comes back as probe.txt, beside touch.log. Probes: toggleswitch, tilt, tiltgrid.
+  log of what the control did comes back as probe.txt, beside touch.log. Probes: toggleswitch, tilt, tiltgrid, motion,
+  pages, projections, ring.
+  -Record (with -Probe) records the emulator's display with ffmpeg gdigrab from just before the touches until the
+  probe is done, lossless, and brings back record.mkv and frames.csv, each frame's time in seconds. Probes motion,
+  pages, projections and ring start their sequence on one tap, so the recording and the log start together.
   -TouchMode real (the default) moves the VM's real cursor, which needs the emulator in front and the VM's
   mouse left alone; post posts the mouse messages to the emulator's display window, which the emulator
   ignored when tried (2026-11-09).
@@ -43,12 +47,14 @@ param(
     [switch]$Grab,
     [string]$Probe = '',
     [ValidateSet('post', 'real')][string]$TouchMode = 'real',
+    [switch]$Record,
     [string]$HostAlias = 'cornflower-ref',
     [string]$Out = 'R:\cornflower-reference\refapp',
     [int]$TimeoutMinutes = 40
 )
 
 $ErrorActionPreference = 'Stop'
+if ($Record -and -not $Probe) { throw '-Record goes with -Probe' }
 $here = $PSScriptRoot
 $remote = 'C:\cornflower\refapp'
 $task = 'cornflower-refapp'
@@ -107,7 +113,7 @@ if (-not ($build -match '^built ')) {
 $build | Select-Object -Last 3 | ForEach-Object { Write-Host "  $_" }
 
 Write-Host "3/5 starting the session task for device $Device"
-$taskArgs = "-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File $remote\vm\session.ps1 -Device $Device -ProductId $productId -Root $remote -TimeoutMinutes $TimeoutMinutes$(if ($Demo) { ' -Demo' })$(if ($Grab) { ' -Grab' })$(if ($Probe) { " -Probe -TouchMode $TouchMode" })"
+$taskArgs = "-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File $remote\vm\session.ps1 -Device $Device -ProductId $productId -Root $remote -TimeoutMinutes $TimeoutMinutes$(if ($Demo) { ' -Demo' })$(if ($Grab) { ' -Grab' })$(if ($Probe) { " -Probe -TouchMode $TouchMode" })$(if ($Record) { ' -Record' })"
 Remote @"
 `$a = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument '$taskArgs'
 `$p = New-ScheduledTaskPrincipal -UserId `$env:USERNAME -LogonType Interactive -RunLevel Highest
@@ -141,6 +147,11 @@ if ($status -notmatch '^done') {
         Copy-Scp @("${HostAlias}:C:/cornflower/refapp/out", "${HostAlias}:C:/cornflower/refapp/session.log", $partial)
         if ($Probe) {
             try { Copy-Scp @("${HostAlias}:C:/cornflower/refapp/touch.log", $partial) } catch { Write-Host '  no touch.log' }
+            if ($Record) {
+                foreach ($file in 'record.mkv', 'frames.csv', 'rect.log') {
+                    try { Copy-Scp @("${HostAlias}:C:/cornflower/refapp/$file", $partial) } catch { Write-Host "  no $file" }
+                }
+            }
         }
         Write-Host "  partial results in $partial"
     }
@@ -160,6 +171,16 @@ Remove-Item (Join-Path $dest 'out') -Recurse -Force
 
 if ($Probe) {
     Copy-Scp @("${HostAlias}:C:/cornflower/refapp/touch.log", $dest)
+    if ($Record) {
+        # ffmpeg can die after its start check; the probe's own results are still good, so say so rather than fail.
+        foreach ($file in 'record.mkv', 'frames.csv', 'rect.log') {
+            try { Copy-Scp @("${HostAlias}:C:/cornflower/refapp/$file", $dest) } catch { Write-Host "  no $file (see session.log)" }
+        }
+        $frames = Join-Path $dest 'frames.csv'
+        if (Test-Path $frames) { Write-Host "  recording in $(Join-Path $dest 'record.mkv'), $((Get-Content $frames).Count) frames" }
+        else { Write-Host '  WARNING: no recording came back' }
+    }
+
     Write-Host "  probe $Probe`: $(Get-Content (Join-Path $dest 'done.txt'))"
     Write-Host "  log in $(Join-Path $dest 'probe.txt')"
     return
