@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="using:Cornflower.Sample"
              x:Class="Cornflower.Sample.MainView"
              Background="{DynamicResource ApplicationPageBackgroundThemeBrush}"
              Foreground="{DynamicResource PhoneForegroundBrush}"
@@ -22,11 +23,7 @@
 
   <ScrollViewer>
     <StackPanel Margin="19,12,19,24" Spacing="6">
-      <TextBlock Text="CORNFLOWER" FontFamily="{DynamicResource PhoneFontFamilySemiBold}"
-                 FontSize="{DynamicResource TextStyleMediumFontSize}" />
-      <TextBlock x:Name="PageTitle" Margin="-2,0,0,12"
-                 FontFamily="{DynamicResource PhoneFontFamilySemiLight}"
-                 FontSize="{DynamicResource PivotHeaderItemFontSize}" />
+      <local:SamplePageHeader x:Name="Header" />
 
       <TextBlock Text="accent" Classes="section" />
       <StackPanel Orientation="Horizontal" Spacing="12">

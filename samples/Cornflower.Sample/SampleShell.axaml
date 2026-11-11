@@ -7,10 +7,41 @@
              FontSize="{DynamicResource TextStyleLargeFontSize}">
   <!--
     The catalogue: a list of the pages marked [SamplePage], one per control, and Back. MainWindow
-    holds it on desktop, and App shows it on a phone, without the rail. The list's buttons and Back are
-    SimpleTheme's until Button is themed. Back is also Avalonia's own back request (Alt+Left on desktop,
-    the back button or gesture on a phone).
+    holds it on desktop, and App shows it on a phone, without the rail. The list's buttons are the phone's
+    Button, stretched across the list. Back is the sample's chrome, not the phone's, so it has a theme of its
+    own, RailButton. Back is also Avalonia's own back request (Alt+Left on desktop, the back button or
+    gesture on a phone).
   -->
+  <UserControl.Resources>
+    <!-- Back's theme: an icon on the rail, with none of the phone Button's minimum size, overhang, accent or tilt.
+         The pointer over it shows PhoneLowBrush behind it, the phone's pointer-over brush for its own chrome
+         (ButtonPointerOverBackgroundThemeBrush's colour); a press dims it. -->
+    <ControlTheme x:Key="RailButton" TargetType="Button">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="Template">
+        <ControlTemplate>
+          <ContentPresenter x:Name="PART_ContentPresenter"
+                            Background="{TemplateBinding Background}"
+                            Padding="{TemplateBinding Padding}"
+                            HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                            VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                            Content="{TemplateBinding Content}"
+                            ContentTemplate="{TemplateBinding ContentTemplate}" />
+        </ControlTemplate>
+      </Setter>
+      <!-- No focus rectangle: the theme under Wp81 would draw its own, and the phone draws none. -->
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+      <Style Selector="^:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource PhoneLowBrush}" />
+      </Style>
+      <Style Selector="^:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Opacity" Value="0.6" />
+      </Style>
+    </ControlTheme>
+  </UserControl.Resources>
   <!--
     Back sits in a rail of its own to the right of the page, as the phone's navigation bar does in landscape,
     so that a page has the whole view, 450 x 800 in the reference profile, with nothing drawn over it.
@@ -33,10 +64,9 @@
     <!-- On a phone (HasBackRail off) the rail is collapsed: the platform's back request is Back there. -->
     <Border x:Name="Rail" Grid.Column="1" Width="40" Background="#FF000000">
       <DockPanel>
-        <Button x:Name="BackButton" DockPanel.Dock="Bottom" IsVisible="False" Click="OnBack"
-                AutomationProperties.Name="Back" Width="40" Height="40" Padding="0"
-                HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,12"
-                Background="Transparent" BorderThickness="0">
+        <Button x:Name="BackButton" Theme="{StaticResource RailButton}" DockPanel.Dock="Bottom" IsVisible="False" Click="OnBack"
+                AutomationProperties.Name="Back" Width="40" Height="40"
+                HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,12">
           <Path Data="M 15,4 L 7,12 L 15,20 M 7,12 L 21,12" Stroke="#FFFFFFFF" StrokeThickness="2"
                 StrokeLineCap="Round" StrokeJoin="Round" Width="24" Height="24" />
         </Button>

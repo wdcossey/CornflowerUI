@@ -39,7 +39,6 @@ public partial class MainView : UserControl
     public MainView()
     {
         AvaloniaXamlLoader.Load(this);
-        this.GetControl<TextBlock>("PageTitle").Text = SamplePageCatalog.TitleOf(GetType());
 
         var accents = this.GetControl<WrapPanel>("NamedAccents");
         foreach (var name in NamedAccentNames)
