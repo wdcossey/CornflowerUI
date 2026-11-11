@@ -122,8 +122,6 @@ public class TextBlockTests
             .MaxBy(g => Math.Abs(g - Background));
     }
 
-    private static Thickness Padding(TextBlock block) => block.Padding;
-
     /// <summary>The text's height before layout rounds it to the pixel grid.</summary>
     private static double Unrounded(TextBlock block) => block.Padding.Top + block.TextLayout.Height + block.Padding.Bottom;
 
@@ -323,7 +321,7 @@ public class TextBlockTests
         specimen.Block.FontSize = 30;
         Dispatcher.UIThread.RunJobs();
 
-        Assert.Equal(new Thickness(3), Padding(specimen.Block));
+        Assert.Equal(new Thickness(3), specimen.Block.Padding);
         Assert.Equal(1, specimen.Block.LetterSpacing);
 
         specimen.Block.ClearValue(TextBlock.PaddingProperty);
@@ -350,14 +348,14 @@ public class TextBlockTests
         spaced.Block.Classes.Add("dense");
         listed.Block.Classes.Add("dense");
         Dispatcher.UIThread.RunJobs();
-        Assert.Equal(new Thickness(3), Padding(spaced.Block));
+        Assert.Equal(new Thickness(3), spaced.Block.Padding);
         Assert.Equal(1, spaced.Block.LetterSpacing);
         Assert.Equal(40, listed.Block.LineHeight);
 
         spaced.Block.FontSize = 30;
         listed.Block.FontSize = 30;
         Dispatcher.UIThread.RunJobs();
-        Assert.Equal(new Thickness(3), Padding(spaced.Block));
+        Assert.Equal(new Thickness(3), spaced.Block.Padding);
         Assert.Equal(1, spaced.Block.LetterSpacing);
         Assert.Equal(40, listed.Block.LineHeight);
     }
@@ -377,7 +375,7 @@ public class TextBlockTests
         spaced.Block.Theme = dense;
         listed.Block.Theme = tall;
         Dispatcher.UIThread.RunJobs();
-        Assert.Equal(new Thickness(12, 0), Padding(spaced.Block));
+        Assert.Equal(new Thickness(12, 0), spaced.Block.Padding);
         Assert.Equal(0, spaced.Block.LetterSpacing);
         Assert.Equal(40, listed.Block.LineHeight);
 
@@ -385,7 +383,7 @@ public class TextBlockTests
         listed.Block.FontSize = 30;
         Dispatcher.UIThread.RunJobs();
 
-        Assert.Equal(new Thickness(12, 0), Padding(spaced.Block));
+        Assert.Equal(new Thickness(12, 0), spaced.Block.Padding);
         Assert.Equal(0, spaced.Block.LetterSpacing);
         Assert.Equal(40, listed.Block.LineHeight);
     }
@@ -400,9 +398,355 @@ public class TextBlockTests
         listed.Block.Theme = null;
         Dispatcher.UIThread.RunJobs();
 
-        Assert.Equal(default, Padding(spaced.Block));
+        Assert.Equal(default, spaced.Block.Padding);
         Assert.Equal(0, spaced.Block.LetterSpacing);
         Assert.True(double.IsNaN(listed.Block.LineHeight));
+    }
+
+    // From a MaxHeight style to a BaselineToBaseline one of the same font and size: the LineHeight PhoneTextLine set
+    // for the first gives way to the second's, and the Padding follows it.
+    [AvaloniaFact]
+    public void A_Change_Of_Style_From_MaxHeight_To_BaselineToBaseline_Keeps_The_Phones_Line()
+    {
+        var phone = TextStyleReadings.Get("ControlContextualInfoTextBlockStyle");
+        using var specimen = new Specimens("ListViewItemContentTextBlockStyle");
+        var block = specimen.Block;
+
+        block.Theme = (ControlTheme)specimen.Window.FindResource(phone.Key)!;
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(phone.LineHeight, block.LineHeight);
+        Assert.Equal(PhoneLine.FirstBaseline * phone.FontSize, FirstBaseline(block), 0.001);
+        Assert.Equal(phone.Height, Unrounded(block), 0.01);
+    }
+
+    // The same change, a property at a time, in either order: the LineHeight a MaxHeight line set gives way to one
+    // below it, and BaselineToBaseline's Padding follows, whichever of the two changes is raised first.
+    [AvaloniaTheory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void The_Padding_Follows_A_LineHeight_The_MaxHeight_Line_Gives_Back(bool baselineFirst)
+    {
+        var block = new TextBlock { Text = Specimen, FontSize = 16 };
+        using var scene = new Scene(block);
+        PhoneTextLine.SetMaxHeightLineHeight(block, 20);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(PhoneLine.FontLine * 16, block.LineHeight, 9);
+
+        // A LineHeight below PhoneTextLine's, as a new ControlTheme's is.
+        var below = new ControlTheme(typeof(TextBlock));
+        below.Setters.Add(new Setter(TextBlock.LineHeightProperty, 17.5));
+        block.Theme = below;
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(PhoneLine.FontLine * 16, block.LineHeight, 9);
+
+        if (baselineFirst)
+        {
+            PhoneTextLine.SetBaselineToBaseline(block, true);
+            block.ClearValue(PhoneTextLine.MaxHeightLineHeightProperty);
+        }
+        else
+        {
+            block.ClearValue(PhoneTextLine.MaxHeightLineHeightProperty);
+            PhoneTextLine.SetBaselineToBaseline(block, true);
+        }
+
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(17.5, block.LineHeight);
+        Assert.Equal(PhoneLine.FirstBaseline * 16, FirstBaseline(block), 0.001);
+        Assert.Equal(PhoneLine.Height(16, 17.5), Unrounded(block), 0.01);
+    }
+
+    // A value worked out again is the new one, or, where a ControlTheme's value is below it, that one: PhoneTextLine
+    // takes its old value back before setting the new, so it sees the value below and gives way to it.
+    [AvaloniaFact]
+    public void A_Value_Worked_Out_Again_Is_The_New_One_Or_The_One_Below()
+    {
+        var spaced = new TextBlock { Text = Specimen, FontSize = 16 };
+        var below = new TextBlock { Text = Specimen, FontSize = 16 };
+        using var scene = new Scene(new StackPanel { Children = { spaced, below } });
+        foreach (var block in new[] { spaced, below })
+        {
+            PhoneTextLine.SetBaselineToBaseline(block, true);
+            PhoneTextLine.SetCharacterSpacing(block, -3);
+            block.LineHeight = 23;
+        }
+
+        Dispatcher.UIThread.RunJobs();
+        var theme = new ControlTheme(typeof(TextBlock));
+        theme.Setters.Add(new Setter(TextBlock.PaddingProperty, new Thickness(7)));
+        theme.Setters.Add(new Setter(TextBlock.LetterSpacingProperty, 2.0));
+        below.Theme = theme;
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(-3 * 16 / 1000.0, below.LetterSpacing, 9);
+
+        spaced.FontSize = 30;
+        below.FontSize = 30;
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(-3 * 30 / 1000.0, spaced.LetterSpacing, 9);
+        Assert.Equal(PhoneLine.FirstBaseline * 30, FirstBaseline(spaced), 0.001);
+        Assert.Equal(PhoneLine.Height(30, 23), Unrounded(spaced), 0.01);
+        Assert.Equal(2, below.LetterSpacing);
+        Assert.Equal(new Thickness(7), below.Padding);
+    }
+
+    // Other code that changes the font in the middle of PhoneTextLine's pass (here, when the Padding it sets changes):
+    // the pass works the values out again for it.
+    [AvaloniaFact]
+    public void A_Change_Made_In_The_Middle_Of_A_Pass_Is_Worked_Out_Too()
+    {
+        var block = new TextBlock { Text = Specimen, FontSize = 16 };
+        using var scene = new Scene(block);
+        PhoneTextLine.SetBaselineToBaseline(block, true);
+        block.LineHeight = 20;
+        Dispatcher.UIThread.RunJobs();
+        var once = false;
+        block.PropertyChanged += (_, e) =>
+        {
+            if (e.Property == TextBlock.PaddingProperty && !once)
+            {
+                once = true;
+                block.FontSize = 30;
+            }
+        };
+
+        block.LineHeight = 24;
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.True(once);
+        Assert.Equal(PhoneLine.FirstBaseline * 30, FirstBaseline(block), 0.001);
+        Assert.Equal(PhoneLine.Height(30, 24), Unrounded(block), 0.01);
+    }
+
+    // A pass posted to the dispatcher that never runs (aborted here) doesn't stop a later change posting another.
+    [AvaloniaFact]
+    public void A_Pass_That_Never_Ran_Doesnt_Stop_The_Next()
+    {
+        var block = new TextBlock { Text = Specimen, FontSize = 16 };
+        using var scene = new Scene(block);
+        PhoneTextLine.SetBaselineToBaseline(block, true);
+        PhoneTextLine.SetCharacterSpacing(block, 10);
+        block.LineHeight = 20;
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(block.IsSet(TextBlock.PaddingProperty));
+
+        block.ClearValue(PhoneTextLine.CharacterSpacingProperty);
+        Assert.True(Posted(block).Abort());
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(block.IsSet(TextBlock.LetterSpacingProperty));
+
+        block.ClearValue(PhoneTextLine.BaselineToBaselineProperty);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.False(block.IsSet(TextBlock.LetterSpacingProperty));
+        Assert.False(block.IsSet(TextBlock.PaddingProperty));
+    }
+
+    /// <summary>The pass PhoneTextLine has posted for <paramref name="block"/>, read from its bookkeeping.</summary>
+    private static DispatcherOperation Posted(TextBlock block)
+    {
+        const System.Reflection.BindingFlags Hidden = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Instance;
+        var table = typeof(PhoneTextLine).GetField("Bookkeeping", Hidden)!.GetValue(null)!;
+        object?[] args = [block, null];
+        Assert.True((bool)table.GetType().GetMethod("TryGetValue")!.Invoke(table, args)!);
+        return (DispatcherOperation)args[1]!.GetType().GetField("_posted", Hidden)!.GetValue(args[1])!;
+    }
+
+    // A swap to a theme of another FontSize and no CharacterSpacing: PhoneTextLine takes its LetterSpacing back and
+    // works its Padding out for the new size, and every other value the old style set goes.
+    [AvaloniaFact]
+    public void A_Swap_To_A_Theme_Of_Another_Size_Leaves_None_Of_The_Old_Styles_Values()
+    {
+        using var specimen = new Specimens("GroupHeaderTextBlockStyle");
+        var block = specimen.Block;
+        var plain = new ControlTheme(typeof(TextBlock));
+        plain.Setters.Add(new Setter(TextBlock.FontSizeProperty, 30.0));
+        plain.Setters.Add(new Setter(TextBlock.LineHeightProperty, 33.0));
+        plain.Setters.Add(new Setter(PhoneTextLine.BaselineToBaselineProperty, true));
+
+        block.Theme = plain;
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(30, block.FontSize);
+        Assert.Equal(0, block.LetterSpacing);
+        Assert.False(block.IsSet(TextBlock.LetterSpacingProperty));
+        Assert.Equal(0, PhoneTextLine.GetCharacterSpacing(block));
+        Assert.False(block.IsSet(TextBlock.FontFamilyProperty));
+        Assert.False(block.IsSet(TextBlock.TextWrappingProperty));
+        Assert.False(block.IsSet(Visual.ClipToBoundsProperty));
+        Assert.Equal(PhoneLine.FirstBaseline * 30, FirstBaseline(block), 0.001);
+        Assert.Equal(PhoneLine.Height(30, 33), Unrounded(block), 0.01);
+    }
+
+    // Taken away and measured in the same job, a style's values can still be there (they go in a pass posted to the
+    // dispatcher); by the time a job at layout's priority runs, they have gone.
+    [AvaloniaFact]
+    public void Taking_The_Style_Away_Settles_In_One_Run_Of_Jobs()
+    {
+        using var spaced = new Specimens("GroupHeaderTextBlockStyle");
+        var block = spaced.Block;
+
+        bool? stale = null;
+        Dispatcher.UIThread.Post(() =>
+        {
+            block.Theme = null;
+            block.Measure(Size.Infinity);
+            // Queued at layout's priority, so it runs where the next layout would.
+            Dispatcher.UIThread.Post(() => stale = block.IsSet(TextBlock.PaddingProperty), DispatcherPriority.Render);
+        });
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.False(stale);
+        Assert.False(block.IsSet(TextBlock.PaddingProperty));
+        Assert.False(block.IsSet(TextBlock.LetterSpacingProperty));
+        Assert.Equal(default, block.Padding);
+        Assert.Equal(block.TextLayout.Height, block.Bounds.Height, Pixel);
+    }
+
+    // An app's untriggered Style that sets the value PhoneTextLine had worked out: equal, so no change shows that it
+    // took over, but it did, and when the font changes it keeps the property.
+    [AvaloniaFact]
+    public void An_Apps_Style_With_An_Equal_Value_Keeps_It_When_The_Font_Changes()
+    {
+        using var specimen = new Specimens("GroupHeaderTextBlockStyle");
+        var padding = specimen.Block.Padding;
+        var spacing = specimen.Block.LetterSpacing;
+        var rule = new Style(x => x.OfType<TextBlock>());
+        rule.Setters.Add(new Setter(TextBlock.PaddingProperty, padding));
+        rule.Setters.Add(new Setter(TextBlock.LetterSpacingProperty, spacing));
+        specimen.Window.Styles.Add(rule);
+        Dispatcher.UIThread.RunJobs();
+
+        specimen.Block.FontSize = 30;
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(padding, specimen.Block.Padding);
+        Assert.Equal(spacing, specimen.Block.LetterSpacing);
+    }
+
+    // A ControlTheme's value below PhoneTextLine's, set after it (as a new theme's is): when PhoneTextLine works its
+    // value out again, it finds the theme's, and gives way to it.
+    [AvaloniaFact]
+    public void A_ControlThemes_Value_Below_Shows_When_The_Value_Is_Worked_Out_Again()
+    {
+        var block = new TextBlock { Text = Specimen, FontSize = 16 };
+        using var scene = new Scene(block);
+        PhoneTextLine.SetMaxHeightLineHeight(block, 20);
+        Dispatcher.UIThread.RunJobs();
+        var below = new ControlTheme(typeof(TextBlock));
+        below.Setters.Add(new Setter(TextBlock.LineHeightProperty, 17.5));
+        block.Theme = below;
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(PhoneLine.FontLine * 16, block.LineHeight, 9);
+
+        block.FontSize = 30;
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(17.5, block.LineHeight);
+    }
+
+    // A theme that sets both MaxHeightLineHeight and BaselineToBaseline, so taking its LineHeight back also takes the
+    // Padding back. When it goes, every value it set goes with it, and PhoneTextLine's too; a theme based on it that
+    // sets a Padding of its own gets that Padding.
+    [AvaloniaFact]
+    public void A_Theme_Setting_MaxHeight_And_BaselineToBaseline_Goes_Cleanly()
+    {
+        var both = new ControlTheme(typeof(TextBlock));
+        both.Setters.Add(new Setter(TextBlock.FontSizeProperty, 16.0));
+        both.Setters.Add(new Setter(PhoneTextLine.MaxHeightLineHeightProperty, 20.0));
+        both.Setters.Add(new Setter(PhoneTextLine.BaselineToBaselineProperty, true));
+        both.Setters.Add(new Setter(PhoneTextLine.CharacterSpacingProperty, 10));
+        var padded = new ControlTheme(typeof(TextBlock)) { BasedOn = both };
+        padded.Setters.Add(new Setter(TextBlock.PaddingProperty, new Thickness(12, 0)));
+        padded.Setters.Add(new Setter(TextBlock.LetterSpacingProperty, 2.0));
+        var block = new TextBlock { Text = Specimen, Theme = both };
+        using var scene = new Scene(block);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(PhoneLine.FontLine * 16, block.LineHeight, 9);
+        Assert.Equal(PhoneLine.FirstBaseline * 16, FirstBaseline(block), 0.001);
+        Assert.Equal(0.16, block.LetterSpacing, 9);
+
+        block.Theme = padded;
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(new Thickness(12, 0), block.Padding);
+        Assert.Equal(2, block.LetterSpacing);
+        Assert.Equal(PhoneLine.FontLine * 16, block.LineHeight, 9);
+
+        block.Theme = null;
+        Dispatcher.UIThread.RunJobs();
+        Assert.False(PhoneTextLine.GetBaselineToBaseline(block));
+        Assert.True(double.IsNaN(block.LineHeight));
+        Assert.Equal(default, block.Padding);
+        Assert.Equal(0, block.LetterSpacing);
+        Assert.False(block.IsSet(TextBlock.FontSizeProperty));
+    }
+
+    // Not a size: an infinite LineHeight sets no Padding, as a NaN one doesn't (Avalonia refuses an infinite
+    // FontSize itself), and an infinite MaxHeight line sets no LineHeight. Out of a window: Avalonia's own layout
+    // fails on an infinite LineHeight.
+    [AvaloniaFact]
+    public void An_Infinite_Line_Height_Sets_Nothing()
+    {
+        var body = new TextBlock { Text = Specimen, FontSize = 16 };
+        PhoneTextLine.SetBaselineToBaseline(body, true);
+        body.LineHeight = double.PositiveInfinity;
+        var listed = new TextBlock { Text = Specimen, FontSize = 16 };
+        PhoneTextLine.SetMaxHeightLineHeight(listed, double.PositiveInfinity);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.False(body.IsSet(TextBlock.PaddingProperty));
+        Assert.False(listed.IsSet(TextBlock.LineHeightProperty));
+    }
+
+    [AvaloniaFact]
+    public void The_Padding_Of_No_Size_Is_None()
+    {
+        var typeface = new Typeface(FontFamily.Default);
+        Assert.Equal(default, PhoneTextLine.Padding(0, 20, typeface));
+        Assert.Equal(default, PhoneTextLine.Padding(16, double.NaN, typeface));
+        Assert.Equal(default, PhoneTextLine.Padding(double.PositiveInfinity, 20, typeface));
+    }
+
+    // With no LineHeight there is no phone's line to keep: BaselineToBaseline sets no Padding, not a zero one.
+    [AvaloniaFact]
+    public void BaselineToBaseline_With_No_LineHeight_Sets_No_Padding()
+    {
+        using var specimen = new Specimens("BodyTextBlockStyle");
+        Assert.True(specimen.Block.IsSet(TextBlock.PaddingProperty));
+
+        specimen.Block.LineHeight = double.NaN;
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.False(specimen.Block.IsSet(TextBlock.PaddingProperty));
+    }
+
+    // An app's untriggered Style is at the priority PhoneTextLine sets its values at: added after the text style
+    // has applied, it wins, as an app's style does, and taken away it gives the phone's line back.
+    [AvaloniaFact]
+    public void An_Apps_Untriggered_Style_Added_Later_Wins_Over_The_Styles()
+    {
+        using var specimen = new Specimens("GroupHeaderTextBlockStyle");
+        var phone = specimen.Block.Padding;
+        var rule = new Style(x => x.OfType<TextBlock>());
+        rule.Setters.Add(new Setter(TextBlock.PaddingProperty, new Thickness(3)));
+        rule.Setters.Add(new Setter(TextBlock.LetterSpacingProperty, 1.0));
+
+        specimen.Window.Styles.Add(rule);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(new Thickness(3), specimen.Block.Padding);
+        Assert.Equal(1, specimen.Block.LetterSpacing);
+
+        specimen.Block.FontSize = 30;
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(new Thickness(3), specimen.Block.Padding);
+        Assert.Equal(1, specimen.Block.LetterSpacing);
+
+        specimen.Block.ClearValue(TextBlock.FontSizeProperty);
+        specimen.Window.Styles.Remove(rule);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(phone, specimen.Block.Padding);
+        Assert.Equal(-3 * 23.73 / 1000, specimen.Block.LetterSpacing, 9);
     }
 
     // ── The hooks (ADR 0004) ─────────────────────────────────────────────────────────────────

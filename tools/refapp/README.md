@@ -509,7 +509,7 @@ page transitions and the ProgressRing. Two ways of reading it:
   `vm\session.ps1` record the emulator's display with `ffmpeg gdigrab` (lossless, each frame at the
   time it was grabbed), from before the probe's one tap, which starts its sequence, until it is done.
   It grabs about 40 frames a second (25 ms apart, ±10 ms), at 0.83 view px a pixel. The frames were
-  measured with throwaway scripts, outside the repo.
+  measured with the scripts in [`tools/motion`](../motion/README.md), which says which numbers they reproduce.
 
 **The emulator animates on a 64 Hz clock.** Every value moves in steps of 15.625 ms: the MenuFlyout's
 `ScaleX` goes up by 0.041 a frame, 380 ms in 24.3 steps. An animation shows the same values in every

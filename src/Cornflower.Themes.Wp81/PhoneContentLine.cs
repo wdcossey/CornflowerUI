@@ -43,6 +43,7 @@ internal static class PhoneContentLine
             return;
 
         // Avalonia's default template made this TextBlock for data: the phone's line, at its own size.
-        PhoneTextLine.SetMaxHeightLineHeight(text, 0);
+        // The smallest size PhoneTextLine takes (since #77 it ignores 0), so the line is always its own, 1.33 em.
+        PhoneTextLine.SetMaxHeightLineHeight(text, double.Epsilon);
     }
 }
