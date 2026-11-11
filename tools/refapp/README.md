@@ -457,7 +457,8 @@ px down. The template root's `PlaneProjection`, read every frame:
 translating 112 down with a `GlobalOffsetY` of −112 against it. The press seemed to reach its
 values in about 45 ms (three frames); the grid run below reads it closer, as a jump (see its
 Timing). On release nothing moves for about 180 ms, then the tilt eases back to rest by about
-345 ms. Dragged after the press, the tilt follows the finger. These are readings, not yet the
+345 ms, by the stopwatch ([in frames](#tilt-the-model-2026-11-09-device-11-for-22), a 182.6 ms
+hold). Dragged after the press, the tilt follows the finger. These are readings, not yet the
 model: #22 fits them (next section).
 
 ### Tilt: the model (2026-11-09, device 11, for #22)
@@ -501,9 +502,26 @@ centre as a fraction of its width and height (−0.5 to 0.5):
   the bias taken out.
 - **Timing.** The press is a jump: the first frame after the press already shows 96% to 100% of
   the held values (99% on average, at 30 to 40 ms, the first frame the emulator draws). On release
-  the values hold for about 180 ms, then ease back to rest over about 195 ms: a sine ease-out fits
-  1,199 frames with an rms of 0.03 of the full value (quadratic 0.036, linear 0.037, cubic 0.059).
-  Every press was within 1% of rest by 335 to 372 ms.
+  the values hold for about 180 ms, then ease back to rest over about 195 ms by the stopwatch: a
+  sine ease-out fits 1,199 frames with an rms of 0.03 of the full value (quadratic 0.036, linear
+  0.037, cubic 0.059). Every press was within 1% of rest by 335 to 372 ms. In frames, below, it is
+  a 182.6 ms hold and a `KeySpline` over 167.0 ms.
+- **The release in frames** (re-read 2026-11-11, `tools/motion/tiltrelease.py`, all five tilt runs,
+  252 releases on both profiles). Every release reads the same fraction of its held tilt at each
+  frame, within 0.0002, whatever its frames' spacing by the stopwatch. So the return moves on
+  animation time, 15.625 ms a frame
+  ([the clock](#progressring-the-size-threshold-and-the-clock)): 0.9412, 0.8039, 0.6885, 0.5832,
+  0.4845, 0.3913, 0.3030, 0.2210, 0.1431, 0.0737, 0.0163, then rest. The probe logs only changes,
+  so the hold's frames aren't in the log. The hold is a stopwatch count: the first change comes
+  12.4 frames' spacing after the release on average (each press's time from the release over its
+  own return's frame spacing; 11.95 to 12.90 for 90% of the presses), so on the 13th frame. With
+  the first frame after the release as time 0, as the first frame logged after the ProgressRing's
+  `Active` storyboard began read storyboard time 0 (`20261111-2316-dev11`), that frame is at
+  187.5 ms of animation time. Fitted to the eleven frames from there, a sine is out by up to 0.027
+  (hold 179.2 ms, return 202.6 ms). A `KeySpline` 0.1,0.25 0.75,0.9 fits within 0.00075 (rms
+  0.00024, about the log's rounding): **a hold of 182.6 ms, then 167.0 ms down the spline**, at
+  rest by 349.6 ms. A free spline, 0.117,0.272 0.769,0.912 over 182.5 and 167.3 ms, fits no closer.
+  Open by one frame: were time 0 the second frame after the release, the hold would be 167.0 ms.
 - **A tap at the very edge clicks** (`-Probe tiltedge`, `20261110-0822-dev11`): a Button 300 × 120,
   tapped for 150 ms at the middle of each edge, 0.84, 1.7 and 3.35 view px inside it (the nearest the
   cursor gets to 1, 2 and 3), three times each: all 36 taps clicked. The tilt sinks the edge away

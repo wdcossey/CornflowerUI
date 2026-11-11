@@ -46,6 +46,7 @@ frames are already in their `analysis\` folders; `decode.py` itself has not been
 | `ringsize.py` | a `-Probe ringsize` run | the ProgressRing's `SizeStates` threshold, and the animation clock against the app's stopwatch, from the app's log |
 | `toggle.py` | `-Probe toggleswitch` runs | each press, and the tap limits |
 | `tiltcurve.py` | a `-Probe tiltgrid` run | #60's tilt curve against each press |
+| `tiltrelease.py` | `-Probe tilt`, `tiltedge` and `tiltgrid` runs | the tilt's release frame by frame, which frame after the release it starts on, and its hold and return in animation time: a sine and a `KeySpline` fitted; #60's stopwatch fit beside them. A few seconds a run |
 | `motionlib.py` | | what they share: the run, the frame measurements, the projection, the easing curves and the fits |
 | `selftest.py` | nothing | checks the measurements and fits on synthetic data with known answers |
 
@@ -110,6 +111,8 @@ Each published number, run again on its original run on 2026-11-11. The runs are
 | ToggleSwitch on the 720p profile: moved 17.76 taps, 18.85 doesn't (17.47 and 18.33 on the reference); held 984 ms taps, 1,018 doesn't; `ToggleStates` changes about 380 ms after the release | README, ADR | `toggle.py` | `20261110-0733-dev10`, `20261109-2128-dev11` | Yes: 17.76 / 18.85 and 984 / 1018 ms; 17.47 / 18.33 and 993 / 1019 ms on the reference; the state changes 374 to 391 ms after the release |
 | #60's tilt curve on the reference profile: rms 0.08° once each button's offset is out, 0.38° raw, worst 1.26°; the depth within 0.002 px | README "Tilt: the model", ADR | `tiltcurve.py` | `20261109-2307-dev11` | Yes: 0.083°, 0.379°, 1.256°; depth worst 0.0015 px |
 | #60's tilt curve on the 720p profile: within 0.08° once each button's offset is out, 0.33° raw, worst 1.04°; the depth within 0.002 px | README | `tiltcurve.py` | `20261110-0851-dev10` | Yes: 0.076°, 0.326°, 1.042°; depth worst 0.0017 px |
+| #60's release by the stopwatch: held 180 ms (fit 178), then a sine over 195 ms (fit 196), rms 0.03 over 1,199 frames | README "Tilt: the model", ADR (until 2026-11-11) | `tiltrelease.py` | `20261109-2307-dev11` | Yes: 177.9 and 196.1 ms, rms 0.032 over 1,188 frames (one press of 11 frames left out, its first frame unread) |
+| The release in frames: the same fractions every release; the first change on the 13th frame after the release; a hold of 182.6 ms, then `KeySpline` 0.1,0.25 0.75,0.9 over 167.0 ms, within 0.00075; a sine out by 0.027 | README "Tilt: the model", ADR, `TiltModel` | `tiltrelease.py` | the five tilt runs: `20261109-2307-dev11`, `20261109-2118-dev11`, `20261110-0738-dev10`, `20261110-0822-dev11`, `20261110-0851-dev10` | Yes: 252 presses (2 left out of the medians), spread 0.0002 at most; 12.40 frames' spacing to the first change (median); 182.6 and 167.0 ms, rms 0.00024, worst 0.00075; the sine 179.2 and 202.6 ms, worst 0.0270 |
 
 ### Published and reproduced, where they differ
 
@@ -126,8 +129,7 @@ Not corrected here; the docs are corrected separately.
 
 Not covered, with no script here:
 
-- **The tilt's release** (held 180 ms, then a sine ease-out over 195 ms, rms 0.03 over 1,199 frames) and **its
-  bias table** (−0.83° and so on, from presses on opposite sides of the centre): measured for #60, not by these
+- **The tilt's bias table** (−0.83° and so on, from presses on opposite sides of the centre): measured for #60, not by these
   scripts. `tiltcurve.py`'s per-button mean residuals are the same bias by another method (−0.88° for A).
 - **The inline ComboBox's items** (`TranslateY` from −8.5 to 0 over 4 frames) and the recorder's rate (about 40
   frames a second): read from the log and `frames.csv` by eye.

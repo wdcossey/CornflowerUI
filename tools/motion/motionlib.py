@@ -543,3 +543,33 @@ def print_fits(vals, ticks, curves=(), unit=''):
 
 def median(vals):
     return statistics.median(vals)
+
+
+def minimize(f, x0, scale, iterations=2000):
+    """Nelder-Mead: a local minimum of f from x0, the first simplex x0 and x0 moved by each scale in turn. For fits
+    with too many parameters for a grid. Returns (f(x), x)."""
+    n = len(x0)
+    pts = [list(x0)] + [[x0[i] + (scale[i] if i == j else 0) for i in range(n)] for j in range(n)]
+    vals = [f(p) for p in pts]
+    for _ in range(iterations):
+        order = sorted(range(n + 1), key=lambda i: vals[i])
+        pts, vals = [pts[i] for i in order], [vals[i] for i in order]
+        c = [sum(p[i] for p in pts[:-1]) / n for i in range(n)]
+        xr = [2 * c[i] - pts[-1][i] for i in range(n)]
+        fr = f(xr)
+        if fr < vals[0]:
+            xe = [3 * c[i] - 2 * pts[-1][i] for i in range(n)]
+            fe = f(xe)
+            pts[-1], vals[-1] = (xe, fe) if fe < fr else (xr, fr)
+        elif fr < vals[-2]:
+            pts[-1], vals[-1] = xr, fr
+        else:
+            xc = [(c[i] + pts[-1][i]) / 2 for i in range(n)]
+            fc = f(xc)
+            if fc < vals[-1]:
+                pts[-1], vals[-1] = xc, fc
+            else:
+                pts = [pts[0]] + [[(pts[0][i] + p[i]) / 2 for i in range(n)] for p in pts[1:]]
+                vals = [vals[0]] + [f(p) for p in pts[1:]]
+    best = min(range(n + 1), key=lambda i: vals[i])
+    return vals[best], pts[best]

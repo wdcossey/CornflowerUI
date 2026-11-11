@@ -27,8 +27,8 @@ as an 8.1 page does. A Button that must be smaller than the phone's minimum (chr
 - **At rest**: a 2.5 border in the foreground, a transparent background, the text in `PhoneFontFamilyNormal`
   Semibold at 18.14, padded 9.5 at the sides and 3.5 below.
 - **Pressed**: the background is the accent and the text `PhoneTextOverAccentColor`, white, in both themes; the
-  border stays. The Button tilts towards the finger and sinks, follows it, and on release holds 180 ms and eases
-  back over 195 ms: `Tilt`, turned on by the theme, drawn on the template's `Grid`, the whole Button, as the
+  border stays. The Button tilts towards the finger and sinks, follows it, and on release holds 182.6 ms and eases
+  back over 167 ms: `Tilt`, turned on by the theme, drawn on the template's `Grid`, the whole Button, as the
   phone's `PointerDownThemeAnimation` is.
 - **A press anywhere on it clicks**, the overhang above and below the border and the very edge of a tilted Button
   included, as on the phone: the template's root, untilted, takes the hits.

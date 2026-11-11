@@ -169,8 +169,11 @@ public class TiltTests
         }
     }
 
+    // Run 2307's first press, released. As read: still held on frame 12 after the release, 171.875 ms
+    // of animation time; frame 23 (343.75 ms) still 0.139° off rest; frame 24 (359.375 ms) at rest.
+    // In between, each frame shows the model's return for its time since the release.
     [AvaloniaFact]
-    public void A_Release_Holds_For_180_ms_Then_Eases_Back_Over_195_ms()
+    public void A_Release_Holds_Then_Eases_Back_As_The_Emulator_Did()
     {
         using var clock = new TestClock();
         using var page = new Page(GridButtons);
@@ -186,18 +189,21 @@ public class TiltTests
         var released = clock.Now.TotalMilliseconds;
 
         Assert.Equal(held, CfTilt.Current(button));
-        clock.At(released + 176);                                   // eleven frames on: still held
+        clock.At(released + (ReleaseFirstFrame - 2) * 15.625);      // the hold's last frame, as read
+        Assert.Equal(held, CfTilt.Current(button));
+        clock.At(released + 182);                                   // the hold's end, 182.6 ms
         Assert.Equal(held, CfTilt.Current(button));
 
-        // The return's frames are 16 ms apart from the end of the hold. Six frames in, it is 96 ms
-        // of 195 along a sine ease-out: 1 - sin(96 / 195 × π / 2) of the held tilt is left.
-        clock.At(released + 180 + 96);
-        AssertNear(held.Scale(1 - Math.Sin(96.0 / 195 * Math.PI / 2)), CfTilt.Current(button), angle: 1e-9, depth: 1e-9);
+        // The return's frames are 16 ms apart from the end of the hold. Six frames in:
+        var sixth = TiltModel.Hold.TotalMilliseconds + 6 * CornflowerClock.FrameInterval.TotalMilliseconds;
+        clock.At(released + sixth);
+        AssertNear(held.Scale(TiltModel.ReturnFactor(TimeSpan.FromMilliseconds(sixth))), CfTilt.Current(button), angle: 1e-9, depth: 1e-9);
 
-        clock.At(released + 180 + 192);                             // 3 ms short of the end: all but gone
-        Assert.InRange(Math.Abs(CfTilt.Current(button).RotationX), 1e-6, 0.01);
+        var last = ReleaseFirstFrame - 1 + ReleaseFrames.Length - 2;  // frames after the release, less one
+        clock.At(released + last * 15.625);                         // frame 23: all but gone
+        Assert.InRange(Math.Abs(CfTilt.Current(button).RotationX), 1e-6, 0.3);
 
-        clock.At(released + 180 + 208);
+        clock.At(released + (last + 1) * 15.625);                   // frame 24: at rest
         Assert.Equal(TiltState.Rest, CfTilt.Current(button));
         Assert.Null(CfTilt.TargetOf(button).RenderTransform);
         Assert.Equal(0, clock.Pending);
@@ -823,10 +829,10 @@ public class TiltTests
         Assert.NotEqual(TiltState.Rest, CfTilt.Current(item));
         scene.Window.TouchEnd(touch, corner);
         var released = clock.Now.TotalMilliseconds;
-        clock.At(released + 180);                                   // the hold over: the item starts back
+        clock.At(released + 183);                                   // the hold over: the item starts back
 
         scene.Window.TouchBegin(new Point(50 + 20 + 30, 100 + 20 + 20));
-        clock.At(released + 180 + SettleMs);                        // the item still easing, the Button settled
+        clock.At(released + 183 + SettleMs);                        // the item still easing, the Button settled
         Assert.NotEqual(TiltState.Rest, CfTilt.Current(item));
         var settled = CfTilt.Current(button);
         Assert.NotEqual(TiltState.Rest, settled);

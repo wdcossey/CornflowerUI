@@ -21,7 +21,7 @@ namespace Cornflower.Controls;
 /// Measured on Windows Phone 8.1 (#60): the rule, the eye and the timing are in
 /// <see cref="TiltModel"/>. A press jumps to the tilt for its point, which settles over the next
 /// frames as the phone's does; a move follows the finger; a release, a lost capture or the finger
-/// leaving the control holds the tilt for 180 ms, then eases it back over 195 ms. A finger that
+/// leaving the control holds the tilt for 182.6 ms, then eases it back over 167 ms. A finger that
 /// comes back onto the control before it lets go tilts it again, as the toolkit's TiltEffect does.
 /// The tilt runs frame by frame on <see cref="CornflowerClock"/>, not on Avalonia's transitions, so
 /// a test can step it. One pointer at a time: the first down is the one that tilts.

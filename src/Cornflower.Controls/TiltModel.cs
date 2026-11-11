@@ -69,11 +69,29 @@ internal static class TiltModel
     /// </summary>
     public const double EyeDistance = 999;
 
-    /// <summary>How long the tilt holds after the finger lets go: 180 ms (fit to 1,199 frames: 178).</summary>
-    public static readonly TimeSpan Hold = TimeSpan.FromMilliseconds(180);
+    /// <summary>
+    /// How long the tilt holds after the finger lets go: 182.6 ms of animation time. The emulator's
+    /// release moves 15.625 ms of animation time a frame, however far apart its frames come (#84);
+    /// re-read so from the 252 releases of the five tilt runs (<c>tools/motion/tiltrelease.py</c>):
+    /// the first change is the 13th frame after the release, counted by the stopwatch (12.4 frames'
+    /// spacing on average), with the first frame after the release taken as time 0. Were time 0 the
+    /// second frame, the hold would be 167.0 ms. (#60 read 178 against the stopwatch.)
+    /// </summary>
+    public static readonly TimeSpan Hold = TimeSpan.FromMilliseconds(182.6);
 
-    /// <summary>How long it then takes to ease back, on a sine ease-out: 195 ms (fit: 196).</summary>
-    public static readonly TimeSpan Return = TimeSpan.FromMilliseconds(195);
+    /// <summary>
+    /// How long it then takes to ease back, on <see cref="ReturnSpline"/>: 167.0 ms of animation
+    /// time, fitted with <see cref="Hold"/> to the release's eleven frames (#60 fitted a sine over
+    /// 196 ms against the stopwatch; in frames the sine is out by up to 0.027 of the tilt).
+    /// </summary>
+    public static readonly TimeSpan Return = TimeSpan.FromMilliseconds(167.0);
+
+    /// <summary>
+    /// The return's easing, a <c>KeySpline</c> 0.1,0.25 0.75,0.9: the fraction of the tilt gone
+    /// at a fraction of <see cref="Return"/>. Every release reads the same fraction at each frame,
+    /// within 0.0002; this fits them within 0.00075 (rms 0.00024).
+    /// </summary>
+    public static readonly (double X1, double Y1, double X2, double Y2) ReturnSpline = (0.1, 0.25, 0.75, 0.9);
 
     /// <summary>Below this change in a frame, in degrees and view pixels, a press has settled.</summary>
     public const double Settled = 1e-4;
@@ -124,13 +142,51 @@ internal static class TiltModel
     public static Point Eye(Size size, Vector toScreenCentre) =>
         new Point(size.Width / 2, size.Height / 2) + toScreenCentre * EyeShift;
 
-    /// <summary>How much of the held tilt is left <paramref name="sinceRelease"/> after the finger let go: 1, then a sine ease-out to 0.</summary>
+    /// <summary>How much of the held tilt is left <paramref name="sinceRelease"/> after the finger let go: 1, then down <see cref="ReturnSpline"/> to 0.</summary>
     public static double ReturnFactor(TimeSpan sinceRelease)
     {
         var progress = (sinceRelease - Hold) / Return;
         if (progress <= 0) return 1;
         if (progress >= 1) return 0;
-        return 1 - Math.Sin(progress * Math.PI / 2);
+        var (x1, y1, x2, y2) = ReturnSpline;
+        return 1 - Spline(progress, x1, y1, x2, y2);
+    }
+
+    /// <summary>
+    /// A <c>KeySpline</c>'s value at <paramref name="x"/>: the cubic Bézier from (0, 0) to (1, 1)
+    /// with control points (<paramref name="x1"/>, <paramref name="y1"/>) and (<paramref name="x2"/>,
+    /// <paramref name="y2"/>), its parameter solved from x by Newton's method kept inside a bisection
+    /// bracket, to 1e-12. The control points' x are in [0, 1], so x rises with the parameter.
+    /// </summary>
+    internal static double Spline(double x, double x1, double y1, double x2, double y2)
+    {
+        if (x <= 0) return 0;
+        if (x >= 1) return 1;
+        double lo = 0, hi = 1, s = x;
+        for (var i = 0; i < 200; i++)
+        {
+            var error = Bezier(s, x1, x2) - x;
+            if (Math.Abs(error) <= 1e-12) break;
+            if (error > 0) hi = s;
+            else lo = s;
+            var slope = BezierSlope(s, x1, x2);
+            var next = slope > 0 ? s - error / slope : double.NaN;
+            s = next > lo && next < hi ? next : (lo + hi) / 2;
+        }
+
+        return Bezier(s, y1, y2);
+    }
+
+    private static double Bezier(double s, double a, double b)
+    {
+        var r = 1 - s;
+        return 3 * a * s * r * r + 3 * b * s * s * r + s * s * s;
+    }
+
+    private static double BezierSlope(double s, double a, double b)
+    {
+        var r = 1 - s;
+        return 3 * a * r * r + 6 * (b - a) * s * r + 3 * (1 - b) * s * s;
     }
 
     /// <summary>

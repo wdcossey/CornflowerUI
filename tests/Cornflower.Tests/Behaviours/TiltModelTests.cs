@@ -146,13 +146,50 @@ public class TiltModelTests
         }
     }
 
+    // The emulator's release in animation time: frame k after the release at (k − 1) × 15.625 ms.
+    // Held until the first change, then each frame's fraction as every release read it. With #60's
+    // sine (a 180 ms hold, 195 ms back) frame 19 would read 0.272, not 0.303, and frame 24 not be at rest.
+    [Fact]
+    public void The_Return_Matches_The_Emulators_Frames()
+    {
+        for (var frame = 1; frame < TiltReadings.ReleaseFirstFrame; frame++)
+            Assert.Equal(1, TiltModel.ReturnFactor(TimeSpan.FromMilliseconds((frame - 1) * 15.625)));
+
+        for (var i = 0; i < TiltReadings.ReleaseFractions.Length; i++)
+        {
+            var at = TimeSpan.FromMilliseconds((TiltReadings.ReleaseFirstFrame - 1 + i) * 15.625);
+            var left = TiltModel.ReturnFactor(at);
+            Assert.True(Math.Abs(left - TiltReadings.ReleaseFractions[i]) <= 0.001,
+                $"frame {TiltReadings.ReleaseFirstFrame + i}: {left:F5} left, read {TiltReadings.ReleaseFractions[i]}");
+        }
+    }
+
     [Theory]
     [InlineData(0, 1)]
-    [InlineData(180, 1)]
-    [InlineData(277.5, 0.29289321881345254)]                       // halfway: 1 - sin(π / 4)
-    [InlineData(375, 0)]
-    public void The_Return_Holds_Then_Eases_Out_On_A_Sine(double sinceReleaseMs, double left)
+    [InlineData(182.6, 1)]
+    [InlineData(349.6, 0)]
+    [InlineData(1000, 0)]
+    public void The_Return_Holds_Then_Ends(double sinceReleaseMs, double left)
     {
         Assert.Equal(left, TiltModel.ReturnFactor(TimeSpan.FromMilliseconds(sinceReleaseMs)), 1e-9);
+    }
+
+    // The spline is solved, not approximated: at any parameter s, the value at the Bézier's x(s) is
+    // its y(s) to 1e-12. Avalonia's KeySpline is up to 0.0006 off on a ring spline (#28).
+    [Theory]
+    [InlineData(0.1, 0.25, 0.75, 0.9)]
+    [InlineData(0.1, 0.9, 0.2, 1)]
+    [InlineData(0, 0, 1, 1)]
+    [InlineData(0.5, 0, 0.5, 1)]
+    [InlineData(0.42, 0, 0.58, 1)]
+    public void The_Spline_Is_Exact(double x1, double y1, double x2, double y2)
+    {
+        for (var s = 0.0; s <= 1; s += 1.0 / 64)
+        {
+            double r = 1 - s;
+            var x = 3 * x1 * s * r * r + 3 * x2 * s * s * r + s * s * s;
+            var y = 3 * y1 * s * r * r + 3 * y2 * s * s * r + s * s * s;
+            Assert.Equal(y, TiltModel.Spline(x, x1, y1, x2, y2), 1e-11);
+        }
     }
 }
