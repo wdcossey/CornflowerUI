@@ -116,33 +116,30 @@ public class HolePartsTests
         Assert.Equal(109, inner.MinWidth);
     }
 
-    // With nothing under Wp81, a hole's Button keeps Wp81's: there is no other.
+    /// <summary>A template with one plain Button in it, named Inner.</summary>
+    private static FuncControlTemplate InnerButton() => new((_, _) => new Border { Child = new Button { Name = "Inner", Content = "inner" } });
+
+    /// <summary>A <c>ControlTheme</c> for <paramref name="type"/> that sets <paramref name="template"/>.</summary>
+    private static ControlTheme ThemeWith(Type type, IControlTemplate template) =>
+        new(type) { Setters = { new Setter(TemplatedControl.TemplateProperty, template) } };
+
+    // With nothing under Wp81, a Button keeps Wp81's: there is no other. Here AppControl's theme is above Wp81.
     [AvaloniaFact]
-    public void With_Nothing_Under_Wp81_A_Holes_Button_Keeps_Wp81s()
+    public void With_Nothing_Under_Wp81_A_Button_Keeps_Wp81s()
     {
-        var host = new AppControl
-        {
-            Template = new FuncControlTemplate<AppControl>((_, _) => new Button { Name = "Inner", Content = "inner" }),
-        };
-        var theme = new ControlTheme(typeof(AppControl));
-        var under = new Styles { Resources = { [typeof(AppControl)] = theme } };
-        using var scene = new Scene(host, themes: [new Wp81Theme(), under]);   // AppControl's theme is above Wp81, not under it
+        var host = new AppControl();
+        var above = new Styles { Resources = { [typeof(AppControl)] = ThemeWith(typeof(AppControl), InnerButton()) } };
+        using var scene = new Scene(host, themes: [new Wp81Theme(), above]);
 
         Assert.True(CfTilt.GetIsEnabled(PlainButtons(host).Single()));
     }
 
     [AvaloniaFact]
-    public void A_Holes_Button_Takes_The_Theme_Under_Wp81_Not_Another()
+    public void A_Button_In_A_Template_From_Under_Wp81_Takes_The_Button_Theme_Under_Wp81()
     {
-        var host = new AppControl
-        {
-            Template = new FuncControlTemplate<AppControl>((_, _) => new Button { Name = "Inner", Content = "inner" }),
-        };
-        var underButton = new ControlTheme(typeof(Button))
-        {
-            Setters = { new Setter(TemplatedControl.TemplateProperty, new FuncControlTemplate<Button>((_, _) => new Border { Name = "Under" })) },
-        };
-        var under = new Styles { Resources = { [typeof(AppControl)] = new ControlTheme(typeof(AppControl)), [typeof(Button)] = underButton } };
+        var host = new AppControl();
+        var underButton = ThemeWith(typeof(Button), new FuncControlTemplate<Button>((_, _) => new Border { Name = "Under" }));
+        var under = new Styles { Resources = { [typeof(AppControl)] = ThemeWith(typeof(AppControl), InnerButton()), [typeof(Button)] = underButton } };
         using var scene = new Scene(host, themes: [under, new Wp81Theme()]);
         Dispatcher.UIThread.RunJobs();
 
@@ -151,37 +148,95 @@ public class HolePartsTests
         Assert.Contains(inner.GetVisualDescendants(), v => v is Border { Name: "Under" });
     }
 
-    // A control Wp81 themes isn't a hole, even where the theme under Wp81 themes it too: its parts keep Wp81's Button.
+    // A control Wp81 themes, with a template Wp81 sets, keeps Wp81's Button, even where the theme under Wp81 sets the same.
     [AvaloniaFact]
-    public void A_Button_In_A_Control_Wp81_Themes_Keeps_Wp81s()
+    public void A_Button_In_A_Template_Wp81_Sets_Keeps_Wp81s()
     {
         var host = new AppControl();
-        var template = new FuncControlTemplate<AppControl>((_, _) => new Button { Name = "Inner", Content = "inner" });
+        var template = InnerButton();
         var wp81 = new Wp81Theme();
-        wp81.Resources[typeof(AppControl)] = new ControlTheme(typeof(AppControl)) { Setters = { new Setter(TemplatedControl.TemplateProperty, template) } };
+        wp81.Resources[typeof(AppControl)] = ThemeWith(typeof(AppControl), template);
         var under = new SimpleTheme();
-        under.Resources[typeof(AppControl)] = new ControlTheme(typeof(AppControl)) { Setters = { new Setter(TemplatedControl.TemplateProperty, template) } };
+        under.Resources[typeof(AppControl)] = ThemeWith(typeof(AppControl), template);
         using var scene = new Scene(host, themes: [under, wp81]);
 
         Assert.True(CfTilt.GetIsEnabled(PlainButtons(host).Single()));
     }
 
     // A theme under Wp81 keyed by Button but targeting another type (copied from another control's file) is no
-    // Button theme: the hole's Button keeps Wp81's rather than take it.
+    // Button theme: the Button keeps Wp81's rather than take it.
     [AvaloniaFact]
     public void A_Mis_Keyed_Theme_Under_Wp81_Isnt_Taken()
     {
-        var host = new AppControl
+        var host = new AppControl();
+        var under = new Styles
         {
-            Template = new FuncControlTemplate<AppControl>((_, _) => new Button { Name = "Inner", Content = "inner" }),
+            Resources = { [typeof(AppControl)] = ThemeWith(typeof(AppControl), InnerButton()), [typeof(Button)] = new ControlTheme(typeof(ToggleButton)) },
         };
-        var under = new Styles { Resources = { [typeof(AppControl)] = new ControlTheme(typeof(AppControl)), [typeof(Button)] = new ControlTheme(typeof(ToggleButton)) } };
         using var scene = new Scene(host, themes: [under, new Wp81Theme()]);
 
         var inner = PlainButtons(host).Single();
         Assert.Null(inner.Theme);
         Assert.True(CfTilt.GetIsEnabled(inner));
     }
+
+    // An app's subclass of a control Simple themes, with a theme and template of its own: its Button is the phone's.
+    [AvaloniaFact]
+    public void An_Apps_Subclass_With_Its_Own_Theme_Keeps_Wp81s_Button()
+    {
+        var card = new Card { Theme = ThemeWith(typeof(Card), InnerButton()) };
+        using var scene = new Scene(card);
+
+        Assert.True(CfTilt.GetIsEnabled(PlainButtons(card).Single()));
+    }
+
+    // An app's own theme for a control Wp81 doesn't theme, above Wp81: the template is the app's, so its Button is Wp81's.
+    [AvaloniaFact]
+    public void An_Apps_Theme_Above_Wp81_For_A_Hole_Keeps_Wp81s_Button()
+    {
+        var pager = new PipsPager();
+        var window = new Styles { Resources = { [typeof(PipsPager)] = ThemeWith(typeof(PipsPager), InnerButton()) } };
+        using var scene = new Scene(pager, themes: [new SimpleTheme(), new Wp81Theme(), window]);
+
+        Assert.True(CfTilt.GetIsEnabled(PlainButtons(pager).Single()));
+    }
+
+    // The parent's theme changing at run time makes new parts, checked again: Simple's template falls back, the app's
+    // doesn't, and Simple's again does.
+    [AvaloniaFact]
+    public void A_Change_Of_The_Parents_Theme_Checks_Its_Buttons_Again()
+    {
+        var simple = new SimpleTheme();
+        var pager = new PipsPager();
+        using var scene = new Scene(pager, themes: [simple, new Wp81Theme()]);
+        Assert.All(PlainButtons(pager), b => Assert.Same(ButtonThemeOf(simple), b.Theme));
+
+        pager.Theme = ThemeWith(typeof(PipsPager), InnerButton());
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(CfTilt.GetIsEnabled(PlainButtons(pager).Single()));
+
+        pager.Theme = null;
+        Dispatcher.UIThread.RunJobs();
+        var back = PlainButtons(pager);
+        Assert.Equal(2, back.Count);
+        Assert.All(back, b => Assert.Same(ButtonThemeOf(simple), b.Theme));
+    }
+
+    // Wp81 in a group with the theme under it, as an app may write it: the group is walked.
+    [AvaloniaFact]
+    public void Wp81_In_A_Styles_Group_Finds_The_Theme_Under_It()
+    {
+        var simple = new SimpleTheme();
+        var pager = new PipsPager();
+        using var scene = new Scene(pager, themes: [new Styles { simple, new Wp81Theme() }]);
+
+        var buttons = PlainButtons(pager);
+        Assert.Equal(2, buttons.Count);
+        Assert.All(buttons, b => Assert.Same(ButtonThemeOf(simple), b.Theme));
+    }
+
+    /// <summary>An app's subclass of a control Simple themes.</summary>
+    public class Card : HeaderedContentControl;
 
     /// <summary>A templated control of an app's own, which no theme knows.</summary>
     public class AppControl : TemplatedControl;
