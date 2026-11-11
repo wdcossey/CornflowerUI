@@ -108,7 +108,7 @@ src/Cornflower.Themes.Wp81/         exists          era 1: tokens and ControlThe
 src/Cornflower/                     exists, no code the umbrella package
 src/Cornflower.Fonts.Noto/          planned         the optional fallback font package
 tests/Cornflower.Tests/             exists          Avalonia.Headless with Skia and xunit v3: harness, discovery, spikes, fonts, tokens, glyphs, controls, behaviours, sample, performance, tools, completeness, repository guards
-samples/Cornflower.Sample/          exists          the shared sample app: the [SamplePage] catalogue (SampleShell, MainWindow), one page so far (MainView), with the Debug performance line
+samples/Cornflower.Sample/          exists          the shared sample app: the [SamplePage] catalogue (SampleShell, MainWindow; on a phone too), which times each page and writes its ready line, one page so far (MainView), with the Debug performance line
 samples/Cornflower.Sample.Android/  exists          the real-device target, run by tools/android
 samples/Cornflower.Sample.Desktop/  exists          a thin desktop head over Cornflower.Sample: its page at 450 × 800 beside a 40-wide rail for Back, resizable, driven by tools/real-window
 src/Cornflower.Adaptive/            planned         working name: the extension pack for wider windows, after Tier 2 (ADR 0004)

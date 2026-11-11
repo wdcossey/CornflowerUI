@@ -1,13 +1,17 @@
 <#
 .SYNOPSIS
-    The device run: builds the Android sample, installs it on the phone over ADB, starts it, waits
-    for the page to draw, and pulls back a frame and what the device reported.
+    The device run: builds the Android sample, installs it on the phone over ADB, starts it at a page
+    of its catalogue, waits for the page to draw, and pulls back a frame and what the device reported.
 
 .DESCRIPTION
     Writes into one folder per run (artifacts\device\<yyyyMMdd-HHmmss>-<model> by default, which git
     ignores): frame.png, the phone's screen at its own resolution; run.json, the device, the start
     time Android measured and the sample's ready line; and logcat.txt, the run's log. Exits non-zero
     if any step fails, with logcat.txt kept.
+
+    The app opens the page -Page names, by its catalogue title in any case, passed as the intent's
+    `page` extra; without -Page, the first page (theme). The ready line names the page it opened,
+    which has to be the one asked for.
 
     The phone must be the only device `adb devices` lists, with USB or wireless debugging on. A
     phone with a secure lock has to be unlocked by hand: the script wakes the screen and waits.
@@ -16,10 +20,15 @@
     powershell -ExecutionPolicy Bypass -File tools\android\run.ps1
 .EXAMPLE
     powershell -ExecutionPolicy Bypass -File tools\android\run.ps1 -NoBuild -Out C:\temp\run1
+.EXAMPLE
+    powershell -ExecutionPolicy Bypass -File tools\android\run.ps1 -Page theme
 #>
 [CmdletBinding()]
 param(
     [string]$Out,
+    # The catalogue title of the page to open; the first page if omitted.
+    [ValidateNotNullOrEmpty()]
+    [string]$Page,
     [ValidateSet('Release', 'Debug')]
     [string]$Configuration = 'Release',
     [switch]$NoBuild,
@@ -28,11 +37,17 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+# PowerShell 5.1 passes a double quote inside an argument to adb mangled, so such a title can't reach the app intact.
+if ($Page -and $Page.Contains('"')) { throw "A -Page title can't have a double quote in it: $Page" }
 $Repo = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $Project = Join-Path $Repo 'samples\Cornflower.Sample.Android\Cornflower.Sample.Android.csproj'
 $Package = 'io.github.wdcossey.cornflower.sample'
 $Activity = "$Package/cornflower.sample.MainActivity"
 $ReadyMarker = 'CORNFLOWER ready'
+# What a Debug build writes after the ready line: what the page cost to open.
+$CostMarker = 'CORNFLOWER cost'
+# The intent extra the app reads its start page from (App.PageExtra).
+$PageExtra = 'page'
 
 function Find-Adb {
     $candidates = @()
@@ -62,6 +77,21 @@ function Step([string]$text) { Write-Host "-- $text" }
 # Without a BOM, which Set-Content -Encoding utf8 adds in PowerShell 5.1 and JSON readers reject.
 function Write-Utf8([string]$path, [string]$text) {
     [IO.File]::WriteAllText($path, $text, (New-Object Text.UTF8Encoding $false))
+}
+
+# The app's crash, if it has crashed since the log was cleared, with the lines that say why: Java's report
+# (FATAL EXCEPTION, then "Process: <package>, PID: ..."), or .NET's own, when the runtime aborts on an unhandled
+# exception before Java reports it (UNHANDLED EXCEPTION). Only errors, from the main and crash buffers, so that a poll
+# doesn't read the whole log. ('*:E' is left unquoted for the phone's shell, where it matches no file.)
+function Find-Crash {
+    $lines = @((Adb logcat -d -b main -b crash '*:E') -split "`r?`n")
+    $process = "Process: $([regex]::Escape($Package)),"
+    for ($i = 0; $i -lt $lines.Count; $i++) {
+        $java = $lines[$i] -match 'FATAL EXCEPTION' -and $i + 1 -lt $lines.Count -and $lines[$i + 1] -match $process
+        $dotnet = $lines[$i] -match 'UNHANDLED EXCEPTION'
+        if ($java -or $dotnet) { return ($lines[$i..([Math]::Min($i + 8, $lines.Count - 1))] -join "`n") }
+    }
+    return $null
 }
 
 # Any failure from here on keeps the phone's log next to the run, if the run's folder exists yet.
@@ -129,9 +159,21 @@ Adb shell input keyevent KEYCODE_HOME | Out-Null
 Adb shell am force-stop $Package | Out-Null
 Start-Sleep -Seconds 1
 Adb logcat -c | Out-Null
-$start = Adb shell am start -W -S -n $Activity
-# am exits 0 even when it can't start the activity; it says so in its output.
-if ($start -match '(?m)^Error' -or $start -notmatch 'Status:\s*ok') { throw "am start failed:`n$start" }
+# adb joins its arguments into one command for the phone's shell, so the title is quoted for that shell.
+$extra = if ($Page) { @('--es', $PageExtra, ("'" + ($Page -replace "'", "'\''") + "'")) } else { @() }
+# A failure here is read, not thrown: a start that crashes the app (a title the catalogue doesn't have, say) has to
+# be reported with the app's own message, which is in its crash report, not in am's output.
+try { $start = Adb shell am start -W -S -n $Activity @extra } catch { $start = "Error: $($_.Exception.Message)" }
+# am can exit 0 even when it can't start the activity; it says so in its output.
+if ($start -match '(?m)^Error' -or $start -notmatch 'Status:\s*ok') {
+    # The crash report can come a moment after am gives up.
+    for ($try = 0; $try -lt 6; $try++) {
+        $crash = Find-Crash
+        if ($crash) { throw "The app stopped at start:`n$crash" }
+        Start-Sleep -Milliseconds 500
+    }
+    throw "am start failed:`n$start"
+}
 $totalTime = if ($start -match 'TotalTime:\s*(\d+)') { [int]$Matches[1] } else { $null }
 $launchState = if ($start -match 'LaunchState:\s*(\w+)') { $Matches[1] } else { $null }
 if ($launchState -ne 'COLD' -or -not $totalTime) {
@@ -140,17 +182,26 @@ if ($launchState -ne 'COLD' -or -not $totalTime) {
     $totalTime = $null
 }
 
-# 6. Wait for the page to say it has drawn.
+# 6. Wait for the page to say it has drawn. The sample's shell writes the line for the page it opened:
+#    CORNFLOWER ready open=<ms>ms scaling=... view=WxH raw=WxH safe=l,t,r,b page=WxH title=<title>
+#    A start that fails, such as on a title the catalogue doesn't have, stops the app: say why at once.
 $ready = $null
 $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
 while (-not $ready) {
     $line = (Adb logcat -d -s DOTNET:I) -split "`r?`n" | Where-Object { $_ -match [regex]::Escape($ReadyMarker) } | Select-Object -First 1
     if ($line) { $ready = $line; break }
+    $crash = Find-Crash
+    if ($crash) { throw "The app stopped before its ready line:`n$crash" }
     if ((Get-Date) -gt $deadline) { throw "No '$ReadyMarker' line within $TimeoutSeconds s." }
     Start-Sleep -Milliseconds 500
 }
 $facts = $ready.Substring($ready.IndexOf($ReadyMarker) + $ReadyMarker.Length).Trim()
 Step "Ready: $facts"
+# The title is last, as it can have spaces. Titles are matched in any case, as the app matches them.
+$opened = if ($facts -match ' title=(.+)$') { $Matches[1].Trim() } else { $null }
+$openMs = if ($facts -match '(?:^| )open=(\d+)ms') { [int]$Matches[1] } else { $null }
+if (-not $opened) { throw "The ready line names no page: $facts" }
+if ($Page -and $opened -ne $Page) { throw "Asked for the page '$Page', but the app opened '$opened'." }
 
 # 7. The frame. Written on the phone and pulled, because piping exec-out through PowerShell 5.1
 #    would re-encode the PNG's bytes.
@@ -160,7 +211,12 @@ Adb shell screencap -p $remote | Out-Null
 Adb pull $remote (Join-Path $Out 'frame.png') | Out-Null
 Adb shell rm $remote | Out-Null
 
-Write-Utf8 (Join-Path $Out 'logcat.txt') (Adb logcat -d)
+$log = Adb logcat -d
+Write-Utf8 (Join-Path $Out 'logcat.txt') $log
+# A Debug build writes what the page cost to open after its ready line.
+$costLine = $log -split "`r?`n" | Where-Object { $_ -match [regex]::Escape($CostMarker) } | Select-Object -First 1
+$cost = if ($costLine) { $costLine.Substring($costLine.IndexOf($CostMarker) + $CostMarker.Length).Trim() } else { $null }
+if ($cost) { Step "Cost: $cost" }
 
 $run = [ordered]@{
     when          = (Get-Date).ToString('o')
@@ -174,9 +230,12 @@ $run = [ordered]@{
     apkBytes      = $apk.Length
     launchState   = $launchState
     totalTimeMs   = $totalTime
+    page          = $opened
+    openMs        = $openMs
     ready         = $facts
+    cost          = $cost
 }
 Write-Utf8 (Join-Path $Out 'run.json') ($run | ConvertTo-Json)
 
-Step "Start: $launchState, $totalTime ms (am start -W TotalTime)"
+Step "Start: $launchState, $totalTime ms (am start -W TotalTime); '$opened' opened in $openMs ms (the shell's time)"
 Step "Wrote $Out"

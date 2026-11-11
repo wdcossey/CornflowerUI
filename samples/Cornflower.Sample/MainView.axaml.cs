@@ -1,32 +1,20 @@
-using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Platform;
 using Avalonia.Layout;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
-#if DEBUG
-using Cornflower.Sample.Diagnostics;
-#endif
 
 namespace Cornflower.Sample;
 
 /// <summary>
-/// The sample's one page: the accent, the 20 named accents, the type ramp and the font families,
-/// each read through its key, and what the device reports. Each time the page is shown, once it has
-/// drawn, it writes one <c>CORNFLOWER ready</c> line to standard output (logcat's <c>DOTNET</c> tag on Android), which
-/// <c>tools/android/run.ps1</c> waits for. In a Debug build, a line along the bottom says what the page
-/// cost to open, the first time it's shown (<see cref="Diagnostics.PerformanceMonitor"/>).
-/// First in the desktop sample's catalogue (<see cref="SampleShell"/>), under the title it shows.
+/// The theme page: the accent, the 20 named accents, the type ramp and the font families,
+/// each read through its key, and what the device reports. It has no timing code: <see cref="SampleShell"/> times it,
+/// as it does every page, and writes its ready line. First in the catalogue, under the title it shows.
 /// </summary>
 [SamplePage("theme", Order = 0)]
 public partial class MainView : UserControl
 {
-    internal const string ReadyMarker = "CORNFLOWER ready";
-
-    /// <summary>Where the ready line goes. Standard output; a test replaces it.</summary>
-    internal static Action<string> Report { get; set; } = Console.WriteLine;
-
     internal static readonly string[] NamedAccentNames =
     [
         "Lime", "Green", "Emerald", "Teal", "Cyan", "Cobalt", "Indigo", "Violet", "Pink", "Magenta",
@@ -48,17 +36,8 @@ public partial class MainView : UserControl
     private TopLevel? _top;
     private IInsetsManager? _insets;
 
-#if DEBUG
-    /// <summary>Times the page from before it's made until it's laid out; begun in the constructor.</summary>
-    private readonly PerformanceMonitor _performance = new();
-    private bool _performanceReported;
-#endif
-
     public MainView()
     {
-#if DEBUG
-        _performance.Begin();
-#endif
         AvaloniaXamlLoader.Load(this);
         this.GetControl<TextBlock>("PageTitle").Text = SamplePageCatalog.TitleOf(GetType());
 
@@ -83,7 +62,7 @@ public partial class MainView : UserControl
         }
     }
 
-    /// <summary>What the device reports, as shown on the page and in the ready line.</summary>
+    /// <summary>What the device reports, as shown on the page (<see cref="Diagnostics.DeviceFacts"/>).</summary>
     internal string DeviceFacts { get; private set; } = "";
 
     private Border Swatch(string name)
@@ -119,28 +98,7 @@ public partial class MainView : UserControl
             _insets.SafeAreaChanged += OnSafeAreaChanged;
         top.ScalingChanged += OnScalingChanged;
         UpdateFacts();
-
-        // The callback runs before the next frame is drawn; the one it asks for runs after it.
-        top.RequestAnimationFrame(_ => top.RequestAnimationFrame(_ => ReportReady()));
-
-#if DEBUG
-        if (!_performanceReported)
-        {
-            _performanceReported = true;
-            _performance.Report(this.GetControl<TextBlock>("PageTitle").Text!, this, ShowPerformance);
-        }
-#endif
     }
-
-#if DEBUG
-    private void ShowPerformance(string line)
-    {
-        _performance.Dispose();
-        var shown = this.GetControl<TextBlock>("PerformanceLine");
-        shown.Text = line;
-        shown.IsVisible = true;
-    }
-#endif
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
@@ -150,9 +108,6 @@ public partial class MainView : UserControl
         if (_top is not null)
             _top.ScalingChanged -= OnScalingChanged;
         _top = null;
-#if DEBUG
-        _performance.Dispose(); // Reported once; a page gone before its line is never reported.
-#endif
         base.OnDetachedFromVisualTree(e);
     }
 
@@ -171,24 +126,7 @@ public partial class MainView : UserControl
         if (TopLevel.GetTopLevel(this) is not { } top)
             return;
 
-        var size = top.ClientSize;
-        var safe = _insets?.SafeAreaPadding ?? default;
-        // view is the window's client area; page is this page's own size, which a shell's chrome would take from.
-        DeviceFacts = string.Format(CultureInfo.InvariantCulture,
-            "scaling={0:0.###} view={1:0.##}x{2:0.##} raw={3:0}x{4:0} safe={5:0.##},{6:0.##},{7:0.##},{8:0.##} page={9:0.##}x{10:0.##}",
-            top.RenderScaling, size.Width, size.Height,
-            size.Width * top.RenderScaling, size.Height * top.RenderScaling,
-            safe.Left, safe.Top, safe.Right, safe.Bottom, Bounds.Width, Bounds.Height);
+        DeviceFacts = Diagnostics.DeviceFacts.Of(top, this);
         this.GetControl<TextBlock>("DeviceFactsText").Text = DeviceFacts.Replace(' ', '\n');
-    }
-
-    private void ReportReady()
-    {
-        // The frame requests can't be cancelled; a page that has left its window says nothing.
-        if (_top is null)
-            return;
-
-        UpdateFacts();
-        Report($"{ReadyMarker} {DeviceFacts}");
     }
 }

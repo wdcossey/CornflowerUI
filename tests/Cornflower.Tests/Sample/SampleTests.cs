@@ -1,13 +1,10 @@
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.LogicalTree;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Themes.Simple;
-using Avalonia.Threading;
-using Avalonia.VisualTree;
 using Cornflower.Sample;
 using Cornflower.Themes.Wp81;
 using Xunit;
@@ -15,9 +12,9 @@ using Xunit;
 namespace Cornflower.Tests.Sample;
 
 /// <summary>
-/// The sample app every head runs (<c>samples/Cornflower.Sample</c>): its theme set-up, and its one
-/// page drawn by the theme's keys. The device run (<c>tools/android/run.ps1</c>) reads the page's
-/// ready line, so its format is held here too.
+/// The sample app every head runs (<c>samples/Cornflower.Sample</c>): its theme set-up, and the theme
+/// page drawn by the theme's keys. The ready line the shell writes for each page is held in
+/// <see cref="PageTimingTests"/>; the phone's start page in <see cref="StartPageTests"/>.
 /// </summary>
 public class SampleTests
 {
@@ -123,60 +120,6 @@ public class SampleTests
         using var scene = new Scene(view);
 
         Assert.Equal("scaling=2.4 view=450x800 raw=1080x1920 safe=0,0,0,0 page=450x800", view.DeviceFacts);
-    }
-
-    [AvaloniaFact]
-    public void Once_The_Page_Has_Drawn_It_Reports_Ready()
-    {
-        var lines = new List<string>();
-        var previous = MainView.Report;
-        MainView.Report = lines.Add;
-        try
-        {
-            var view = new MainView();
-            using var scene = new Scene(view);
-            for (var frame = 0; frame < 4; frame++)
-            {
-                AvaloniaHeadlessPlatform.ForceRenderTimerTick();
-                Dispatcher.UIThread.RunJobs();
-            }
-
-            Assert.Equal([$"{MainView.ReadyMarker} {view.DeviceFacts}"], lines);
-        }
-        finally
-        {
-            MainView.Report = previous;
-        }
-    }
-
-    [AvaloniaFact]
-    public void A_Page_That_Leaves_Before_Its_Frame_Reports_Nothing()
-    {
-        var lines = new List<string>();
-        var previous = MainView.Report;
-        MainView.Report = lines.Add;
-        try
-        {
-            // In and out with no dispatcher work between, so no render pass (Scene's own RunJobs
-            // runs one) can run the page's frame requests before it leaves.
-            using var scene = new Scene();
-            var view = new MainView();
-            scene.Window.Content = view;
-            Assert.True(view.IsAttachedToVisualTree());
-            scene.Window.Content = null;
-            Assert.False(view.IsAttachedToVisualTree());
-            for (var frame = 0; frame < 4; frame++)
-            {
-                AvaloniaHeadlessPlatform.ForceRenderTimerTick();
-                Dispatcher.UIThread.RunJobs();
-            }
-
-            Assert.Empty(lines);
-        }
-        finally
-        {
-            MainView.Report = previous;
-        }
     }
 
     // The swatches and the ramp's lines are made in code, outside the XAML name scope.

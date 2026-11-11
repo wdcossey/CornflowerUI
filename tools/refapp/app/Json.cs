@@ -88,6 +88,14 @@ namespace RefApp
 
         public Json Prop(string key, bool value) => Key(key).Val(value);
 
+        /// <summary>Writes JSON another writer finished, as one value: how a reading that may throw is built apart and added whole.</summary>
+        public Json Raw(string json)
+        {
+            Separate();
+            _sb.Append(json);
+            return this;
+        }
+
         public override string ToString() => _sb.ToString();
 
         private void Separate()

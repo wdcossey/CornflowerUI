@@ -96,6 +96,56 @@ public class TiltModelTests
         Assert.Equal(offsetZ, tilt.OffsetZ, 1e-9);
     }
 
+    // An element 60,000 px across, pressed 10 px from its left end, 7,000 px from the eye: once
+    // tilted, the line from the eye through the press meets the plane behind the eye, and the
+    // steps swung between corners every frame. The press is taken as it is, and the step settles.
+    [Fact]
+    public void A_Press_No_Point_Of_The_Tilted_Element_Is_Drawn_Under_Still_Settles()
+    {
+        var size = new Size(60000, 100);
+        var eye = TiltModel.Eye(size, new Vector(225 - 30000, 350));
+        var press = new Point(10, 50);
+        var tilt = TiltState.Rest;
+
+        for (var frame = 0; frame < 10; frame++)
+        {
+            var next = TiltModel.Step(tilt, size, press, eye);
+            Assert.True(double.IsFinite(next.RotationX) && double.IsFinite(next.RotationY) && double.IsFinite(next.OffsetZ), $"{next}");
+            var moved = Math.Abs(next.RotationX - tilt.RotationX) + Math.Abs(next.RotationY - tilt.RotationY) +
+                        Math.Abs(next.OffsetZ - tilt.OffsetZ);
+            tilt = next;
+            if (moved <= TiltModel.Settled)
+            {
+                Assert.Equal(TiltModel.ForOffset(press.X / size.Width - 0.5, 0), tilt);
+                return;
+            }
+        }
+
+        Assert.Fail($"not settled after 10 frames: {tilt}");
+    }
+
+    // Stepping isn't sure to settle: for TiltTests' huge Button, pressed where it is, the steps go
+    // on swinging well past TiltModel.MaxSteps (with and without the fallback above). So the tilt
+    // stops itself after that many frames.
+    [Fact]
+    public void Some_Presses_Never_Settle_By_Stepping()
+    {
+        var size = TiltTests.HugeSize;
+        var at = TiltTests.HugeAt;
+        var eye = TiltModel.Eye(size, new Point(225, 400) - (at + new Point(size.Width / 2, size.Height / 2)));
+        var press = TiltTests.HugePress - at;
+        var tilt = TiltState.Rest;
+
+        for (var frame = 0; frame < 10 * TiltModel.MaxSteps; frame++)
+        {
+            var next = TiltModel.Step(tilt, size, (Point)press, eye);
+            var moved = Math.Abs(next.RotationX - tilt.RotationX) + Math.Abs(next.RotationY - tilt.RotationY) +
+                        Math.Abs(next.OffsetZ - tilt.OffsetZ);
+            Assert.True(moved > TiltModel.Settled, $"settled at frame {frame}");
+            tilt = next;
+        }
+    }
+
     [Theory]
     [InlineData(0, 1)]
     [InlineData(180, 1)]

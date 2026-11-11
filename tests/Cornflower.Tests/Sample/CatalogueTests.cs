@@ -102,7 +102,6 @@ public class CatalogueTests
     {
         var first = SampleShell.Pages[0];
 
-        // Not made: a MainView that's never shown keeps its Debug performance listener.
         Assert.Equal("theme", first.Title);
         Assert.Equal(typeof(MainView), first.Type);
         Assert.Equal(first.Title, SamplePageCatalog.TitleOf(typeof(MainView)));
@@ -171,7 +170,7 @@ public class CatalogueTests
         var shell = new SampleShell();
         using var scene = new Scene(shell, width: Scene.ReferenceWidth + RailWidth);
         var page = new Border();
-        shell.ShowPage(page);
+        shell.ShowPage(page, "a page");
         Dispatcher.UIThread.RunJobs();
 
         Assert.Equal(new Rect(0, 0, Scene.ReferenceWidth, Scene.ReferenceHeight), page.Bounds);
@@ -187,7 +186,7 @@ public class CatalogueTests
     {
         var shell = new SampleShell();
         using var scene = new Scene(shell);
-        shell.ShowPage(new Border());
+        shell.ShowPage(new Border(), "a page");
         shell.FindControl<Button>("BackButton")!.IsVisible = false;
 
         Assert.True(shell.IsShowingPage);
@@ -205,7 +204,7 @@ public class CatalogueTests
         var page = new Panel();
         var popup = new Popup { Child = inPopup, PlacementTarget = page };
         page.Children.Add(popup);
-        shell.ShowPage(page);
+        shell.ShowPage(page, "a page");
         Dispatcher.UIThread.RunJobs();
         popup.IsOpen = true;
         Dispatcher.UIThread.RunJobs();
@@ -219,7 +218,7 @@ public class CatalogueTests
     {
         var shell = new SampleShell();
         using var scene = new Scene(shell);
-        shell.ShowPage(new Border());
+        shell.ShowPage(new Border(), "a page");
 
         Assert.True(Back(scene.Window));
         Assert.False(shell.IsShowingPage);
@@ -242,7 +241,7 @@ public class CatalogueTests
     {
         var shell = new SampleShell();
         using var scene = new Scene(shell);
-        shell.ShowPage(new Border());
+        shell.ShowPage(new Border(), "a page");
 
         scene.Window.KeyPressQwerty(PhysicalKey.ArrowLeft, RawInputModifiers.Alt);
         scene.Window.KeyReleaseQwerty(PhysicalKey.ArrowLeft, RawInputModifiers.Alt);
@@ -258,7 +257,7 @@ public class CatalogueTests
         var shell = new SampleShell();
         using var scene = new Scene(shell);
         var page = new Border();
-        shell.ShowPage(page);
+        shell.ShowPage(page, "a page");
         scene.Window.AddHandler(TopLevel.BackRequestedEvent, (_, e) => e.Handled = true);
 
         Assert.True(Back(page));
@@ -270,7 +269,7 @@ public class CatalogueTests
     {
         var shell = new SampleShell();
         using var scene = new Scene(shell);
-        shell.ShowPage(new Border());
+        shell.ShowPage(new Border(), "a page");
         using var other = new Scene(new Border());
 
         Assert.False(Back(other.Window));
@@ -282,7 +281,7 @@ public class CatalogueTests
     {
         var shell = new SampleShell();
         using var scene = new Scene(shell);
-        shell.ShowPage(new Border());
+        shell.ShowPage(new Border(), "a page");
         scene.Window.Content = null;
         Dispatcher.UIThread.RunJobs();
 

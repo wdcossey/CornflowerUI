@@ -129,7 +129,9 @@ function ReadyLines {
     }
     catch { @() }
 }
-# The next ready line after the $seen-th: a page writes one each time it's shown, once it has drawn.
+# The next ready line after the $seen-th: the shell writes one for each page it opens, once the page has drawn:
+#   CORNFLOWER ready open=<ms>ms scaling=... view=WxH raw=WxH safe=l,t,r,b page=WxH title=<title>
+# Only page=, scaling= and title= are read here.
 function WaitForReady($seen, $seconds = 5) {
     $until = (Get-Date).AddSeconds($seconds)
     do {
@@ -141,6 +143,8 @@ function WaitForReady($seen, $seconds = 5) {
 # The page's own size, which a shell's chrome would take from; the window's client area is view=.
 function PageOf($line) { if ($line -match ' page=([\d.]+)x([\d.]+)') { [double]$Matches[1], [double]$Matches[2] } }
 function ScalingOf($line) { if ($line -match 'scaling=([\d.]+) ') { [double]$Matches[1] } else { 1 } }
+# The page the line is for: last on the line, as a title can have spaces.
+function TitleOf($line) { if ($line -match ' title=(.+)$') { $Matches[1].Trim() } }
 # Windows gives a window whole pixels, so at 1.25 a 450 view is 562 pixels, 449.6: within a pixel is the size.
 function WithinAPixel($view, $want, $scaling) { [math]::Abs($view - $want) * $scaling -le 1 }
 function OnIndex { [bool](Named $CT::Text 'samples') -and -not (Named $CT::Button 'Back') }
@@ -186,9 +190,13 @@ try {
             Index
             $link = Named $CT::Button $title
             $x, $y = Centre $link
+            $seen = @(ReadyLines).Count
             # A list longer than the window: what's below the fold is opened through UI Automation instead.
             if (InWindow $x $y) { Click $link } else { "        $title is below the fold: opened through UI Automation"; Invoke-Element $link }
             Check "a click on '$title' opens it" ([bool](Named $CT::Button 'Back'))
+            # The shell times every page and writes its ready line, with no code in the page.
+            $ready = WaitForReady $seen
+            Check "$title reports ready, under its title" ((TitleOf $ready) -ceq $title) "$ready"
             Shot $title
             # A control with no size is invisible, as Avonic's fixed slot's button once was.
             $empty = @(AppButtons | Where-Object {
@@ -213,6 +221,7 @@ try {
         if ($line) { "        $line" }
         $w, $h = PageOf $line
         $scaling = ScalingOf $line
+        Check 'the ready line is the theme page''s' ((TitleOf $line) -ceq 'theme') "$line"
         Check 'the theme page reports ready, laid out at 450 x 800 to the pixel' ((WithinAPixel $w 450 $scaling) -and (WithinAPixel $h 800 $scaling)) "$line"
     }
 

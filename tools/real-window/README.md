@@ -21,14 +21,18 @@ and fails those checks. It stops at once if the window doesn't fit on the screen
 ## What it does
 
 - **Every page on the list,** with nothing to add for a new control: opens it with a real click,
-  saves a frame, fails on a button with no size and, in a Debug build, on a missing performance
-  line, then clicks Back (in the rail beside the page) and checks the list is back. A page below the fold of a long list is
-  opened through UI Automation instead: a click never goes outside the window. The performance
-  line is looked for under the page's catalogue title, which a page reads from its own `[SamplePage]`. Titles are matched exactly, case and all.
-- **The page's size:** the theme page's `CORNFLOWER ready` line has to report a 450 × 800 page
-  (`page=`, the page's own size, so chrome taking space from it shows; `view=` is the window's client
-  area, 40 wider for Back's rail), to the pixel. Windows gives a window whole pixels, so at 125 % a
-  450 page can come out at 449.6.
+  checks that the shell writes the page's ready line under its title, saves a frame, fails on a
+  button with no size and, in a Debug build, on a missing performance line, then clicks Back (in the
+  rail beside the page) and checks the list is back. A page below the fold of a long list is
+  opened through UI Automation instead: a click never goes outside the window. The ready line and the
+  performance line (which the shell shows up the rail, beside the page) are looked for under the page's
+  catalogue title, from its `[SamplePage]`. Titles are matched exactly, case and all.
+- **The page's size:** the theme page's ready line,
+  `CORNFLOWER ready open=<ms>ms scaling=<s> view=<w>x<h> raw=<w>x<h> safe=<l>,<t>,<r>,<b> page=<w>x<h> title=<title>`,
+  has to name the theme page and report a 450 × 800 page (`page=`, the page's own size, so chrome
+  taking space from it shows; `view=` is the window's client area, 40 wider for Back's rail), to the
+  pixel. Windows gives a window whole pixels, so at 125 % a 450 page can come out at 449.6. Only
+  `page=`, `scaling=` and `title=` are read.
 - **Alt+Left,** Avalonia's back on desktop, from a page to the list.
 - **Resizing:** the window has to say it can be resized, and the page is laid out wider once the
   window is.
