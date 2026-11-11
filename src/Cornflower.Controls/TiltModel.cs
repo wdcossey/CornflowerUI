@@ -78,6 +78,14 @@ internal static class TiltModel
     /// <summary>Below this change in a frame, in degrees and view pixels, a press has settled.</summary>
     public const double Settled = 1e-4;
 
+    /// <summary>
+    /// The most frames a press steps for at one point of the finger. Every press the readings
+    /// cover settles in four or five. An element tens of thousands of pixels across, pressed far
+    /// from the eye, can swing between tilts for ever; after this many, it takes the rule for the
+    /// point as it is, untilted (a step from rest), and stops.
+    /// </summary>
+    public const int MaxSteps = 30;
+
     /// <summary>The rule itself, for a press at fractions <paramref name="dx"/>, <paramref name="dy"/> from the centre.</summary>
     public static TiltState ForOffset(double dx, double dy)
     {

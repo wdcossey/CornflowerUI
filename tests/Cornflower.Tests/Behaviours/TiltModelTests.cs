@@ -124,6 +124,28 @@ public class TiltModelTests
         Assert.Fail($"not settled after 10 frames: {tilt}");
     }
 
+    // Stepping isn't sure to settle: for TiltTests' huge Button, pressed where it is, the steps go
+    // on swinging well past TiltModel.MaxSteps (with and without the fallback above). So the tilt
+    // stops itself after that many frames.
+    [Fact]
+    public void Some_Presses_Never_Settle_By_Stepping()
+    {
+        var size = TiltTests.HugeSize;
+        var at = TiltTests.HugeAt;
+        var eye = TiltModel.Eye(size, new Point(225, 400) - (at + new Point(size.Width / 2, size.Height / 2)));
+        var press = TiltTests.HugePress - at;
+        var tilt = TiltState.Rest;
+
+        for (var frame = 0; frame < 10 * TiltModel.MaxSteps; frame++)
+        {
+            var next = TiltModel.Step(tilt, size, (Point)press, eye);
+            var moved = Math.Abs(next.RotationX - tilt.RotationX) + Math.Abs(next.RotationY - tilt.RotationY) +
+                        Math.Abs(next.OffsetZ - tilt.OffsetZ);
+            Assert.True(moved > TiltModel.Settled, $"settled at frame {frame}");
+            tilt = next;
+        }
+    }
+
     [Theory]
     [InlineData(0, 1)]
     [InlineData(180, 1)]

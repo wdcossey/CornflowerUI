@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -32,9 +33,15 @@ namespace Cornflower.Controls;
 /// isn't tilted, so <c>GetPosition</c> on it, and its layout, are unchanged. If a template gives
 /// the tilted part a transform of its own, the tilt is drawn after it, as the phone draws a
 /// <c>PlaneProjection</c> after a <c>RenderTransform</c>, and the finger's point is taken back
-/// through both. That transform changing in place (an animation on its scale, say) shows at once.
-/// A new value for it, local or styled, set while a press has settled, shows at the next move or
-/// the return: Avalonia 12.1.4 raises no change for a value set under an animation-priority one.
+//// through both. That transform changing in place (an animation on its scale, say) shows at once,
+/// and a press steps again for the point now under the finger. A new value for it, local or
+/// styled, set while a press has settled, shows at the next move or the return: Avalonia 12.1.4
+/// raises no change for a value set under an animation-priority one. Only the local or styled
+/// value is composed. One at animation priority, as Avalonia's <c>Animation</c> and
+/// <c>Transitions</c> set it (a pressed scale with a <c>TransformOperationsTransition</c>, say),
+/// isn't the base value and can't be read under the tilt's: the later of the two shows, so one
+/// started before the press is hidden while the tilt shows, and one started during it hides the
+/// tilt. A template that animates the tilted part's transform puts it on another element.
 /// </para>
 /// <para>
 /// A press in a popup the control owns is routed through the control but isn't on it, so it
@@ -70,6 +77,9 @@ public static class Tilt
 
     private static readonly AttachedProperty<Tracker?> TrackerProperty =
         AvaloniaProperty.RegisterAttached<Control, Tracker?>("Tracker", typeof(Tilt));
+
+    /// <summary>Every tracker's transform, so that an inner tilt's eye can leave an outer tilt out.</summary>
+    private static readonly ConditionalWeakTable<MatrixTransform, Tracker> TiltTransforms = new();
 
     static Tilt()
     {
@@ -131,14 +141,15 @@ public static class Tilt
 
     /// <summary>
     /// Whether a tilt-enabled control nearer the press than <paramref name="control"/> will tilt
-    /// instead: only the nearest tilts, as the toolkit's. One that won't take the press (its target
-    /// has no size, it's outside a window, or it's already pressed) leaves it to the next one out.
+    /// instead: only the nearest tilts, as the toolkit's. One that can't tilt at all (its target has
+    /// no size) leaves the press to the next one out; one that is busy with another finger still
+    /// keeps it from the outer one, so a second finger never tilts two at once.
     /// </summary>
     private static bool NearerTiltBelow(Control control, object? source)
     {
         for (var v = source as Visual; v is not null && !ReferenceEquals(v, control); v = v.GetVisualParent())
         {
-            if (v is Control c && c.GetValue(TrackerProperty) is { } nearer && nearer.Takes(source, out _)) return true;
+            if (v is Control c && c.GetValue(TrackerProperty) is { CanTilt: true }) return true;
         }
 
         return false;
@@ -164,6 +175,7 @@ public static class Tilt
         private IPointer? _pointer;
         private Point _press;          // the finger, in the target's parent's space
         private Point _eye;            // the point under the eye, in the target's space, as of the last frame
+        private int _steps;            // steps taken for this point of the finger
         private TimeSpan _released;
         private TiltState _held;
         private IDisposable? _pending; // in Pressed, a step; in Paused or Returning, the return
@@ -174,6 +186,7 @@ public static class Tilt
         public Tracker(Control control)
         {
             _control = control;
+            TiltTransforms.Add(_transform, this);
             control.AddHandler(InputElement.PointerPressedEvent, OnPressed, RoutingStrategies.Tunnel, handledEventsToo: true);
             control.AddHandler(InputElement.PointerMovedEvent, OnMoved, RoutingStrategies.Tunnel, handledEventsToo: true);
             control.AddHandler(InputElement.PointerReleasedEvent, OnReleased, RoutingStrategies.Tunnel, handledEventsToo: true);
@@ -182,6 +195,9 @@ public static class Tilt
         }
 
         public TiltState State { get; private set; }
+
+        /// <summary>Whether the control has anything to tilt: a target with a size. Cheap: no eye.</summary>
+        public bool CanTilt => TargetOf(_control).Bounds is { Width: > 0, Height: > 0 };
 
         public void Detach()
         {
@@ -231,6 +247,7 @@ public static class Tilt
             _phase = Phase.Pressed;
             _pointer = e.Pointer;
             _press = e.GetPosition(target.GetVisualParent());
+            _steps = 0;
             Step();
         }
 
@@ -259,6 +276,7 @@ public static class Tilt
             var stepping = _phase == Phase.Pressed && _pending is not null;
             _phase = Phase.Pressed;
             _press = press;
+            _steps = 0;
             if (!stepping) Step();                   // else the frame already asked for steps from here
         }
 
@@ -287,12 +305,14 @@ public static class Tilt
             if (_target is not null) _target.DetachedFromVisualTree += OnTargetDetached;
         }
 
-        /// <summary>The target is still this control's: not swapped out by a new template, and laid out.</summary>
-        private bool TargetStands() =>
-            _target is not null && (ReferenceEquals(_target, _control) || _control.IsVisualAncestorOf(_target)) &&
-            _target.Bounds.Width > 0 && _target.Bounds.Height > 0;
+        /// <summary>The target is laid out. (One a new template took away has already put the tracker at rest.)</summary>
+        private bool TargetStands() => _target is not null && _target.Bounds.Width > 0 && _target.Bounds.Height > 0;
 
-        /// <summary>One frame of a press: the tilt for the finger as the current tilt shows it. Steps again next frame until it settles.</summary>
+        /// <summary>
+        /// One frame of a press: the tilt for the finger as the current tilt shows it. Steps again
+        /// next frame until it settles, or for <see cref="TiltModel.MaxSteps"/> frames at one point,
+        /// after which it takes the rule for the point as it is, untilted, and stops.
+        /// </summary>
         private void Step()
         {
             Cancel();
@@ -304,12 +324,14 @@ public static class Tilt
 
             var bounds = _target!.Bounds;
             Look();
-            var next = TiltModel.Step(State, bounds.Size, _press - bounds.Position, _eye, OwnMatrix(bounds.Size));
+            var own = OwnMatrix(bounds.Size);
+            var last = ++_steps >= TiltModel.MaxSteps;
+            var next = TiltModel.Step(last ? TiltState.Rest : State, bounds.Size, _press - bounds.Position, _eye, own);
             var moved = Math.Abs(next.RotationX - State.RotationX) + Math.Abs(next.RotationY - State.RotationY) +
                         Math.Abs(next.OffsetZ - State.OffsetZ);
-            Show(next, bounds.Size);
+            Show(next, bounds.Size, own);
 
-            if (moved > TiltModel.Settled)
+            if (moved > TiltModel.Settled && !last)
                 _pending = CornflowerClock.RequestFrame(_control, Step);
         }
 
@@ -344,7 +366,8 @@ public static class Tilt
             }
 
             Look();
-            Show(_held.Scale(factor), _target!.Bounds.Size);
+            var size = _target!.Bounds.Size;
+            Show(_held.Scale(factor), size, OwnMatrix(size));
             _pending = CornflowerClock.RequestFrame(_control, Return);
         }
 
@@ -359,13 +382,37 @@ public static class Tilt
         /// from its centre to the centre of its <see cref="TopLevel"/>, which on a phone is the
         /// screen. Null outside a window.
         /// </summary>
+        /// <remarks>
+        /// The screen's centre is taken into the parent's space as <c>TranslatePoint</c> takes it, by
+        /// each ancestor's offset and <c>RenderTransform</c>, but an ancestor's tilt is left out: a
+        /// tilting item round a pressed Button would move the Button's eye every frame of its own
+        /// return, and the Button would never settle while it moved.
+        /// </remarks>
         private Point? EyeFor(Visual target, Visual parent)
         {
             if (TopLevel.GetTopLevel(_control) is not { } top) return null;
 
+            var toTop = Matrix.Identity;
+            Visual? v = parent;
+            for (; v is not null && !ReferenceEquals(v, top); v = v.GetVisualParent())
+            {
+                var transform = v.RenderTransform;
+                if (transform is MatrixTransform shown && TiltTransforms.TryGetValue(shown, out _))
+                    transform = v.GetBaseValue(Visual.RenderTransformProperty).GetValueOrDefault();
+                if (transform is not null)
+                {
+                    var origin = v.RenderTransformOrigin.ToPixels(v.Bounds.Size);
+                    toTop *= Matrix.CreateTranslation(-origin) * transform.Value * Matrix.CreateTranslation(origin);
+                }
+
+                toTop *= Matrix.CreateTranslation(v.Bounds.Position);
+            }
+
+            if (v is null || !toTop.TryInvert(out var fromTop)) return null;
+
             var bounds = target.Bounds;
-            var screenCentre = top.TranslatePoint(new Point(top.ClientSize.Width / 2, top.ClientSize.Height / 2), parent);
-            return screenCentre is { } centre ? TiltModel.Eye(bounds.Size, centre - bounds.Center) : null;
+            var centre = fromTop.Transform(new Point(top.ClientSize.Width / 2, top.ClientSize.Height / 2));
+            return TiltModel.Eye(bounds.Size, centre - bounds.Center);
         }
 
         /// <summary>
@@ -389,7 +436,10 @@ public static class Tilt
             return Matrix.CreateTranslation(-origin) * own.Value * Matrix.CreateTranslation(origin);
         }
 
-        private void Show(TiltState state, Size size)
+        /// <param name="state">The tilt to show.</param>
+        /// <param name="size">The target's size.</param>
+        /// <param name="own">The target's own transform, from <see cref="OwnMatrix"/>.</param>
+        private void Show(TiltState state, Size size, Matrix own)
         {
             State = state;
             if (_target is null) return;
@@ -398,16 +448,30 @@ public static class Tilt
             // the top left, so it's moved there and back. The target's own transform, about its origin,
             // is drawn first, then the tilt: (own about the origin) × tilt, moved to the origin.
             var origin = _target.RenderTransformOrigin.ToPixels(size);
-            var own = OwnMatrix(size);
             _transform.Matrix = Matrix.CreateTranslation(origin) * own * TiltModel.ToMatrix(state, size, _eye) *
                                 Matrix.CreateTranslation(-origin);
             Put();
         }
 
-        /// <summary>The target's own transform changed while the tilt shows: the same tilt, drawn over the new one.</summary>
+        /// <summary>
+        /// The target's own transform changed in place while the tilt shows. Pressed, a different
+        /// point of it is under the finger now, so the press steps again from here. Returning, the
+        /// same tilt is drawn over the new transform.
+        /// </summary>
         private void Redraw()
         {
-            if (_shown is not null && _target is not null) Show(State, _target.Bounds.Size);
+            if (_shown is null || _target is null) return;
+
+            if (_phase == Phase.Pressed)
+            {
+                _steps = 0;
+                Step();
+                return;
+            }
+
+            Look();
+            var size = _target.Bounds.Size;
+            Show(State, size, OwnMatrix(size));
         }
 
         /// <summary>
