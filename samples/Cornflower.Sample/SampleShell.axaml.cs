@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Globalization;
-using System.Reflection;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -20,13 +19,17 @@ namespace Cornflower.Sample;
 /// The shell times every page it opens, from navigation to the page's first drawn frame, and then writes the page's
 /// <c>CORNFLOWER ready</c> line to standard output (logcat's <c>DOTNET</c> tag on Android), which
 /// <c>tools/android/run.ps1</c> and <c>tools/real-window/drive.ps1</c> read. A page has no timing code of its own. In a
-/// Debug build it also shows what the page cost to open, along the bottom (<see cref="PerformanceMonitor"/>).
+/// Debug build it also writes what the page cost to open, a <c>CORNFLOWER cost</c> line, and shows it up the rail
+/// (<see cref="PerformanceMonitor"/>).
 /// </para>
 /// </summary>
 public partial class SampleShell : UserControl
 {
     /// <summary>What every ready line starts with.</summary>
     internal const string ReadyMarker = "CORNFLOWER ready";
+
+    /// <summary>What the Debug line starts with, written after the page's ready line.</summary>
+    internal const string CostMarker = "CORNFLOWER cost";
 
     private static IReadOnlyList<SamplePageEntry>? _pages;
 
@@ -39,13 +42,11 @@ public partial class SampleShell : UserControl
     private TopLevel? _top;
     private IDisposable? _backRequests;
 
-    /// <summary>The page shown, from its navigation until the shell leaves it; null on the list.</summary>
+    /// <summary>
+    /// The page being opened, from its navigation until its ready line is written, or until the shell leaves it or its
+    /// window; then null.
+    /// </summary>
     private Opening? _opening;
-
-#if DEBUG
-    /// <summary>Avalonia's layout and render times, from each navigation; made when a page is first opened.</summary>
-    private PerformanceMonitor? _performance;
-#endif
 
     /// <summary>The sample's catalogue, <see cref="Pages"/>.</summary>
     public SampleShell()
@@ -69,7 +70,7 @@ public partial class SampleShell : UserControl
     /// <summary>The pages on the list.</summary>
     internal IReadOnlyList<SamplePageEntry> Catalogue { get; }
 
-    /// <summary>Where each ready line goes. Standard output; a test replaces it.</summary>
+    /// <summary>Where each ready line, and in Debug each cost line, goes. Standard output; a test replaces it.</summary>
     internal Action<string> Report { get; set; } = Console.WriteLine;
 
     /// <summary>
@@ -91,7 +92,7 @@ public partial class SampleShell : UserControl
     /// <summary>Shows the list.</summary>
     public void ShowIndex()
     {
-        _opening = null;
+        Abandon();
         HidePerformance();
         BackButton.IsVisible = false;
         Host.Content = Index;
@@ -111,39 +112,23 @@ public partial class SampleShell : UserControl
         Open(page);
     }
 
-    /// <summary>Makes <paramref name="page"/> and shows it, timed from before it's made.</summary>
+    /// <summary>Makes <paramref name="page"/> and shows it, timed from before it's made, because styles apply as soon as it's attached.</summary>
     public void Open(SamplePageEntry page)
     {
-        var started = Begin();
+        var started = Stopwatch.GetTimestamp();
         Show(page.Create(), page.Title, started);
     }
 
-    /// <summary>
-    /// Shows <paramref name="page"/>, with Back to the list, timed from now under its <see cref="SamplePageAttribute"/>
-    /// title, or its type's name if it has none.
-    /// </summary>
-    public void ShowPage(Control page)
-    {
-        var started = Begin();
-        Show(page, page.GetType().GetCustomAttribute<SamplePageAttribute>()?.Title ?? page.GetType().Name, started);
-    }
+    /// <summary>Shows <paramref name="page"/>, made by a test, under <paramref name="title"/>, timed from now.</summary>
+    internal void ShowPage(Control page, string title) => Show(page, title, Stopwatch.GetTimestamp());
 
     /// <summary>The ready line: the time to open, what the device reports, and the page's title, last, as it can have spaces.</summary>
     internal static string ReadyLine(TimeSpan opened, string facts, string title) =>
         string.Create(CultureInfo.InvariantCulture, $"{ReadyMarker} open={opened.TotalMilliseconds:0}ms {facts} title={title}");
 
-    /// <summary>Navigation: where a page's time starts, before it's made, because styles apply as soon as it's attached.</summary>
-    private long Begin()
-    {
-#if DEBUG
-        _performance ??= new PerformanceMonitor();
-        _performance.Begin();
-#endif
-        return Stopwatch.GetTimestamp();
-    }
-
     private void Show(Control page, string title, long started)
     {
+        Abandon();
         HidePerformance();
         BackButton.IsVisible = true;
         Host.Content = page;
@@ -151,36 +136,46 @@ public partial class SampleShell : UserControl
         AwaitFirstFrame();
     }
 
+    /// <summary>Leaves the page being opened unreported, and stops measuring it.</summary>
+    private void Abandon()
+    {
+        _opening?.Dispose();
+        _opening = null;
+    }
+
     /// <summary>
-    /// Asks for the frame after the one that first draws the page shown, if the shell is in a window and the page
-    /// hasn't been reported; a shell that isn't in one yet, as on a phone at start, asks once it is.
+    /// Asks for the frame after the one that first draws the page being opened, if the shell is in a window; a shell
+    /// that isn't in one yet, as on a phone at start, asks once it is.
     /// </summary>
     private void AwaitFirstFrame()
     {
-        if (_opening is not { Reported: false } opening || _top is not { } top)
+        if (_opening is not { } opening || _top is not { } top)
             return;
 
+#if DEBUG
+        // Only now, in a window, so that a shell never shown has no listener; layout and render can't come before.
+        opening.Measure();
+#endif
         // The callback runs before the next frame is drawn; the one it asks for runs after it.
         top.RequestAnimationFrame(_ => top.RequestAnimationFrame(_ => Drawn(opening, top)));
     }
 
     private void Drawn(Opening opening, TopLevel top)
     {
-        // Frame requests can't be cancelled: a page that has gone, or a shell that has left its window, says nothing.
-        if (!ReferenceEquals(opening, _opening) || opening.Reported || !ReferenceEquals(top, _top))
+        // Frame requests can't be cancelled: a page left, or a shell that has left its window since, says nothing.
+        if (!ReferenceEquals(opening, _opening) || !ReferenceEquals(top, _top))
             return;
 
-        opening.Reported = true;
+        _opening = null;
         var elapsed = Stopwatch.GetElapsedTime(opening.Started);
         Report(ReadyLine(elapsed, DeviceFacts.Of(top, opening.Page), opening.Title));
 #if DEBUG
-        // None if the shell left its window and came back while the page was opening: its times went with it.
-        if (_performance is not null)
-        {
-            PerformanceLine.Text = _performance.Read(opening.Title, opening.Page, elapsed);
-            PerformanceLine.IsVisible = true;
-        }
+        var cost = opening.Read(elapsed);
+        Report($"{CostMarker} {cost}");
+        PerformanceLine.Text = cost;
+        PerformanceLine.IsVisible = true;
 #endif
+        opening.Dispose();
     }
 
     private void HidePerformance()
@@ -205,11 +200,8 @@ public partial class SampleShell : UserControl
         _backRequests?.Dispose();
         _backRequests = null;
         _top = null;
-#if DEBUG
-        // Its listener hears every meter in the process until it's disposed.
-        _performance?.Dispose();
-        _performance = null;
-#endif
+        // A page still opening when its shell leaves the window is never reported: its time would include the gap.
+        Abandon();
         base.OnDetachedFromVisualTree(e);
     }
 
@@ -236,8 +228,8 @@ public partial class SampleShell : UserControl
         return top;
     }
 
-    /// <summary>A page shown: what it is, what it's called, when its navigation began, and whether its line is written.</summary>
-    private sealed class Opening(Control page, string title, long started)
+    /// <summary>A page being opened: what it is, what it's called, when its navigation began, and in Debug its cost.</summary>
+    private sealed class Opening(Control page, string title, long started) : IDisposable
     {
         public Control Page { get; } = page;
 
@@ -245,6 +237,23 @@ public partial class SampleShell : UserControl
 
         public long Started { get; } = started;
 
-        public bool Reported { get; set; }
+#if DEBUG
+        /// <summary>Avalonia's layout and render times for this page; a process-wide listener, so disposed with it.</summary>
+        private PerformanceMonitor? _performance;
+
+        public void Measure() => _performance ??= new PerformanceMonitor();
+
+        public string Read(TimeSpan opened) => _performance!.Read(Title, Page, opened);
+
+        public void Dispose()
+        {
+            _performance?.Dispose();
+            _performance = null;
+        }
+#else
+        public void Dispose()
+        {
+        }
+#endif
     }
 }

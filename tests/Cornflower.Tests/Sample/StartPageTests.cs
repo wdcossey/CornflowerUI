@@ -65,7 +65,17 @@ public class StartPageTests
         }
 
         Assert.False(shell.HasBackRail);
-        Assert.Matches("^CORNFLOWER ready open=[0-9]+ms scaling=2.4 view=450x800 raw=1080x1920 safe=0,0,0,0 page=450x800 title=second page$", Assert.Single(lines));
+        Assert.Matches(
+            "^CORNFLOWER ready open=[0-9]+ms scaling=2.4 view=450x800 raw=1080x1920 safe=0,0,0,0 page=450x800 title=second page$",
+            Assert.Single(lines, line => line.StartsWith(SampleShell.ReadyMarker, StringComparison.Ordinal)));
+    }
+
+    [AvaloniaFact]
+    public void A_Phone_With_No_Pages_Fails_Saying_So()
+    {
+        var error = Assert.Throws<InvalidOperationException>(() => App.PhoneView([], null));
+
+        Assert.Equal("The sample has no pages to open: a page is a control marked [SamplePage].", error.Message);
     }
 
     // With no rail, the platform's back request is Back: to the list, then out of the app.
@@ -97,6 +107,30 @@ public class StartPageTests
             App.StartPage = "no such page";
             var error = Assert.Throws<ArgumentException>(App.PhoneView);
             Assert.Contains("'no such page'", error.Message, StringComparison.Ordinal);
+        }
+        finally
+        {
+            App.StartPage = previous;
+        }
+    }
+
+    // Avalonia's activity lifetime makes the view with no arguments; the Android head sets StartPage first, in OnCreate.
+    // If Avalonia ever made the view before that, a -Page would be ignored: the view fails instead. That Avalonia makes
+    // it after OnCreate's first line is checked only by the device run.
+    [AvaloniaFact]
+    public void The_Activitys_View_Fails_If_Made_Before_The_Activity_Set_The_Start_Page()
+    {
+        var previous = App.StartPage;
+        try
+        {
+            App.ForgetStartPage();
+            var error = Assert.Throws<InvalidOperationException>(App.ActivityView);
+            Assert.StartsWith("Avalonia made the phone's view before MainActivity set App.StartPage", error.Message, StringComparison.Ordinal);
+
+            App.StartPage = null; // As from the launcher, with no extra.
+            var shell = App.ActivityView();
+            using var scene = new Scene(shell);
+            Assert.IsType<MainView>(shell.Shown);
         }
         finally
         {

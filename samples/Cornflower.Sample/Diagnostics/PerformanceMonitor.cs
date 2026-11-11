@@ -7,7 +7,7 @@ using Avalonia.VisualTree;
 namespace Cornflower.Sample.Diagnostics;
 
 /// <summary>
-/// The line along the bottom of the sample in a Debug build: what a page cost to open, from <see cref="SampleShell"/>'s
+/// The sample's line in a Debug build, up the rail and on standard output: what a page cost to open, from <see cref="SampleShell"/>'s
 /// time and Avalonia's own meter. It adds nothing to the library, and it doesn't trace, because tracing would cost more
 /// than what it measures. See docs/performance/README.md.
 /// </summary>
@@ -20,6 +20,8 @@ public sealed class PerformanceMonitor : IDisposable
 
     private readonly MeterListener _listener = new();
     private readonly object _gate = new();
+    private static int _listening;
+    private int _disposed;
     private double _layout;
     private double _render;
 
@@ -46,6 +48,7 @@ public sealed class PerformanceMonitor : IDisposable
         };
         _listener.SetMeasurementEventCallback<double>((instrument, value, _, _) => Record(instrument.Name, value));
         _listener.Start();
+        Interlocked.Increment(ref _listening);
     }
 
     /// <summary>A time from Avalonia's meter, in milliseconds.</summary>
@@ -64,7 +67,13 @@ public sealed class PerformanceMonitor : IDisposable
         }
     }
 
-    /// <summary>Call this before making a page, because styles apply as soon as it's attached: Avalonia's times count from here.</summary>
+    /// <summary>
+    /// How many monitors are listening, in the whole process: each hears every one of Avalonia's measurements until it's
+    /// disposed, so one should live no longer than the page it measures.
+    /// </summary>
+    internal static int Listening => Volatile.Read(ref _listening);
+
+    /// <summary>Starts the times again: Avalonia's times count from here, or from when the monitor was made.</summary>
     public void Begin()
     {
         lock (_gate)
@@ -122,5 +131,12 @@ public sealed class PerformanceMonitor : IDisposable
             CultureInfo.InvariantCulture,
             $"{title}: {openMs:0} ms, {elements} elements, {rules} rules ({alternatives}), layout {layoutMs:0.0}, render {renderMs:0.0}");
 
-    public void Dispose() => _listener.Dispose();
+    public void Dispose()
+    {
+        if (Interlocked.Exchange(ref _disposed, 1) == 0)
+        {
+            _listener.Dispose();
+            Interlocked.Decrement(ref _listening);
+        }
+    }
 }

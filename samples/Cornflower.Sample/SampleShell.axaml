@@ -30,25 +30,31 @@
       </ScrollViewer>
     </ContentControl>
 
-    <!--
-      What the page cost to open, in a Debug build: drawn over the foot of the page, so that the page keeps its
-      whole view, and not hit-testable, so that it takes nothing from the page's input (docs/performance/README.md).
-    -->
-    <TextBlock x:Name="PerformanceLine" VerticalAlignment="Bottom" IsVisible="False" IsHitTestVisible="False"
-               Padding="19,6" TextWrapping="Wrap"
-               Background="{DynamicResource ApplicationPageBackgroundThemeBrush}"
-               Foreground="{DynamicResource PhoneMidBrush}"
-               FontSize="{DynamicResource TextStyleSmallFontSize}" />
-
     <!-- On a phone (HasBackRail off) the rail is collapsed: the platform's back request is Back there. -->
     <Border x:Name="Rail" Grid.Column="1" Width="40" Background="#FF000000">
-      <Button x:Name="BackButton" IsVisible="False" Click="OnBack"
-              AutomationProperties.Name="Back" Width="40" Height="40" Padding="0"
-              HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,12"
-              Background="Transparent" BorderThickness="0">
-        <Path Data="M 15,4 L 7,12 L 15,20 M 7,12 L 21,12" Stroke="#FFFFFFFF" StrokeThickness="2"
-              StrokeLineCap="Round" StrokeJoin="Round" Width="24" Height="24" />
-      </Button>
+      <DockPanel>
+        <Button x:Name="BackButton" DockPanel.Dock="Bottom" IsVisible="False" Click="OnBack"
+                AutomationProperties.Name="Back" Width="40" Height="40" Padding="0"
+                HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,12"
+                Background="Transparent" BorderThickness="0">
+          <Path Data="M 15,4 L 7,12 L 15,20 M 7,12 L 21,12" Stroke="#FFFFFFFF" StrokeThickness="2"
+                StrokeLineCap="Round" StrokeJoin="Round" Width="24" Height="24" />
+        </Button>
+        <!--
+          What the page cost to open, in a Debug build, read up the rail above Back: in the sample's chrome, so that
+          nothing is drawn over the page, which keeps its whole view in every build, its content and its frames
+          (docs/performance/README.md). The shell also writes it to standard output, which is where a phone, with
+          no rail, has it.
+        -->
+        <LayoutTransformControl HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,6">
+          <LayoutTransformControl.LayoutTransform>
+            <RotateTransform Angle="-90" />
+          </LayoutTransformControl.LayoutTransform>
+          <TextBlock x:Name="PerformanceLine" IsVisible="False" TextTrimming="CharacterEllipsis"
+                     Foreground="{DynamicResource PhoneMidBrush}"
+                     FontSize="{DynamicResource TextStyleSmallFontSize}" />
+        </LayoutTransformControl>
+      </DockPanel>
     </Border>
   </Grid>
 </UserControl>

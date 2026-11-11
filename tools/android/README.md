@@ -11,11 +11,13 @@ powershell -ExecutionPolicy Bypass -File tools\android\run.ps1 -Page theme # ope
 
 The phone shows the sample's catalogue, as the desktop does, with no rail for Back: the phone's
 back button or gesture is Back, to the list, and from the list out of the app. `-Page <title>`
-opens a page of the catalogue at start, by its title in any case (quote a title with a space); it
-is passed to the app as the intent's `page` extra (`am start --es page <title>`), which
-`MainActivity` gives `App.StartPage`. Without it, the app opens the first page, `theme`, as a
-start from the launcher does. A title the catalogue doesn't have stops the app at start, naming
-the titles it has, and the script stops with Android's crash report.
+opens a page of the catalogue at start, by its title in any case (quote a title with a space; a
+title with a double quote is refused, as PowerShell 5.1 can't pass one to adb intact); it is
+passed to the app as the intent's `page` extra (`am start --es page <title>`), which
+`MainActivity` gives `App.StartPage` before Avalonia makes the view (the app fails if Avalonia
+ever made it first, rather than ignore the page). Without it, the app opens the first page,
+`theme`, as a start from the launcher does. A title the catalogue doesn't have stops the app at
+start, naming the titles it has, and the script stops with the app's crash report.
 
 `run.ps1`:
 
@@ -29,10 +31,13 @@ the titles it has, and the script stops with Android's crash report.
    the time Android measured from the intent to the activity's first frame (`TotalTime`). Going
    home first matters: a screen waking from doze can bring the app's last task back by itself,
    and then `am start` only delivers to it and times nothing. If Android doesn't report a `COLD`
-   start, the script warns and records no time.
+   start, the script warns and records no time. If `am start` fails, the script first looks for
+   the app's crash report, so that a crash at start is reported with the app's own message.
 5. Waits for the page's ready line in logcat (`-TimeoutSeconds`, 60 by default), or stops at once
-   on a crash report for the app. The sample's shell writes the line, under logcat's `DOTNET` tag,
-   for the page it opened, after the page's first drawn frame:
+   on a crash report for the app: Java's (`FATAL EXCEPTION` with `Process: <package>`) or .NET's
+   (`UNHANDLED EXCEPTION`), read from the errors in the main and crash buffers. The sample's shell
+   writes the line, under logcat's `DOTNET` tag, for the page it opened, after the page's first
+   drawn frame:
 
    ```
    CORNFLOWER ready open=<ms>ms scaling=<s> view=<w>x<h> raw=<w>x<h> safe=<l>,<t>,<r>,<b> page=<w>x<h> title=<title>
@@ -41,7 +46,9 @@ the titles it has, and the script stops with Android's crash report.
    `open` is the shell's time from navigation, before the page is made, to that frame; on a cold
    start it includes making the app's view. `view` is the window's size in view pixels and `raw` in
    raw pixels, `safe` the safe area, `page` the page's own size, and the title is last, as it can
-   have spaces. The script checks that the title is the page `-Page` asked for, in any case.
+   have spaces. The script checks that the title is the page `-Page` asked for, in any case. A
+   Debug build also writes `CORNFLOWER cost <line>` after it, what the page cost to open
+   ([`docs/performance`](../../docs/performance/README.md#in-a-debug-build)).
 6. Saves the screen with `screencap` on the phone and pulls it, so the PNG's bytes aren't
    re-encoded by PowerShell 5.1.
 
@@ -51,7 +58,7 @@ otherwise. `artifacts/` is ignored by git.
 | File | What |
 |---|---|
 | `frame.png` | The phone's screen at its own resolution, status bar and all |
-| `run.json` | The device, the APK, `launchState` and `totalTimeMs` from `am start -W`, the page opened (`page`) and the shell's time to open it (`openMs`), and the ready line's facts (`ready`) |
+| `run.json` | The device, the APK, `launchState` and `totalTimeMs` from `am start -W`, the page opened (`page`) and the shell's time to open it (`openMs`), the ready line's facts (`ready`), and in a Debug build the cost line (`cost`) |
 | `logcat.txt` | The run's whole log, also written when the ready line never comes |
 
 The ADB path is taken from `ANDROID_HOME`, `ANDROID_SDK_ROOT`, `%LOCALAPPDATA%\Android\Sdk`, then

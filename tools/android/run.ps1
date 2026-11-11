@@ -37,11 +37,15 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+# PowerShell 5.1 passes a double quote inside an argument to adb mangled, so such a title can't reach the app intact.
+if ($Page -and $Page.Contains('"')) { throw "A -Page title can't have a double quote in it: $Page" }
 $Repo = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $Project = Join-Path $Repo 'samples\Cornflower.Sample.Android\Cornflower.Sample.Android.csproj'
 $Package = 'io.github.wdcossey.cornflower.sample'
 $Activity = "$Package/cornflower.sample.MainActivity"
 $ReadyMarker = 'CORNFLOWER ready'
+# What a Debug build writes after the ready line: what the page cost to open.
+$CostMarker = 'CORNFLOWER cost'
 # The intent extra the app reads its start page from (App.PageExtra).
 $PageExtra = 'page'
 
@@ -73,6 +77,21 @@ function Step([string]$text) { Write-Host "-- $text" }
 # Without a BOM, which Set-Content -Encoding utf8 adds in PowerShell 5.1 and JSON readers reject.
 function Write-Utf8([string]$path, [string]$text) {
     [IO.File]::WriteAllText($path, $text, (New-Object Text.UTF8Encoding $false))
+}
+
+# The app's crash, if it has crashed since the log was cleared, with the lines that say why: Java's report
+# (FATAL EXCEPTION, then "Process: <package>, PID: ..."), or .NET's own, when the runtime aborts on an unhandled
+# exception before Java reports it (UNHANDLED EXCEPTION). Only errors, from the main and crash buffers, so that a poll
+# doesn't read the whole log. ('*:E' is left unquoted for the phone's shell, where it matches no file.)
+function Find-Crash {
+    $lines = @((Adb logcat -d -b main -b crash '*:E') -split "`r?`n")
+    $process = "Process: $([regex]::Escape($Package)),"
+    for ($i = 0; $i -lt $lines.Count; $i++) {
+        $java = $lines[$i] -match 'FATAL EXCEPTION' -and $i + 1 -lt $lines.Count -and $lines[$i + 1] -match $process
+        $dotnet = $lines[$i] -match 'UNHANDLED EXCEPTION'
+        if ($java -or $dotnet) { return ($lines[$i..([Math]::Min($i + 8, $lines.Count - 1))] -join "`n") }
+    }
+    return $null
 }
 
 # Any failure from here on keeps the phone's log next to the run, if the run's folder exists yet.
@@ -142,9 +161,19 @@ Start-Sleep -Seconds 1
 Adb logcat -c | Out-Null
 # adb joins its arguments into one command for the phone's shell, so the title is quoted for that shell.
 $extra = if ($Page) { @('--es', $PageExtra, ("'" + ($Page -replace "'", "'\''") + "'")) } else { @() }
-$start = Adb shell am start -W -S -n $Activity @extra
-# am exits 0 even when it can't start the activity; it says so in its output.
-if ($start -match '(?m)^Error' -or $start -notmatch 'Status:\s*ok') { throw "am start failed:`n$start" }
+# A failure here is read, not thrown: a start that crashes the app (a title the catalogue doesn't have, say) has to
+# be reported with the app's own message, which is in its crash report, not in am's output.
+try { $start = Adb shell am start -W -S -n $Activity @extra } catch { $start = "Error: $($_.Exception.Message)" }
+# am can exit 0 even when it can't start the activity; it says so in its output.
+if ($start -match '(?m)^Error' -or $start -notmatch 'Status:\s*ok') {
+    # The crash report can come a moment after am gives up.
+    for ($try = 0; $try -lt 6; $try++) {
+        $crash = Find-Crash
+        if ($crash) { throw "The app stopped at start:`n$crash" }
+        Start-Sleep -Milliseconds 500
+    }
+    throw "am start failed:`n$start"
+}
 $totalTime = if ($start -match 'TotalTime:\s*(\d+)') { [int]$Matches[1] } else { $null }
 $launchState = if ($start -match 'LaunchState:\s*(\w+)') { $Matches[1] } else { $null }
 if ($launchState -ne 'COLD' -or -not $totalTime) {
@@ -159,15 +188,10 @@ if ($launchState -ne 'COLD' -or -not $totalTime) {
 $ready = $null
 $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
 while (-not $ready) {
-    $log = (Adb logcat -d) -split "`r?`n"
-    $line = $log | Where-Object { $_ -match [regex]::Escape($ReadyMarker) } | Select-Object -First 1
+    $line = (Adb logcat -d -s DOTNET:I) -split "`r?`n" | Where-Object { $_ -match [regex]::Escape($ReadyMarker) } | Select-Object -First 1
     if ($line) { $ready = $line; break }
-    # Android's crash report names the process on the line after.
-    $fatal = @($log | Select-String -SimpleMatch 'FATAL EXCEPTION' -Context 0, 6 |
-        Where-Object { ($_.Context.PostContext -join "`n").Contains($Package) } | Select-Object -First 1)
-    if ($fatal.Count -gt 0) {
-        throw "The app stopped before its ready line:`n$($fatal[0].Line)`n$($fatal[0].Context.PostContext -join "`n")"
-    }
+    $crash = Find-Crash
+    if ($crash) { throw "The app stopped before its ready line:`n$crash" }
     if ((Get-Date) -gt $deadline) { throw "No '$ReadyMarker' line within $TimeoutSeconds s." }
     Start-Sleep -Milliseconds 500
 }
@@ -187,7 +211,12 @@ Adb shell screencap -p $remote | Out-Null
 Adb pull $remote (Join-Path $Out 'frame.png') | Out-Null
 Adb shell rm $remote | Out-Null
 
-Write-Utf8 (Join-Path $Out 'logcat.txt') (Adb logcat -d)
+$log = Adb logcat -d
+Write-Utf8 (Join-Path $Out 'logcat.txt') $log
+# A Debug build writes what the page cost to open after its ready line.
+$costLine = $log -split "`r?`n" | Where-Object { $_ -match [regex]::Escape($CostMarker) } | Select-Object -First 1
+$cost = if ($costLine) { $costLine.Substring($costLine.IndexOf($CostMarker) + $CostMarker.Length).Trim() } else { $null }
+if ($cost) { Step "Cost: $cost" }
 
 $run = [ordered]@{
     when          = (Get-Date).ToString('o')
@@ -204,6 +233,7 @@ $run = [ordered]@{
     page          = $opened
     openMs        = $openMs
     ready         = $facts
+    cost          = $cost
 }
 Write-Utf8 (Join-Path $Out 'run.json') ($run | ConvertTo-Json)
 

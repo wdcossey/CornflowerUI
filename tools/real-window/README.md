@@ -25,7 +25,7 @@ and fails those checks. It stops at once if the window doesn't fit on the screen
   button with no size and, in a Debug build, on a missing performance line, then clicks Back (in the
   rail beside the page) and checks the list is back. A page below the fold of a long list is
   opened through UI Automation instead: a click never goes outside the window. The ready line and the
-  performance line (which the shell draws over the bottom of the page) are looked for under the page's
+  performance line (which the shell shows up the rail, beside the page) are looked for under the page's
   catalogue title, from its `[SamplePage]`. Titles are matched exactly, case and all.
 - **The page's size:** the theme page's ready line,
   `CORNFLOWER ready open=<ms>ms scaling=<s> view=<w>x<h> raw=<w>x<h> safe=<l>,<t>,<r>,<b> page=<w>x<h> title=<title>`,
