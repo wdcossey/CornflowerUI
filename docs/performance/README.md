@@ -74,8 +74,6 @@ CORNFLOWER_BENCHMARK=/absolute/path/ramp.md dotnet test tests/Cornflower.Tests -
 
 Run by hand at each tier's roll-up, on the same machine, and add a row. Timings in CI would mean
 nothing.
-Tier 0's row is owed: it has to be measured on main once #63 to #69 are merged, so it is added when
-this roll-up is rebased onto them.
 
 ```
 CORNFLOWER_BENCHMARK=/absolute/path/row.md dotnet test tests/Cornflower.Tests -c Release --filter FullyQualifiedName~StyleCostBenchmark
@@ -90,8 +88,11 @@ straight in the table.
 | When | Themed | Rules | Alternatives | `TextBlock` | `Border` |
 |---|---|---|---|---|---|
 | 2026-11-09 | 0 | 0 | 0 | 12.7 to 12.7 (+0.0) | 2.1 to 2.4 (+0.3) |
+| 2026-11-11, Tier 0 done (#61 to #69) | 1 | 0 | 0 | 11.9 to 12.0 (+0.1) | 1.8 to 2.1 (+0.3) |
 
-The first row is before any control: what the tokens and fonts cost, with no global rules.
+The first row is before any control: what the tokens and fonts cost, with no global rules. The second is
+Tier 0's end: one themed control (`LucideIcon`; the 16 text styles are keyed, so a `TextBlock` without
+one pays nothing), still no global rule, and the difference within the run-to-run noise.
 
 ## In a Debug build
 

@@ -84,7 +84,10 @@ public class StyleCostBenchmark
 
             var before = Median(without) * 1000 / Elements;
             var after = Median(with) * 1000 / Elements;
-            cells.Add(string.Create(CultureInfo.InvariantCulture, $"{before:0.0} to {after:0.0} ({after - before:+0.0;-0.0})"));
+            // The difference of the values as shown, so the three agree; the third section writes a difference that
+            // rounds to zero as +0.0, where two sections would write -+0.0 for a small negative one.
+            var delta = Math.Round(after, 1) - Math.Round(before, 1);
+            cells.Add(string.Create(CultureInfo.InvariantCulture, $"{before:0.0} to {after:0.0} ({delta:+0.0;-0.0;+0.0})"));
         }
 
         // Themed: the templated controls that aren't holes.
