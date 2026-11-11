@@ -1,6 +1,6 @@
 # ADR 0001 — What "faithful" means here
 
-**Date:** 2026-11-08 · **Status:** Accepted 2026-11-08; item 1 amended 2026-11-08
+**Date:** 2026-11-08 · **Status:** Accepted 2026-11-08; item 1 amended 2026-11-08 and 2026-11-11
 
 ## Context
 
@@ -30,7 +30,8 @@ contradicted "faithful" and were never revisited
 
    **Amended 2026-11-08.** This item first named the WVGA profile (device 8), on the assumption
    that it ran at a scale of 1.0 and so would compare pixel for pixel with our frames. That was
-   never read, and the maintainer chose 1080p instead. The reference app then read three profiles:
+   never read (it runs at 1.2: the amendment of 2026-11-11, below), and the maintainer chose 1080p
+   instead. The reference app then read three profiles:
 
    | Device | Profile | `RawPixelsPerViewPixel` | View | `ResolutionScale` |
    |---|---|---|---|---|
@@ -38,7 +39,8 @@ contradicted "faithful" and were never revisited
    | **11** | **U1 1080P 5.5"** | **2.4** | **450 × 800** | 180 |
    | 12 | U1 1080P 6" | 2.2 | 490.91 × 872.73 | 180 |
 
-   - **`ResolutionScale` reports 180 on every profile**, so it isn't the scale. The scale is
+   - **`ResolutionScale` reports 180 on all three** (not on every profile: 140 on the three at
+     1.2, below), so it isn't the scale. The scale is
      `RawPixelsPerViewPixel`, and the capture PNGs agree with it: a 100-pixel-tall stage is 180,
      240 and 220 pixels tall.
    - **Phones don't all lay out about 400 view pixels wide**, as was assumed: the 1080p profiles
@@ -51,6 +53,29 @@ contradicted "faithful" and were never revisited
    Of the two 1080p profiles, device 11 is the reference: its view is whole numbers, so a test
    window can match it exactly, and it has the most raw pixels per view pixel. The 720p captures
    (device 10) and the device 12 captures are kept as second readings, not as the reference.
+
+   **Amended 2026-11-11.** The reference app read the display through the API on all seven
+   Update 1 profiles (`run.ps1 -Native`, PR #72; the readings and run folders are in
+   [`tools/refapp/README.md`, Native readings](../../tools/refapp/README.md#native-readings-2026-11-11-devices-7-to-13)).
+   The amendment above left WVGA's scale unread, and said `ResolutionScale` is 180 on every
+   profile. Both are now read:
+
+   | Device | Profile | `RawPixelsPerViewPixel` | View | `ResolutionScale` |
+   |---|---|---|---|---|
+   | 7, 8 | U1 WVGA 4" | 1.2 | 400 × 666.67 | 140 |
+   | 9 | U1 WXGA 4.5" | 2 | 384 × 640 | 180 |
+   | 10 | U1 720P 4.7" | 1.8 | 400 × 711.11 | 180 |
+   | **11** | **U1 1080P 5.5"** | **2.4** | **450 × 800** | 180 |
+   | 12 | U1 1080P 6" | 2.2 | 490.91 × 872.73 | 180 |
+   | 13 | U1 qHD 5" | 1.2 | 450 × 800 | 140 |
+
+   - **WVGA runs at 1.2, not 1.0**: its 480 × 800 pixels are a 400 × 666.67 view. So the first
+     choice, WVGA, wouldn't have compared pixel for pixel with our frames either. qHD runs at 1.2
+     too: its 540 × 960 pixels are the reference's 450 × 800 view.
+   - **`ResolutionScale` is 140 on the three profiles at 1.2** (WVGA and qHD), and 180 on the
+     rest. It still isn't the scale; `RawPixelsPerViewPixel` is.
+
+   The reference stays device 11.
 
 2. **Geometry, colour, motion and behaviour are reproduced and measured.** Every number in a
    control's plan comes from the templates or from a capture, with its source beside it.
