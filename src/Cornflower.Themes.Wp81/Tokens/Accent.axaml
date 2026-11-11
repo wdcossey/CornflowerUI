@@ -5,38 +5,40 @@
 
     SystemColorControlAccentColor is the system colour that every accent brush in themeresources.xaml takes
     (PhoneAccentBrush, ButtonPressedBackgroundThemeBrush and the rest, in Colors.axaml). The SDK file doesn't
-    define it: the phone supplies it. Its default here is #FF3E65FF, the emulator's PhoneAccentBrush as the
-    reference app read it in both themes (refapp run 20261108-1443-dev11, index.json; ADR 0002).
+    define it: the phone supplies it. Its default here is the phone's: in the 8.1 Update 1 image's registry
+    (Control Panel\Theme), DefaultAccent is 5, Cobalt, #FF3E65FF. The reference app read the same
+    PhoneAccentBrush in both themes (refapp run 20261108-1443-dev11, index.json). ADR 0002.
 
     An app picks another accent by defining SystemColorControlAccentColor in Application.Resources, which is
     searched before the theme, for example as one of the named accents below.
 
-    The 20 named accents are the phone's accent palette, from the Windows Phone 8.1 SDK's design files
-    (Microsoft SDKs\Windows Phone\v8.1\Design\AccentColors\<Name>.xaml, each one PhoneAccentColor).
-    WinRT has no keys for them, so these keys are Cornflower's: CornflowerAccent<Name>Color. The emulator's
-    default, #FF3E65FF, is none of the 20.
+    The 20 named accents are the phone's accent palette: the same registry key's Themes\{0,1}\Accents\0-19,
+    the same in both themes, named by UIXMobileRes.dll.mui strings 10017-10026 and 10050-10059. The Windows
+    Phone 8.1 SDK's design files (Microsoft SDKs\Windows Phone\v8.1\Design\AccentColors\<Name>.xaml, each one
+    PhoneAccentColor) agree but for Cobalt, where the phone has #FF3E65FF and the SDK file #FF0B6CF8.
+    WinRT has no keys for them, so these keys are Cornflower's: CornflowerAccent<Name>Color.
   -->
-  <Color x:Key="SystemColorControlAccentColor">#FF3E65FF</Color> <!-- SystemColorControlAccentColor; run: index.json, PhoneAccentBrush in dark and light -->
+  <Color x:Key="SystemColorControlAccentColor">#FF3E65FF</Color> <!-- SystemColorControlAccentColor; the registry, DefaultAccent 5 (Cobalt); run: index.json, PhoneAccentBrush in dark and light -->
 
   <!-- Named accents (20) -->
-  <Color x:Key="CornflowerAccentAmberColor">#FFF0A30A</Color> <!-- PhoneAccentColor, AccentColors\Amber.xaml -->
-  <Color x:Key="CornflowerAccentBrownColor">#FF825A2C</Color> <!-- PhoneAccentColor, AccentColors\Brown.xaml -->
-  <Color x:Key="CornflowerAccentCobaltColor">#FF0B6CF8</Color> <!-- PhoneAccentColor, AccentColors\Cobalt.xaml; the 8.0 SDK has #FF0050EF -->
-  <Color x:Key="CornflowerAccentCrimsonColor">#FFA20025</Color> <!-- PhoneAccentColor, AccentColors\Crimson.xaml -->
-  <Color x:Key="CornflowerAccentCyanColor">#FF1BA1E2</Color> <!-- PhoneAccentColor, AccentColors\Cyan.xaml -->
-  <Color x:Key="CornflowerAccentEmeraldColor">#FF008A00</Color> <!-- PhoneAccentColor, AccentColors\Emerald.xaml -->
-  <Color x:Key="CornflowerAccentGreenColor">#FF60A917</Color> <!-- PhoneAccentColor, AccentColors\Green.xaml -->
-  <Color x:Key="CornflowerAccentIndigoColor">#FF6A00FF</Color> <!-- PhoneAccentColor, AccentColors\Indigo.xaml -->
-  <Color x:Key="CornflowerAccentLimeColor">#FFA4C400</Color> <!-- PhoneAccentColor, AccentColors\Lime.xaml -->
-  <Color x:Key="CornflowerAccentMagentaColor">#FFD80073</Color> <!-- PhoneAccentColor, AccentColors\Magenta.xaml -->
-  <Color x:Key="CornflowerAccentMauveColor">#FF76608A</Color> <!-- PhoneAccentColor, AccentColors\Mauve.xaml -->
-  <Color x:Key="CornflowerAccentOliveColor">#FF6D8764</Color> <!-- PhoneAccentColor, AccentColors\Olive.xaml -->
-  <Color x:Key="CornflowerAccentOrangeColor">#FFFA6800</Color> <!-- PhoneAccentColor, AccentColors\Orange.xaml -->
-  <Color x:Key="CornflowerAccentPinkColor">#FFF472D0</Color> <!-- PhoneAccentColor, AccentColors\Pink.xaml -->
-  <Color x:Key="CornflowerAccentRedColor">#FFE51400</Color> <!-- PhoneAccentColor, AccentColors\Red.xaml -->
-  <Color x:Key="CornflowerAccentSteelColor">#FF647687</Color> <!-- PhoneAccentColor, AccentColors\Steel.xaml -->
-  <Color x:Key="CornflowerAccentTaupeColor">#FF87794E</Color> <!-- PhoneAccentColor, AccentColors\Taupe.xaml -->
-  <Color x:Key="CornflowerAccentTealColor">#FF00ABA9</Color> <!-- PhoneAccentColor, AccentColors\Teal.xaml -->
-  <Color x:Key="CornflowerAccentVioletColor">#FFAA00FF</Color> <!-- PhoneAccentColor, AccentColors\Violet.xaml -->
-  <Color x:Key="CornflowerAccentYellowColor">#FFE3C800</Color> <!-- PhoneAccentColor, AccentColors\Yellow.xaml -->
+  <Color x:Key="CornflowerAccentAmberColor">#FFF0A30A</Color> <!-- the registry, Accents\13; AccentColors\Amber.xaml PhoneAccentColor agrees -->
+  <Color x:Key="CornflowerAccentBrownColor">#FF825A2C</Color> <!-- the registry, Accents\15; AccentColors\Brown.xaml PhoneAccentColor agrees -->
+  <Color x:Key="CornflowerAccentCobaltColor">#FF3E65FF</Color> <!-- the registry, Accents\5; AccentColors\Cobalt.xaml has #FF0B6CF8, the 8.0 SDK #FF0050EF -->
+  <Color x:Key="CornflowerAccentCrimsonColor">#FFA20025</Color> <!-- the registry, Accents\10; AccentColors\Crimson.xaml PhoneAccentColor agrees -->
+  <Color x:Key="CornflowerAccentCyanColor">#FF1BA1E2</Color> <!-- the registry, Accents\4; AccentColors\Cyan.xaml PhoneAccentColor agrees -->
+  <Color x:Key="CornflowerAccentEmeraldColor">#FF008A00</Color> <!-- the registry, Accents\2; AccentColors\Emerald.xaml PhoneAccentColor agrees -->
+  <Color x:Key="CornflowerAccentGreenColor">#FF60A917</Color> <!-- the registry, Accents\1; AccentColors\Green.xaml PhoneAccentColor agrees -->
+  <Color x:Key="CornflowerAccentIndigoColor">#FF6A00FF</Color> <!-- the registry, Accents\6; AccentColors\Indigo.xaml PhoneAccentColor agrees -->
+  <Color x:Key="CornflowerAccentLimeColor">#FFA4C400</Color> <!-- the registry, Accents\0; AccentColors\Lime.xaml PhoneAccentColor agrees -->
+  <Color x:Key="CornflowerAccentMagentaColor">#FFD80073</Color> <!-- the registry, Accents\9; AccentColors\Magenta.xaml PhoneAccentColor agrees -->
+  <Color x:Key="CornflowerAccentMauveColor">#FF76608A</Color> <!-- the registry, Accents\18; AccentColors\Mauve.xaml PhoneAccentColor agrees -->
+  <Color x:Key="CornflowerAccentOliveColor">#FF6D8764</Color> <!-- the registry, Accents\16; AccentColors\Olive.xaml PhoneAccentColor agrees -->
+  <Color x:Key="CornflowerAccentOrangeColor">#FFFA6800</Color> <!-- the registry, Accents\12; AccentColors\Orange.xaml PhoneAccentColor agrees -->
+  <Color x:Key="CornflowerAccentPinkColor">#FFF472D0</Color> <!-- the registry, Accents\8; AccentColors\Pink.xaml PhoneAccentColor agrees -->
+  <Color x:Key="CornflowerAccentRedColor">#FFE51400</Color> <!-- the registry, Accents\11; AccentColors\Red.xaml PhoneAccentColor agrees -->
+  <Color x:Key="CornflowerAccentSteelColor">#FF647687</Color> <!-- the registry, Accents\17; AccentColors\Steel.xaml PhoneAccentColor agrees -->
+  <Color x:Key="CornflowerAccentTaupeColor">#FF87794E</Color> <!-- the registry, Accents\19; AccentColors\Taupe.xaml PhoneAccentColor agrees -->
+  <Color x:Key="CornflowerAccentTealColor">#FF00ABA9</Color> <!-- the registry, Accents\3; AccentColors\Teal.xaml PhoneAccentColor agrees -->
+  <Color x:Key="CornflowerAccentVioletColor">#FFAA00FF</Color> <!-- the registry, Accents\7; AccentColors\Violet.xaml PhoneAccentColor agrees -->
+  <Color x:Key="CornflowerAccentYellowColor">#FFE3C800</Color> <!-- the registry, Accents\14; AccentColors\Yellow.xaml PhoneAccentColor agrees -->
 </ResourceDictionary>

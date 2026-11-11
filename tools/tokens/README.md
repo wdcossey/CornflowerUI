@@ -20,7 +20,7 @@ write only Cornflower's files. No Microsoft file or content is stored here (rule
 | Reads | From |
 |---|---|
 | `themeresources.xaml`, `generic.xaml` | The 8.1 SDK's `Windows Phone Kits\8.1\Include\abi\Xaml\Design` folder (`--design`) |
-| `<Name>.xaml`, the 20 named accents, each one `PhoneAccentColor` | The 8.1 SDK's `Microsoft SDKs\Windows Phone\v8.1\Design\AccentColors` folder (`--accents`) |
+| `<Name>.xaml`, the 20 named accents, each one `PhoneAccentColor`, checked against the phone's palette in `resources.py` | The 8.1 SDK's `Microsoft SDKs\Windows Phone\v8.1\Design\AccentColors` folder (`--accents`) |
 | The capture JSONs and `index.json` | A refapp run folder (`--capture`) |
 
 | Writes | Who |
@@ -68,8 +68,9 @@ The scripts hold no table read from the SDK. The few values written into them:
 
 | Value | Where | Source |
 |---|---|---|
-| `SystemColorControlAccentColor` default `#FF3E65FF` | `resources.py` `ACCENT` | The emulator's `PhoneAccentBrush`, read by refapp run `20261108-1443-dev11` (`index.json`), chosen in [ADR 0002](../../docs/decisions/0002-decisions-of-2026-11-08.md). The SDK file doesn't define this key: the phone supplies it |
-| Cobalt's 8.0 value `#FF0050EF`, in Cobalt's comment | `gen.py` | The 8.0 SDK's `AccentColors\Cobalt.xaml`, compared in PR #45. It is the one accent that changed from 8.0 to 8.1 |
+| The phone's 20 accents: registry index, name, colour | `resources.py` `PHONE_ACCENTS` | The 8.1 Update 1 image's registry (`config\SOFTWARE`, `Microsoft\Windows\CurrentVersion\Control Panel\Theme`): `Themes\{0,1}\Accents\<i>` `Color` (the same in both themes), named through `AccentDisplayNames\<i>` by `UIXMobileRes.dll.mui` strings 10017-10026 and 10050-10059. The RTM image's is the same. `gen.py` writes the named accents from it |
+| `SystemColorControlAccentColor` default, `DefaultAccent` 5 (Cobalt, `#FF3E65FF`) | `resources.py` `DEFAULT_ACCENT_INDEX` | The same key's `DefaultAccent`. The emulator's `PhoneAccentBrush`, read by refapp run `20261108-1443-dev11` (`index.json`), is the same. Chosen in [ADR 0002](../../docs/decisions/0002-decisions-of-2026-11-08.md). The SDK file doesn't define this key: the phone supplies it |
+| Where the SDK's accent files differ: Cobalt, 8.1 `#FF0B6CF8`, 8.0 `#FF0050EF` | `resources.py` `SDK_ACCENT_DIFFERS` | The SDK's `AccentColors\Cobalt.xaml` (8.0 compared in PR #45). `gen.py` stops on a difference not listed, or a listed one that no longer holds |
 | `Transparent`, `White`, `Black` as `#AARRGGBB` | `resources.py` `NAMED` | The XAML named colours |
 | Font weight names as numbers (`Light` 300, `SemiLight` 350, `Semibold` 600 and so on) | `crosscheck.py` `WEIGHTS`, `gen.py` `WNUM` | The OpenType weight classes |
 | The two known differences and their reasons | `gen.py` `DIFFER` | Cornflower's reading of run `20261108-1443-dev11`, PR #45 |

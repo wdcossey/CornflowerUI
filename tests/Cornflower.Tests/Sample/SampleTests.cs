@@ -61,7 +61,8 @@ public class SampleTests
 
     [AvaloniaTheory]
     [InlineData("Lime", 0xFFA4C400u)]
-    [InlineData("Cobalt", 0xFF0B6CF8u)] // 8.1's Cobalt; 8.0's was #FF0050EF (ADR 0002)
+    [InlineData("Cobalt", 0xFF3E65FFu)] // pins the phone's Cobalt (the 8.1 SDK file has #FF0B6CF8; ADR 0002). It is also the
+    [InlineData("Cyan", 0xFF1BA1E2u)]   // default, so Lime, Cyan and Taupe carry the check that a swatch draws its own key
     [InlineData("Taupe", 0xFF87794Eu)]
     public void A_Named_Accent_Swatch_Draws_Its_Token(string name, uint expected)
     {
