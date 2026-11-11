@@ -209,6 +209,15 @@ public class ButtonTests
         AssertBorder(frame, DisabledInk(dark), Page(dark));
     }
 
+    // ButtonDisabledBackgroundThemeBrush: disabled, the background is the phone's, not the one the app gave the Button.
+    [AvaloniaFact]
+    public void Disabled_Takes_The_Apps_Background_Away()
+    {
+        using var stage = new Stage(button: new Button { Content = "button", Background = Brushes.Red, IsEnabled = false });
+
+        Assert.Equal(Transparent, ColourOf(BorderOf(stage.Button).Background));
+    }
+
     // CommonStates.Pressed: the accent behind the text over the accent; the border stays the foreground.
     [AvaloniaTheory]
     [MemberData(nameof(Variants))]
