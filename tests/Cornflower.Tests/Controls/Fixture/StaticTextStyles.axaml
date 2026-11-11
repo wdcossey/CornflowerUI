@@ -1,0 +1,8 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Cornflower.Tests.Controls.Fixture.StaticTextStyles">
+  <!-- A text style set as an 8.1 page sets one, by StaticResource, from a theme in Application.Styles. -->
+  <StackPanel>
+    <TextBlock x:Name="Body" Theme="{StaticResource BodyTextBlockStyle}" Text="body" />
+  </StackPanel>
+</UserControl>

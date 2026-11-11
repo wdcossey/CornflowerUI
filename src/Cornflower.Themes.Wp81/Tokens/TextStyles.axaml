@@ -1,0 +1,43 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!--
+    The values the 8.1 text styles set as literals, named so that an app or an extension pack can
+    override them (ADR 0004): a style reads each through a DynamicResource, so a key defined in a
+    window's or the application's Resources wins over these. The sizes the styles take from the
+    WinRT keys (TextStyleLargeFontSize and the rest) are in Typography.axaml.
+
+    Source: the TextBlock styles of the Windows Phone 8.1 SDK's generic.xaml and themeresources.xaml,
+    read as a specification. The keys are Cornflower's, the style's own key followed by the property,
+    since WinRT gave these values no key. Each entry names its style. Every style here was captured by
+    the reference app (refapp run 20261108-1443-dev11, device 11), except the two MessageDialog styles.
+
+    Sizes are in view pixels, as on the phone. A LineHeight is WinRT's own, the distance between
+    baselines; Controls/TextBlock.axaml turns it into Avalonia's line (docs/controls/TextBlock). A
+    CharacterSpacing is in WinRT's unit, thousandths of an em.
+  -->
+
+  <!-- Font sizes (3) -->
+  <x:Double x:Key="GroupHeaderTextBlockStyleFontSize">23.73</x:Double> <!-- GroupHeaderTextBlockStyle -->
+  <x:Double x:Key="SubheaderTextBlockStyleFontSize">30</x:Double> <!-- SubheaderTextBlockStyle -->
+  <x:Double x:Key="HeaderTextBlockStyleFontSize">57.5</x:Double> <!-- HeaderTextBlockStyle -->
+
+  <!-- Line heights (13) -->
+  <x:Double x:Key="BaseTextBlockStyleLineHeight">21.5</x:Double> <!-- BaseTextBlockStyle -->
+  <x:Double x:Key="BodyTextBlockStyleLineHeight">24</x:Double> <!-- BodyTextBlockStyle -->
+  <x:Double x:Key="ControlHeaderTextBlockStyleLineHeight">17.5</x:Double> <!-- ControlHeaderTextBlockStyle -->
+  <x:Double x:Key="ControlContextualInfoTextBlockStyleLineHeight">17.5</x:Double> <!-- ControlContextualInfoTextBlockStyle -->
+  <x:Double x:Key="ListViewItemSubheaderTextBlockStyleLineHeight">20</x:Double> <!-- ListViewItemSubheaderTextBlockStyle; MaxHeight, so the font's line where that is taller -->
+  <x:Double x:Key="GroupHeaderTextBlockStyleLineHeight">23</x:Double> <!-- GroupHeaderTextBlockStyle -->
+  <x:Double x:Key="ComboBoxPlaceholderTextBlockStyleLineHeight">30</x:Double> <!-- ComboBoxPlaceholderTextBlockStyle -->
+  <x:Double x:Key="MessageDialogContentStyleLineHeight">21.5</x:Double> <!-- MessageDialogContentStyle -->
+  <x:Double x:Key="MessageDialogTitleStyleLineHeight">31.5</x:Double> <!-- MessageDialogTitleStyle -->
+  <x:Double x:Key="SubheaderTextBlockStyleLineHeight">33</x:Double> <!-- SubheaderTextBlockStyle -->
+  <x:Double x:Key="ListViewItemTextBlockStyleLineHeight">33.5</x:Double> <!-- ListViewItemTextBlockStyle -->
+  <x:Double x:Key="ListViewEmptyStaticTextBlockStyleLineHeight">33.5</x:Double> <!-- ListViewEmptyStaticTextBlockStyle -->
+  <x:Double x:Key="HeaderTextBlockStyleLineHeight">57.5</x:Double> <!-- HeaderTextBlockStyle -->
+
+  <!-- Character spacing (3) -->
+  <x:Int32 x:Key="GroupHeaderTextBlockStyleCharacterSpacing">-3</x:Int32> <!-- GroupHeaderTextBlockStyle -->
+  <x:Int32 x:Key="MessageDialogTitleStyleCharacterSpacing">3</x:Int32> <!-- MessageDialogTitleStyle -->
+  <x:Int32 x:Key="FlyoutPickerTitleTextBlockStyleCharacterSpacing">15</x:Int32> <!-- FlyoutPickerTitleTextBlockStyle -->
+</ResourceDictionary>
