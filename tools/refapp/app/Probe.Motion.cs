@@ -229,7 +229,7 @@ namespace RefApp
             var panel = new Grid { Background = new SolidColorBrush(Colors.Black), Children = { sheet } };
             var projection = new PlaneProjection();
             panel.Projection = projection;
-            var page = await Page(host, false, panel);
+            var page = await Page(host, panel);
 
             Func<Task> sequence = async () =>
             {
@@ -342,13 +342,13 @@ namespace RefApp
                 }
 
                 await Task.Delay(1000);
-                CompositionTarget.Rendering -= OnTreeFrame;
                 await Finish("sequence done");
             }), true);
 
-            Step("down", 30, _view.Height - 30, page);
+            var view = Window.Current.Bounds;
+            Step("down", 30, view.Height - 30, page);
             Wait(80);
-            Step("up", 30, _view.Height - 30);
+            Step("up", 30, view.Height - 30);
             Wait(1000);
             if (!await StartTouches("one tap starts the sequence;", 1, TimeSpan.FromMinutes(3 + 6).TotalMilliseconds))
             {

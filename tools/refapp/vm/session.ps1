@@ -102,10 +102,22 @@ if ($Probe) {
     $in = Join-Path $Root 'probe-in'
     Remove-Item $in -Recurse -Force -ErrorAction SilentlyContinue
     New-Item -ItemType Directory -Force $in | Out-Null
-    & $ise ts "deviceindex:$Device" $ProductId $in 2>&1 | Add-Content -Path $log
     # ready.txt's "timeout <ms>": how long after it the app finishes and writes its log, whether the touches came or not.
-    $timeoutLine = Get-Content (Join-Path $in 'IsolatedStore\ready.txt') -ErrorAction SilentlyContinue | Where-Object { $_ -match '^timeout ' } | Select-Object -First 1
-    if ($timeoutLine) { $appTimeoutMinutes = [double]::Parse(($timeoutLine -split ' ')[1], [Globalization.CultureInfo]::InvariantCulture) / 60000 }
+    # The app writes it whole (under another name, then renamed); pull again if the line isn't there yet.
+    $timeoutLine = $null
+    for ($i = 0; $i -lt 3 -and -not $timeoutLine; $i++) {
+        if ($i -gt 0) { Start-Sleep -Seconds 2 }
+        & $ise ts "deviceindex:$Device" $ProductId $in 2>&1 | Add-Content -Path $log
+        $timeoutLine = Get-Content (Join-Path $in 'IsolatedStore\ready.txt') -ErrorAction SilentlyContinue | Where-Object { $_ -match '^timeout \d' } | Select-Object -First 1
+    }
+
+    $parsed = 0.0
+    if ($timeoutLine -and [double]::TryParse(($timeoutLine -split ' ')[1], [Globalization.NumberStyles]::Float, [Globalization.CultureInfo]::InvariantCulture, [ref]$parsed)) {
+        $appTimeoutMinutes = $parsed / 60000
+    }
+    else {
+        Add-Content -Path $log -Value "$(Get-Date -Format s) ready.txt gives no timeout ('$timeoutLine'); a probe may take 8 minutes"
+    }
     # More than one emulator can be running, one per profile: touch the one this device is, by its window title.
     $name = (& $deploy /EnumerateDevices 2>&1 | Where-Object { $_ -match "^\s*$Device\s+(.+?)\s*$" } | ForEach-Object { $Matches[1] } | Select-Object -First 1)
     if (-not $name) {
@@ -143,15 +155,24 @@ if ($Probe) {
     Status "probing: playing the touches on '$name'"
     & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $Root 'vm\touch.ps1') -Gestures (Join-Path $in 'IsolatedStore\gestures.txt') -Log (Join-Path $Root 'touch.log') -Title $name -Mode $TouchMode
     if ($LASTEXITCODE -ne 0) {
-        # The app holds its log until it finishes: wait below for its done.txt, which its timeout bounds, then pull.
         $touchFailed = $LASTEXITCODE
-        Add-Content -Path $log -Value "$(Get-Date -Format s) touch.ps1 exit $touchFailed; waiting for the app to time out and write its log"
+        Stop-Recorder
+        # touch.ps1 logs "playing" just before its first step. Failed before it, nothing was touched: say so at once.
+        if (-not (Select-String -Path (Join-Path $Root 'touch.log') -Pattern ' playing ' -SimpleMatch -Quiet)) {
+            Pull
+            Status "failed: touch.ps1 exit $touchFailed before playing any touch; see touch.log; partial results pulled"
+            exit 1
+        }
+
+        # Failed mid-run: the app holds its log until it finishes, so wait below for its done.txt, which its timeout
+        # bounds, then pull.
+        Add-Content -Path $log -Value "$(Get-Date -Format s) touch.ps1 exit $touchFailed mid-run; waiting for the app to time out and write its log"
     }
 }
 
 $grabber = $null
 $stopGrab = Join-Path $Root 'grab.stop'
-if ($Grab) {
+if ($Grab -and -not $touchFailed) {
     Remove-Item $stopGrab, (Join-Path $Root 'frames') -Recurse -Force -ErrorAction SilentlyContinue
     $grabber = Start-Process powershell.exe -PassThru -WindowStyle Hidden -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', (Join-Path $Root 'vm\grab-loop.ps1'), '-Out', (Join-Path $Root 'frames'), '-StopFile', $stopGrab)
     Add-Content -Path $log -Value "$(Get-Date -Format s) grabbing the emulator window, pid $($grabber.Id)"
@@ -159,10 +180,15 @@ if ($Grab) {
 
 $started = Get-Date
 Status 'running: app launched, waiting for done.txt'
-$deadline = $started.AddMinutes($TimeoutMinutes)
-# A probe that wrote no done.txt by then has stalled: 8 minutes, or a minute past the app's own timeout from ready.txt,
-# which started before this.
+# A probe that wrote no done.txt by its limit has stalled: 8 minutes, or a minute past the app's own timeout from
+# ready.txt, which started before this; never past -TimeoutMinutes, which run.ps1 and the task's time limit allow for.
 $probeLimit = [Math]::Max(8, $appTimeoutMinutes + 1)
+if ($Probe -and $probeLimit -gt $TimeoutMinutes) {
+    Add-Content -Path $log -Value "$(Get-Date -Format s) the app's timeout passes -TimeoutMinutes $TimeoutMinutes; waiting $TimeoutMinutes"
+    $probeLimit = $TimeoutMinutes
+}
+
+$deadline = $started.AddMinutes($(if ($Probe) { $probeLimit } else { $TimeoutMinutes }))
 $done = $false
 $stalled = $false
 $lastPngs = -1
@@ -181,7 +207,6 @@ while ((Get-Date) -lt $deadline) {
     if ($pngs -ne $lastPngs) { $lastPngs = $pngs; $lastChange = Get-Date }
     elseif (-not ($Probe -or $Native) -and ((Get-Date) - $lastChange).TotalMinutes -ge 3) { $stalled = $true; break }
     elseif ($Native -and ((Get-Date) - $started).TotalMinutes -ge 8) { $stalled = $true; break }
-    elseif ($Probe -and ((Get-Date) - $started).TotalMinutes -ge $probeLimit) { $stalled = $true; break }
     $elapsed = ((Get-Date) - $started).TotalSeconds
     if ($Native) {
         # A native run makes no PNGs; its progress.txt names the step it is on. Pulling the folder takes a few seconds,
@@ -204,6 +229,8 @@ while ((Get-Date) -lt $deadline) {
         Status ('running: {0} PNGs so far after {1:N0} s' -f $pngs, $elapsed)
     }
 }
+
+if ($Probe -and -not $done) { $stalled = $true }
 
 if ($grabber) {
     Set-Content -Path $stopGrab -Value stop
