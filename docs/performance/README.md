@@ -96,7 +96,8 @@ one pays nothing), still no global rule, and the difference within the run-to-ru
 
 ## In a Debug build
 
-The sample shows a line along the bottom of its page, once it has been laid out the first time:
+The sample's shell (`SampleShell`) shows a line over the bottom of each page it opens, once the
+page's first frame has drawn, so a control's page has no code for it:
 
 ```
 theme: 475 ms, 91 elements, 1 rules (1), layout 1.5, render 18.9
@@ -114,12 +115,15 @@ theme: 472 ms, 91 elements, 1 rules (1), layout 186.5, render 23.8
 Layout is about 120 times the desktop's headless figure. That's a Debug build, JIT-compiled on
 first use, so it measures first-run cost more than the theme; a Release reading needs a Release
 build of the line, which the sample doesn't have. It hasn't been read in a real desktop window.
+Both were read when the page timed itself, to its first layout; since 2026-11-11 the shell times it
+to its first drawn frame, so a new reading can be a little longer.
 
-That's the time to open the page, from before it's made, the elements in it, the global rules it
-is checked against and their alternatives (in the application's `Styles`, and the page's and each
-logical ancestor's: the one here is the page's own `TextBlock.section`), and Avalonia's own layout
-and render times over that time. Layout always comes before the line is read, even with a frame in
-flight, as layout doesn't wait for a render tick (a test holds it). A Release build doesn't have it. **Nothing is added to the library,**
+That's the time to open the page, the shell's, from navigation, before the page is made, to its
+first drawn frame (the same time as the `open=` of the page's ready line, which a Release build
+also writes: `samples/Cornflower.Sample`), the elements in it, the global rules it is checked
+against and their alternatives (in the application's `Styles`, and the page's and each logical
+ancestor's: the one here is the page's own `TextBlock.section`), and Avalonia's own layout and
+render times over that time. Layout has always run by then. A Release build doesn't show the line. **Nothing is added to the library,**
 because Avalonia has this built in, behind a switch that's off by default:
 
 - `AppContext.SetSwitch("Avalonia.Diagnostics.Diagnostic.IsEnabled", true)`, before Avalonia
@@ -153,8 +157,8 @@ budget, `Scene`'s themes and the monitor, all caught, and one hung test, timed o
 
 - **Only style checks are budgeted.** A slow control, layout or animation wouldn't show here. The
   sample's line is how to spot those.
-- **`render` can read low,** if a page opens within a frame of the last one, because its own render
-  pass hasn't happened yet.
+- **`render` may read low.** It's what Avalonia's meter recorded by the frame after the page's
+  first; that this always includes the page's own first render pass hasn't been checked.
 - **One reading on a phone, in Debug.** The benchmark runs headless on a desktop; the line has
   been read once on the Pixel 8, in a Debug build (above), which says little about Release.
 - **`ItemsControl`, virtualising and scrolling** haven't been measured. These are all times to

@@ -1,13 +1,17 @@
 <#
 .SYNOPSIS
-    The device run: builds the Android sample, installs it on the phone over ADB, starts it, waits
-    for the page to draw, and pulls back a frame and what the device reported.
+    The device run: builds the Android sample, installs it on the phone over ADB, starts it at a page
+    of its catalogue, waits for the page to draw, and pulls back a frame and what the device reported.
 
 .DESCRIPTION
     Writes into one folder per run (artifacts\device\<yyyyMMdd-HHmmss>-<model> by default, which git
     ignores): frame.png, the phone's screen at its own resolution; run.json, the device, the start
     time Android measured and the sample's ready line; and logcat.txt, the run's log. Exits non-zero
     if any step fails, with logcat.txt kept.
+
+    The app opens the page -Page names, by its catalogue title in any case, passed as the intent's
+    `page` extra; without -Page, the first page (theme). The ready line names the page it opened,
+    which has to be the one asked for.
 
     The phone must be the only device `adb devices` lists, with USB or wireless debugging on. A
     phone with a secure lock has to be unlocked by hand: the script wakes the screen and waits.
@@ -16,10 +20,15 @@
     powershell -ExecutionPolicy Bypass -File tools\android\run.ps1
 .EXAMPLE
     powershell -ExecutionPolicy Bypass -File tools\android\run.ps1 -NoBuild -Out C:\temp\run1
+.EXAMPLE
+    powershell -ExecutionPolicy Bypass -File tools\android\run.ps1 -Page theme
 #>
 [CmdletBinding()]
 param(
     [string]$Out,
+    # The catalogue title of the page to open; the first page if omitted.
+    [ValidateNotNullOrEmpty()]
+    [string]$Page,
     [ValidateSet('Release', 'Debug')]
     [string]$Configuration = 'Release',
     [switch]$NoBuild,
@@ -33,6 +42,8 @@ $Project = Join-Path $Repo 'samples\Cornflower.Sample.Android\Cornflower.Sample.
 $Package = 'io.github.wdcossey.cornflower.sample'
 $Activity = "$Package/cornflower.sample.MainActivity"
 $ReadyMarker = 'CORNFLOWER ready'
+# The intent extra the app reads its start page from (App.PageExtra).
+$PageExtra = 'page'
 
 function Find-Adb {
     $candidates = @()
@@ -129,7 +140,9 @@ Adb shell input keyevent KEYCODE_HOME | Out-Null
 Adb shell am force-stop $Package | Out-Null
 Start-Sleep -Seconds 1
 Adb logcat -c | Out-Null
-$start = Adb shell am start -W -S -n $Activity
+# adb joins its arguments into one command for the phone's shell, so the title is quoted for that shell.
+$extra = if ($Page) { @('--es', $PageExtra, ("'" + ($Page -replace "'", "'\''") + "'")) } else { @() }
+$start = Adb shell am start -W -S -n $Activity @extra
 # am exits 0 even when it can't start the activity; it says so in its output.
 if ($start -match '(?m)^Error' -or $start -notmatch 'Status:\s*ok') { throw "am start failed:`n$start" }
 $totalTime = if ($start -match 'TotalTime:\s*(\d+)') { [int]$Matches[1] } else { $null }
@@ -140,17 +153,31 @@ if ($launchState -ne 'COLD' -or -not $totalTime) {
     $totalTime = $null
 }
 
-# 6. Wait for the page to say it has drawn.
+# 6. Wait for the page to say it has drawn. The sample's shell writes the line for the page it opened:
+#    CORNFLOWER ready open=<ms>ms scaling=... view=WxH raw=WxH safe=l,t,r,b page=WxH title=<title>
+#    A start that fails, such as on a title the catalogue doesn't have, stops the app: say why at once.
 $ready = $null
 $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
 while (-not $ready) {
-    $line = (Adb logcat -d -s DOTNET:I) -split "`r?`n" | Where-Object { $_ -match [regex]::Escape($ReadyMarker) } | Select-Object -First 1
+    $log = (Adb logcat -d) -split "`r?`n"
+    $line = $log | Where-Object { $_ -match [regex]::Escape($ReadyMarker) } | Select-Object -First 1
     if ($line) { $ready = $line; break }
+    # Android's crash report names the process on the line after.
+    $fatal = @($log | Select-String -SimpleMatch 'FATAL EXCEPTION' -Context 0, 6 |
+        Where-Object { ($_.Context.PostContext -join "`n").Contains($Package) } | Select-Object -First 1)
+    if ($fatal.Count -gt 0) {
+        throw "The app stopped before its ready line:`n$($fatal[0].Line)`n$($fatal[0].Context.PostContext -join "`n")"
+    }
     if ((Get-Date) -gt $deadline) { throw "No '$ReadyMarker' line within $TimeoutSeconds s." }
     Start-Sleep -Milliseconds 500
 }
 $facts = $ready.Substring($ready.IndexOf($ReadyMarker) + $ReadyMarker.Length).Trim()
 Step "Ready: $facts"
+# The title is last, as it can have spaces. Titles are matched in any case, as the app matches them.
+$opened = if ($facts -match ' title=(.+)$') { $Matches[1].Trim() } else { $null }
+$openMs = if ($facts -match '(?:^| )open=(\d+)ms') { [int]$Matches[1] } else { $null }
+if (-not $opened) { throw "The ready line names no page: $facts" }
+if ($Page -and $opened -ne $Page) { throw "Asked for the page '$Page', but the app opened '$opened'." }
 
 # 7. The frame. Written on the phone and pulled, because piping exec-out through PowerShell 5.1
 #    would re-encode the PNG's bytes.
@@ -174,9 +201,11 @@ $run = [ordered]@{
     apkBytes      = $apk.Length
     launchState   = $launchState
     totalTimeMs   = $totalTime
+    page          = $opened
+    openMs        = $openMs
     ready         = $facts
 }
 Write-Utf8 (Join-Path $Out 'run.json') ($run | ConvertTo-Json)
 
-Step "Start: $launchState, $totalTime ms (am start -W TotalTime)"
+Step "Start: $launchState, $totalTime ms (am start -W TotalTime); '$opened' opened in $openMs ms (the shell's time)"
 Step "Wrote $Out"

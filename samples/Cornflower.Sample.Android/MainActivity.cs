@@ -1,5 +1,6 @@
 using Android.App;
 using Android.Content.PM;
+using Android.OS;
 using Avalonia.Android;
 
 namespace Cornflower.Sample.Android;
@@ -14,4 +15,11 @@ namespace Cornflower.Sample.Android;
     ConfigurationChanges = ConfigChanges.Orientation | ConfigChanges.ScreenSize | ConfigChanges.UiMode)]
 public class MainActivity : AvaloniaMainActivity
 {
+    protected override void OnCreate(Bundle? savedInstanceState)
+    {
+        // Before Avalonia makes the view, which opens this page: `run.ps1 -Page <title>` starts the activity with
+        // `--es page <title>`; with no extra, as from the launcher, the first page.
+        App.StartPage = Intent?.GetStringExtra(App.PageExtra);
+        base.OnCreate(savedInstanceState);
+    }
 }

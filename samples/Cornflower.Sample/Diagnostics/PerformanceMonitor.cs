@@ -1,17 +1,15 @@
-using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Threading;
 using Avalonia.VisualTree;
 
 namespace Cornflower.Sample.Diagnostics;
 
 /// <summary>
-/// The line along the bottom of the sample in a Debug build: what a page cost to open, from Avalonia's own meter. It adds
-/// nothing to the library, and it doesn't trace, because tracing would cost more than what it measures. See
-/// docs/performance/README.md.
+/// The line along the bottom of the sample in a Debug build: what a page cost to open, from <see cref="SampleShell"/>'s
+/// time and Avalonia's own meter. It adds nothing to the library, and it doesn't trace, because tracing would cost more
+/// than what it measures. See docs/performance/README.md.
 /// </summary>
 public sealed class PerformanceMonitor : IDisposable
 {
@@ -24,7 +22,6 @@ public sealed class PerformanceMonitor : IDisposable
     private readonly object _gate = new();
     private double _layout;
     private double _render;
-    private long _started;
 
     /// <summary>The switch that turns on Avalonia's diagnostics, off by default.</summary>
     public const string DiagnosticsSwitch = "Avalonia.Diagnostics.Diagnostic.IsEnabled";
@@ -67,7 +64,7 @@ public sealed class PerformanceMonitor : IDisposable
         }
     }
 
-    /// <summary>Call this before making a page, because styles apply as soon as it's attached.</summary>
+    /// <summary>Call this before making a page, because styles apply as soon as it's attached: Avalonia's times count from here.</summary>
     public void Begin()
     {
         lock (_gate)
@@ -75,46 +72,30 @@ public sealed class PerformanceMonitor : IDisposable
             _layout = 0;
             _render = 0;
         }
-
-        _started = Stopwatch.GetTimestamp();
     }
 
     /// <summary>
-    /// Call this once the page is in. <paramref name="report"/> gets the line after it's been laid
-    /// out, unless it's gone by then: layout runs at a higher dispatcher priority than the read, and
-    /// doesn't wait for a render tick, even with a frame in flight (held by
-    /// <c>PerformanceMonitorTests.The_Line_Is_Read_After_Layout_Even_With_A_Frame_In_Flight</c>).
+    /// The line for <paramref name="page"/>, which took <paramref name="opened"/> to open: <see cref="SampleShell"/> calls
+    /// this once the page's first frame has drawn, with its own time from navigation, so that the line and the page's ready
+    /// line agree. Layout has always run by then.
     /// </summary>
-    public void Report(string title, Control page, Action<string> report)
+    public string Read(string title, Control page, TimeSpan opened)
     {
-        var started = _started;
-        Dispatcher.UIThread.Post(Read, DispatcherPriority.Background);
-
-        void Read()
+        if (!DiagnosticsEnabled)
         {
-            if (TopLevel.GetTopLevel(page) is null)
-            {
-                return;
-            }
-
-            if (!DiagnosticsEnabled)
-            {
-                report($"{title}: Avalonia's diagnostics are off. Call PerformanceMonitor.EnableDiagnostics() before Avalonia starts.");
-                return;
-            }
-
-            var elapsed = Stopwatch.GetElapsedTime(started);
-            var (rules, alternatives) = Census(page);
-            double layout;
-            double render;
-            lock (_gate)
-            {
-                layout = _layout;
-                render = _render;
-            }
-
-            report(Format(title, elapsed.TotalMilliseconds, page.GetVisualDescendants().Count() + 1, rules, alternatives, layout, render));
+            return $"{title}: Avalonia's diagnostics are off. Call PerformanceMonitor.EnableDiagnostics() before Avalonia starts.";
         }
+
+        var (rules, alternatives) = Census(page);
+        double layout;
+        double render;
+        lock (_gate)
+        {
+            layout = _layout;
+            render = _render;
+        }
+
+        return Format(title, opened.TotalMilliseconds, page.GetVisualDescendants().Count() + 1, rules, alternatives, layout, render);
     }
 
     /// <summary>

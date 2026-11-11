@@ -102,7 +102,6 @@ public class CatalogueTests
     {
         var first = SampleShell.Pages[0];
 
-        // Not made: a MainView that's never shown keeps its Debug performance listener.
         Assert.Equal("theme", first.Title);
         Assert.Equal(typeof(MainView), first.Type);
         Assert.Equal(first.Title, SamplePageCatalog.TitleOf(typeof(MainView)));
