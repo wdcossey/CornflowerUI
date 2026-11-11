@@ -22,7 +22,8 @@
 
     The visual states: Pressed (Avalonia's :pressed) sets the accent background and the text over it, and
     the tilt runs; Disabled (:disabled) dims the border and the text. PointerOver changes nothing on the
-    phone, so :pointerover has no style. There are no focus states on the phone, and the theme sets no focus adorner.
+    phone, so :pointerover has no style. The phone has no focus states.
+    The ContentPresenter's Foreground is inherited from the Button, where the phone's binds it: the same value.
 
     A string's TextBlock gets the phone's own line, 1.33 em, through PhoneTextLine (ADR 0003: a template
     whose text sets no LineHeight gets the phone's line), so the content is as tall as on the phone and its
