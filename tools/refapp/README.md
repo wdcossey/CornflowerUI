@@ -395,7 +395,8 @@ last touch has settled. `touch.log` says where each step landed on the VM's scre
   phone in batches, so a probe reads a position, not a speed. Press and release times are kept.
 
 Probes: `toggleswitch` (#25), `tilt`, `tiltedge` and `tiltgrid` (#22), and for #24 `motion`, `pages`,
-`projections` and `ring` ([Motion](#motion-2026-11-10-device-11-24)). Each frame's value is read on the UI thread in
+`projections` and `ring` ([Motion](#motion-2026-11-10-device-11-24)), and `ringsize` for #28 (B6:
+[the size threshold and the clock](#progressring-the-size-threshold-and-the-clock)). Each frame's value is read on the UI thread in
 `CompositionTarget.Rendering`. That reads the animated values of the theme animations too: the
 tilt's `PlaneProjection` moves every 15 ms in the log.
 
@@ -540,6 +541,21 @@ page transitions and the ProgressRing. Two ways of reading it:
 run, so the distinct values of many runs, in order, are its steps, one per 15.625 ms, at a finer
 timing than the recording's.
 
+**But 15.625 ms is a frame's step, not the time between frames** (`-Probe ringsize`,
+`20261111-2316-dev11`; see [ProgressRing: the clock](#progressring-the-size-threshold-and-the-clock)). Read
+from `Storyboard.GetCurrentTime()`, *animation* time moves exactly 15.625 ms each frame, however far apart
+the frames are. On that run the frames came 15.0 ms apart by the app's stopwatch (66.7 a second), so
+animations ran about 1.04 times as fast as the stopwatch. The ratio is the run's frame rate, not a
+constant: the MenuFlyout runs' frames were 15.4 ms apart ([`tools/motion`](../motion/README.md)), a
+ratio of about 1.015. So:
+
+- **A duration counted in frames is animation time**: frames × 15.625 ms, as above, in the units a
+  template's key times are in.
+- **A duration read off the stopwatch** is shorter than its animation time by that run's frame interval
+  over 15.625 ms. Convert it with the frames between its ends, not a fixed factor.
+- **A duration from a recording** is timed by the VM's clock, not the emulator's. Whether the two agree
+  isn't checked yet.
+
 **A PlaneProjection's camera** (`-Probe projections`, `20261110-0756-dev11`): a full-window panel given
 known projections (`RotationY` ±10°, ±30°, ±60° about `CenterOfRotationX` 0, 0.5 and −0.25, and
 `GlobalOffsetZ` ±100) fits a pinhole 999 view px in front of the screen, looking at the element's
@@ -637,9 +653,45 @@ default size, 57.5 view px, shows five dots, and one 120 px wide shows six. Each
 rotates and its `Ellipse` hides and shows as the template's storyboard says, the dots 150 to 167 ms
 apart (the template's `BeginTime`s are 0.167 s apart). One cycle takes 4.13 s by the app's clock
 (nine cycles), and a dot hides 3.10 s into it. The template's keyframes give 4.31 s (the last dot's
-`BeginTime` and its 3.47 s) and 3.22 s: the same shape, 4% faster. Whether that is the emulator or
-the storyboard's clock is open; #28 should compare its own timing with the template's keyframes and
-with this log.
+`BeginTime` and its 3.47 s) and 3.22 s: the same shape, 4% faster. **That is the emulator's clock**
+(below), as far as the cycle goes: at that run's frame rate, 4.305 s and 3.22 s of animation time come
+to 4.13 s and 3.09 s on the stopwatch, which [`tools/motion`](../motion/README.md)'s `ring.py` reads as
+4.132 s and 3.090 s. The dots' spacing, 0.167 s of animation time, would be about 160 ms on the
+stopwatch; `ring.py` reads 164 ms (the median), 150 to 165 ms in the first cycle and 129 to 167 ms over
+all nine, so within a frame or two of it but not explained to the millisecond: no probe has read a dot's
+own clock. The keyframes are what to build.
+
+### ProgressRing: the size threshold and the clock
+
+`20261111-2316-dev11` (`-Probe ringsize`, device 11, B6 for #28; `tools/motion/ringsize.py` prints every
+number below from it). One active ring, its `Width` and `Height` stepped by 1 from 40 to 130 and back,
+then by 0.05 from 60 to 61, then 200 wide and 60 or 61 tall and the other way round; each step held
+120 ms before it was read.
+
+- **`SizeStates` is `Large` when the ring's smaller laid-out side is over 60 view px, else `Small`.**
+  The sizes snap to raw pixels (0.417 view px at 2.4), so: 60 gives `Small`, the next step, 60.417,
+  `Large`. The same going down, at the same place (no hysteresis). Not square, it is the smaller side
+  that counts: 200 × 60 and 60 × 200 are `Small`, 200 × 61 and 61 × 200 `Large`. All 208 steps agree.
+  The side is the one `MaxSideLength` reports, the smaller of `ActualWidth` and `ActualHeight`; below
+  the 57.5 `MinWidth` and `MinHeight` it is 57.5. `Large` shows `SixthCircle` and `Small` collapses it,
+  at every step. How many frames after the size the state changes isn't read: each step is read once,
+  120 ms after it is set.
+- **The `Active` storyboard's own time moves 15.625 ms every frame.** Read each frame from
+  `Storyboard.GetCurrentTime()` on the `Active` state's storyboard, from `IsActive` going true, for 10 s:
+  all 663 moves are 15.625 ms. The frames were 15.0 ms apart by the stopwatch (the median; the mean
+  15.017), so animation time ran 1.0405 times the stopwatch (the step over the mean frame), or 1.0416 by a
+  least-squares fit. It wraps after 4,296.9 ms of its own time: the keyframes' 4.305 s, wrapping at the
+  frame that passes it.
+- **A storyboard of known length agrees**: a 4 s `DoubleAnimation` of our own, three runs. Its own time
+  runs 1.0416, 1.0415 and 1.0416 times the stopwatch by the fit. Its `Completed` fires 3,856.5, 3,862.6
+  and 3,861.1 ms after `Begin()` (ratios 1.036 to 1.037), the event coming a frame or so after the end.
+
+A second run after the probe's review fixes, `20261111-2327-dev11`, gives the same threshold at every step
+and the same clock to 0.001 (frames 15.0 ms apart, the mean 15.022; the fit 1.0417).
+
+So on this run the emulator's animations ran about 1.04 times as fast as its stopwatch, by every measure,
+because each frame moves animation time 1/64 s and the frames came at 66.7 a second. The ring's
+template needs no correction: its 4.13 s cycle is the keyframes' 4.305 s on that clock.
 
 ## The page's app bar (2026-11-09, device 11, #23)
 
