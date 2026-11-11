@@ -118,6 +118,7 @@ substituted.
 - **A value worked out again passes through the value below**: `PhoneTextLine` takes its old value back before
   setting the new one, to see whether anything else sets the property, so for a moment the property has the value
   below it (often 0 or none). A transition on `Padding`, `LineHeight` or `LetterSpacing` starts again from there.
+  Neither gap can be moved into layout from outside the `TextBlock` ([spike 7](../../spikes/README.md#7-where-the-phones-line-can-be-applied), #81).
 - **A local `LineHeight` on a MaxHeight style** is taken as it is, where the phone would still keep the font's
   line if it were shorter.
 

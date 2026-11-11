@@ -41,6 +41,9 @@ namespace Cornflower.Themes.Wp81;
 /// <c>Measure</c> right after <c>Theme = null</c>), they are the old style's. It is posted at <c>Normal</c>, above
 /// <c>Render</c> and every priority layout and render run at in Avalonia 12.1.4, so the next layout sees it done
 /// (Taking_The_Style_Away_Settles_In_One_Run_Of_Jobs).</para>
+/// <para>It writes the three properties because they are the line: a <c>TextBlock</c>'s own layout reads them, and nothing
+/// outside it can apply the line during layout instead; a coercion can't tell a value set from none (spike 7,
+/// docs/spikes; #81).</para>
 /// <para>A pass works out only what the change can move (a <c>CharacterSpacing</c> change, the letter spacing), and
 /// looks the face's metrics up only when the face changes. A change other code makes in the middle of a pass is
 /// worked out again after it.</para>

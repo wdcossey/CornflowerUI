@@ -125,3 +125,51 @@ its bookkeeping beside the `TextBlock`, a swap to a `ControlTheme` based on a te
 `Padding` over the derived theme's (`TextBlockTests.A_Value_A_Derived_ControlTheme_Sets_Wins_Over_The_Styles` and
 `A_Theme_Setting_MaxHeight_And_BaselineToBaseline_Goes_Cleanly` go red). An attached property of its own, registered
 after the three, had kept that working only by being the value after them.
+
+## 7. Where the phone's line can be applied
+
+**Question.** `PhoneTextLine` writes the phone's line (WinRT's `BaselineToBaseline`, its `MaxHeight` line and
+`CharacterSpacing`) as `Padding`, `LineHeight` and `LetterSpacing` at style priority, from property-changed handlers, and
+so has two documented gaps (#77, the TextBlock README): a value worked out again passes through the value below, and a
+value that goes is taken back from the dispatcher. Can the line be applied while the `TextBlock` is laid out, or worked
+out by the value store, instead (#81)?
+
+**Answer.** Not from outside the `TextBlock`. Each option, and what stops it:
+
+- **Options 1 and 3**, a `TextBlock` subclass through `StyleKeyOverride`, and its own `TextLayout` through
+   `CreateTextLayout`, which only a subclass can override. `TextBlock` reads `Padding` in `MeasureOverride`, `ArrangeOverride` and `RenderCore`,
+   and `LineHeight` and `LetterSpacing` in `CreateTextLayout`. A subclass in another assembly can override the first
+   two, `CreateTextLayout` and `RenderTextLayout`, but not `RenderCore` (private protected) or `Render` (sealed), and
+   `TextLayout`'s height and drawing aren't virtual, so the first baseline's offset would be four overrides kept in
+   step. A layout of its own can't reach `TextBlock`'s text run cache (private) or its inlines test (internal). What it
+   draws, the properties don't show: a subclass's own spacing widens the text while `LetterSpacing` stays 0, and the
+   type ramp's tests, an app and an extension pack read those properties. The text a `ContentPresenter` makes of data
+   is always Avalonia's own `AccessText` (`CreateChild` is private), so `PhoneContentLine`'s text can't be the
+   subclass. And it is ladder rung 4: every `TextBlock` in an app would change type.
+- **Option 2**, an attached layout hook. `Layoutable` declares two events, `LayoutUpdated` and `EffectiveViewportChanged`, both
+   raised after a pass, so nothing runs before a `TextBlock` is measured. A hook could only write the same three
+   properties, so both gaps stay, and a value written in `LayoutUpdated` lays the `TextBlock` out a second time.
+- **Option 4**, other ways in Avalonia 12.1.4. **Coercion** (`OverrideMetadata` on `TextBlock`'s three properties): while a
+   value comes in, the store still reports the priority before it, so the first value a theme sets is seen as none,
+   and by value alone a value set to the default (a `ControlTheme` based on a text style that sets `LetterSpacing` to 0)
+   can't be told from none, so it would lose to the phone's. **A binding in each style**: `BindingBase`'s one member
+   is internal, so the only bindings are Avalonia's own, and an observable made into a binding gives every target the
+   same value. A `MultiBinding` of the `TextBlock`'s own properties works, but #69 measured it at 66.6 and 85.6 µs per
+   `TextBlock` against the handler's 35.3 and 43.8 (docs/controls/TextBlock/PLAN.md). A style's setters reach only the
+   `TextBlock`s that have the style, not `PhoneContentLine`'s `AccessText` or the attached properties set on any
+   other `TextBlock`, and a binding in a style isn't a `DynamicResource` hook.
+
+**Evidence.** `TextLineHookTests`: `Only_A_Subclass_Reaches_What_A_TextBlocks_Layout_Reads`,
+`A_Subclass_Building_Its_Own_Layout_Has_No_Way_To_The_Run_Cache_Or_The_Inlines_Test`,
+`A_Subclasss_Own_Spacing_Is_Drawn_But_LetterSpacing_Doesnt_Show_It`, `A_Presenter_Makes_Avalonias_Own_AccessText`,
+`The_Only_Layout_Events_Come_After_The_Pass_And_A_Value_Set_There_Lays_Out_Again`,
+`A_Coercion_Cant_Tell_A_Value_Set_From_None` and
+`A_Binding_Of_Ones_Own_Cant_Be_Made_And_An_Observable_Gives_Every_Target_The_Same_Value`. The coercion probe is on a
+property of its own, so the test process's `TextBlock` metadata isn't changed.
+
+**Consequence.** `PhoneTextLine` keeps writing the three properties from handlers, and both gaps stay documented. One
+change inside that design was tried and not made: setting the values with `SetCurrentValue`, told apart from an equal
+value by `GetDiagnostic` (priority `Unset`, an overridden current value), makes a recompute one change (`LetterSpacing`
+−0.048 to −0.09 once, where today it passes through 0), but it doesn't remove the deferred pass, since taking a value
+back still removes it inside the store's unsetting, and it makes a `ControlTheme` set after the phone's value win at
+once rather than at the next recompute, which three of `TextBlockTests`' assertions hold the other way (#81).
