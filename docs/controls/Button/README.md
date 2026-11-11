@@ -39,9 +39,10 @@ as an 8.1 page does. A Button that must be smaller than the phone's minimum (chr
 - **Data's line** (a string, a number) is the phone's, 1.33 × `FontSize`, so the content is as tall as on the phone
   at any size. An app's `ContentTemplate` or `DataTemplate` keeps its own.
 - **Keyboard focus** draws nothing, as the phone's template has no focus states.
-- **Other controls' templates**: a plain Button in the template of a control Wp81 doesn't theme yet (Simple's
-  CalendarItem, CalendarDatePicker, CommandBar, NavigationPage, PipsPager, the file dialogs) keeps the Button theme
-  under Wp81, the one that template was written for.
+- **Other controls' templates**: a plain Button in a template written for the theme under Wp81 (Simple's
+  CalendarItem, CalendarDatePicker, CommandBar, NavigationPage, PipsPager, the file dialogs) keeps that theme's
+  Button. The template decides, not the control's type: an app's own template, or a theme of the app's above Wp81,
+  has the phone's Button.
 
 ## Resource keys
 
@@ -75,7 +76,9 @@ None.
   it has a text style.
 - **Sliding off while pressed**: Avalonia's Button stays `:pressed` until the finger lifts; whether the phone's
   leaves `Pressed` isn't measured yet. The tilt returns as the phone's does.
-- **Access keys**: none, as on the phone; an `_` in a string is drawn.
+- **Access keys** are Avalonia's, where the phone had none: `_Open` draws `Open`, and Alt+O clicks it. A deliberate
+  difference.
+- **An app data template whose root is an `AccessText`** gets the phone's line, as the theme's own text does.
 - **Not captured on the phone**: Pressed under a real touch (the capture is the state forced with no finger), and
   sliding off. The colours are the template's, so neither blocks the control.
 

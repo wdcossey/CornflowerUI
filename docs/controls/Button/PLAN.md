@@ -97,12 +97,13 @@ The phone's `ContentPresenter` puts content that isn't an element (a string, a n
 1.33 em: the dump's `ContentPresenter` is 24.1667 tall at 18.14, at 15 from the Button's top. Selawik's line is
 1.2 em (21.77), which would make ours 2.1 shorter and its text 0.6 higher. ADR 0003 gives every template whose
 text sets no `LineHeight` the phone's line, 1.33 × `FontSize`. The presenter is marked
-`PhoneContentLine.IsEnabled`, internal to the theme: when Avalonia's default template makes the presenter's
-`TextBlock` (content that isn't an element, and no `ContentTemplate` or `DataTemplate` of the app's matches it),
-`PhoneContentLine` sets `PhoneTextLine.MaxHeightLineHeight` to 0 on it, so its `LineHeight` is the larger of 0 and
-1.33 em, kept there when the Button's `FontSize` changes. The theme adds no data template, so an app's are found as
-without it. Content that is an element (an app's own `TextBlock`, say) keeps its own line, as in any other control:
-a known gap.
+`PhoneContentLine.IsEnabled`, internal to the theme. The presenter recognises access keys, so Avalonia's default
+template makes an `AccessText` of content that isn't an element when no `ContentTemplate` or `DataTemplate` of the
+app's matches it. `PhoneContentLine` puts the phone's line on that `AccessText`, without a second data template
+lookup: it sets `PhoneTextLine.MaxHeightLineHeight` to the smallest size there is, so its `LineHeight` is 1.33 em,
+kept there when the Button's `FontSize` changes, and taken back if the mark is. The theme adds no data template, so an
+app's are found as without it. Content that is an element (an app's own `TextBlock`, say) keeps its own line, as in
+any other control: a known gap. So does an app data template whose root is an `AccessText`, which gets the phone's.
 
 ## Avalonia's Button against the phone's
 
@@ -118,9 +119,9 @@ with `SimpleTheme`'s template and against the captures:
 | A press at a tilted edge | clicks (run 0822) | misses, with the tilt on the root | 1, the theme's untilted root around the tilted `Grid` |
 | The text's line | Segoe WP's 1.33 em | Selawik's 1.2 em | 2, `PhoneContentLine` and `PhoneTextLine`, internal to the theme |
 | Focus | no `FocusStates` group: nothing drawn | the theme under Wp81 draws a focus rectangle when `FocusAdorner` is left unset | 1, the theme clears `FocusAdorner` |
-| Buttons in the templates of controls Wp81 doesn't theme yet | not applicable | Simple's templates for CalendarItem, CalendarDatePicker, CommandBar, NavigationPage, PipsPager and the file dialogs hold plain Buttons, which would take Wp81's theme by type | 2, `HoleParts`, internal to the theme: such a Button takes the Button theme under Wp81 |
+| Buttons in templates written for the theme under Wp81 | not applicable | Simple's templates for CalendarItem, CalendarDatePicker, CommandBar, NavigationPage, PipsPager and the file dialogs hold plain Buttons, which would take Wp81's theme by type | 2, `HoleParts`, internal to the theme: a Button whose templated parent's template is one a theme under Wp81 sets, and no Wp81 theme does, takes the Button theme under Wp81 |
 | Content alignment | `Center`, `Center` (WinRT's defaults) | `Stretch`, `Stretch` | 1, theme setters |
-| Access keys | none: `_` is shown as written | Simple's template recognises them | none needed: the theme's presenter doesn't (`RecognizesAccessKey` is off), as the phone's |
+| Access keys | none: `_` is shown as written | Avalonia's Button themes recognise them | 1, kept as Avalonia's: the presenter recognises them, so `_Open` draws `Open` and Alt+O clicks. A deliberate difference, for an Avalonia app's keyboard |
 | The pointer over it | changes nothing | `:pointerover` | nothing styled |
 | Pressed while the finger slides off | not captured: WinRT's `ButtonBase` is believed to leave `Pressed` when the pointer leaves | stays `:pressed` until release | a gap until measured: see Dependencies |
 | `:flyout-open` | no such state | raised | nothing styled; the flyout itself is themed with Flyout |
@@ -173,9 +174,13 @@ Each has a test in `tests/Cornflower.Tests/Controls/ButtonTests.cs` unless named
 18. **A theme change mid-press puts the tilt at rest.** `A_New_Theme_Mid_Press_Puts_The_Tilt_At_Rest_And_The_Next_Press_Tilts`;
     the rest of the tilt's behaviour (capture loss, drag, the return) is tested on this theme's Button in
     `Behaviours/TiltTests.cs`, which runs on Simple then Wp81.
-19. **Buttons in the holes' templates keep the theme under Wp81**: every hole shown with Simple then Wp81, and a
-    Calendar's header and arrows as wide as with Simple alone; an app's own templated control keeps Wp81's Button
-    (`Completeness/HolePartsTests.cs`).
+19. **Buttons in templates written for the theme under Wp81 keep that theme's Button**: every hole shown with Simple
+    then Wp81; a Calendar's header and arrows; an app's own templated control, an app's subclass with its own theme,
+    an app's theme above Wp81 for a hole and a control Wp81 themes keep Wp81's; a change of the parent's theme at run
+    time; Wp81 in a `Styles` group (`Completeness/HolePartsTests.cs`).
+20. **Access keys**: `_Open` draws `Open` and Alt+O clicks.
+    `An_Access_Key_Is_Drawn_Without_Its_Underscore_And_Alt_Clicks_It`.
+21. **The content line comes off with its mark.** `Turning_The_Content_Line_Off_Takes_It_Back`.
 
 ## Dependencies and captures
 

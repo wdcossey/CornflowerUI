@@ -79,4 +79,6 @@ the frames.
   phone's 1.33 em. An app's `TextBlock` inside a Button has Selawik's 1.2 em unless it has a text style.
 - **Sliding off while pressed** isn't measured on the phone. Avalonia's Button stays `:pressed` until release; the
   tilt returns as the phone's does (run 2118). Owed: a probe.
+- **Access keys** are Avalonia's: `_Open` draws `Open` and Alt+O clicks, where the phone drew the `_`. A deliberate
+  difference, kept for an Avalonia app's keyboard.
 - **Rounding**: none shows here; the minimum width rounds to the same 262 px on both sides (ADR 0003).
