@@ -1,9 +1,9 @@
 # TextBlock and the text styles
 
-Status: device run owed · [#26](https://github.com/wdcossey/CornflowerUI/issues/26)
+Status: done · [#26](https://github.com/wdcossey/CornflowerUI/issues/26)
 
-(The loop is done but for the sample's run on the Android device, as the phone was locked on 2026-11-10. The
-line becomes `Status: done` with that run.)
+(The device run passed on 2026-11-11 on the Pixel 8, a Release build over wireless adb: a cold start of
+671 ms, and all 16 text styles drawn. `tools/android/run.ps1`; its frames are git-ignored.)
 
 The Windows Phone 8.1 type ramp: the 16 `TextBlock` styles of the phone's `generic.xaml`, as `ControlTheme`s
 under the same keys, in `src/Cornflower.Themes.Wp81/Controls/TextBlock.axaml`. The plan, with the measurements,

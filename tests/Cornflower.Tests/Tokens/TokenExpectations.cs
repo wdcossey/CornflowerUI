@@ -337,10 +337,10 @@ internal static class TokenExpectations
     /// <summary>The keys that are the same in both themes: key, kind, value, source.</summary>
     internal static readonly SharedToken[] Shared =
     [
-        new("SystemColorControlAccentColor", TokenKind.Color, "#FF3E65FF", "the default accent; run index.json, PhoneAccentBrush in dark and light"),
+        new("SystemColorControlAccentColor", TokenKind.Color, "#FF3E65FF", "the default accent, Cobalt; the 8.1 Update 1 registry, Control Panel\\Theme DefaultAccent 5; run index.json, PhoneAccentBrush in dark and light"),
         new("CornflowerAccentAmberColor", TokenKind.Color, "#FFF0A30A", "AccentColors\\Amber.xaml PhoneAccentColor"),
         new("CornflowerAccentBrownColor", TokenKind.Color, "#FF825A2C", "AccentColors\\Brown.xaml PhoneAccentColor"),
-        new("CornflowerAccentCobaltColor", TokenKind.Color, "#FF0B6CF8", "AccentColors\\Cobalt.xaml PhoneAccentColor"),
+        new("CornflowerAccentCobaltColor", TokenKind.Color, "#FF3E65FF", "the 8.1 Update 1 registry, Control Panel\\Theme accent 5"),
         new("CornflowerAccentCrimsonColor", TokenKind.Color, "#FFA20025", "AccentColors\\Crimson.xaml PhoneAccentColor"),
         new("CornflowerAccentCyanColor", TokenKind.Color, "#FF1BA1E2", "AccentColors\\Cyan.xaml PhoneAccentColor"),
         new("CornflowerAccentEmeraldColor", TokenKind.Color, "#FF008A00", "AccentColors\\Emerald.xaml PhoneAccentColor"),

@@ -14,10 +14,18 @@ import xml.etree.ElementTree as ET
 X = '{http://schemas.microsoft.com/winfx/2006/xaml}'
 
 # The phone supplies SystemColorControlAccentColor; themeresources.xaml doesn't define it. This is
-# Cornflower's default accent, the emulator's PhoneAccentBrush as the reference app read it in both
-# themes (refapp run 20261108-1443-dev11, index.json), chosen in ADR 0002.
+# Cornflower's default accent, the phone's default, Cobalt. In the 8.1 Update 1 image's registry
+# (config\SOFTWARE, Microsoft\Windows\CurrentVersion\Control Panel\Theme), DefaultAccent is 5, and accent 5
+# is #FF3E65FF in both themes, named "Cobalt" by UIXMobileRes.dll.mui string 10022. The emulator's
+# PhoneAccentBrush reads the same in both themes (refapp run 20261108-1443-dev11, index.json). ADR 0002.
 ACCENT_KEY = 'SystemColorControlAccentColor'
 ACCENT = '#FF3E65FF'
+
+# The named accents where the phone's palette differs from the SDK's design files. The palette is the same
+# registry key's Themes\{0,1}\Accents\0-19, named by UIXMobileRes.dll.mui strings 10017-10026 and
+# 10050-10059; it is the same in both themes, and in RTM and Update 1. Of the 20, only Cobalt differs from
+# the SDK: the 8.1 SDK's AccentColors\Cobalt.xaml has #FF0B6CF8 (the 8.0 SDK's #FF0050EF). The phone wins.
+PHONE_ACCENTS = {'Cobalt': ACCENT}
 
 # The XAML named colours that appear as values, as #AARRGGBB.
 NAMED = {'Transparent': '#00FFFFFF', 'White': '#FFFFFFFF', 'Black': '#FF000000'}

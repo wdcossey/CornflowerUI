@@ -61,7 +61,7 @@ What 8.0 has that 8.1 replaced (reported, from Microsoft's archived documentatio
 | App bar | Fixed 72 high, lowercase menu (reported) | CommandBar, compact height 40 (`AppBarThemeCompactHeight`, read in 19041) |
 | Navigation | Pivot, Hub, back button | Hamburger and SplitView, Pivot |
 | Press feedback | Tilt | `PointerDownThemeAnimation` in 38 places in 19041; what it draws on each control is unconfirmed |
-| Accent | 20 named colours, the same names in the 8.0 and 8.1 SDK design files; only Cobalt's value differs (read). The emulator's default, `#FF3E65FF`, is none of the 20 | The system accent; palette size unconfirmed |
+| Accent | 20 named colours, the same names in the 8.0 and 8.1 SDK design files; only Cobalt's value differs (read). The phone's registry has the same 20 but for Cobalt, `#FF3E65FF`, which is the default (read, 8.1 Update 1 image) | The system accent; palette size unconfirmed |
 | Theme dictionaries | 8.1: `Default` (dark), `Light`, `HighContrastBlack`, `HighContrastWhite` (read) | `Default` (dark), `Light`, `HighContrast` (read in 19041) |
 
 Every "reported" cell is measured from the era's own files before it goes in a plan.
@@ -244,12 +244,14 @@ What exists ([#19](https://github.com/wdcossey/CornflowerUI/issues/19)):
 - The theme follows the app's variant; it doesn't force Dark. The phone's default is dark, so the
   samples and `Scene` request it.
 - The accent is the WinRT key `SystemColorControlAccentColor`, in `Tokens/Accent.axaml`,
-  defaulting to `#FF3E65FF`, the emulator's default `PhoneAccentBrush` (read on 2026-11-08 in both
-  themes, on three profiles). Every accent brush takes it through a `DynamicResource`, so an app
+  defaulting to `#FF3E65FF`, the phone's default accent, Cobalt: `DefaultAccent` 5 in the 8.1 Update 1
+  image's registry, named by `UIXMobileRes.dll.mui` string 10022. The emulator's default
+  `PhoneAccentBrush` reads the same (2026-11-08, in both themes, on three profiles). Every accent brush takes it through a `DynamicResource`, so an app
   that defines the key in `Application.Resources` moves them all while it runs.
 - The 20 named accents are resources an app can pick from, keyed `CornflowerAccent<Name>Color`
-  (WinRT has no keys for them). Their values are the 8.1 SDK design files'. Compared with 8.0, 19
-  are identical and Cobalt differs (8.0 `#FF0050EF`, 8.1 `#FF0B6CF8`).
+  (WinRT has no keys for them). Their values are the phone's registry palette (`Control Panel\Theme`,
+  `Accents\0` to `19`), which equals the 8.1 SDK design files' but for Cobalt: the phone's is `#FF3E65FF`,
+  the 8.1 SDK file's `#FF0B6CF8` and the 8.0 one's `#FF0050EF` (ADR 0002, corrected 2026-11-11).
 
 Proposed:
 

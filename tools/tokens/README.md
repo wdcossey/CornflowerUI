@@ -68,8 +68,9 @@ The scripts hold no table read from the SDK. The few values written into them:
 
 | Value | Where | Source |
 |---|---|---|
-| `SystemColorControlAccentColor` default `#FF3E65FF` | `resources.py` `ACCENT` | The emulator's `PhoneAccentBrush`, read by refapp run `20261108-1443-dev11` (`index.json`), chosen in [ADR 0002](../../docs/decisions/0002-decisions-of-2026-11-08.md). The SDK file doesn't define this key: the phone supplies it |
-| Cobalt's 8.0 value `#FF0050EF`, in Cobalt's comment | `gen.py` | The 8.0 SDK's `AccentColors\Cobalt.xaml`, compared in PR #45. It is the one accent that changed from 8.0 to 8.1 |
+| `SystemColorControlAccentColor` default `#FF3E65FF` | `resources.py` `ACCENT` | The phone's default accent, Cobalt: `DefaultAccent` 5 in the 8.1 Update 1 image's registry (`config\SOFTWARE`, `Control Panel\Theme`), named by `UIXMobileRes.dll.mui` string 10022. The emulator's `PhoneAccentBrush`, read by refapp run `20261108-1443-dev11` (`index.json`), is the same. Chosen in [ADR 0002](../../docs/decisions/0002-decisions-of-2026-11-08.md). The SDK file doesn't define this key: the phone supplies it |
+| Cobalt `#FF3E65FF`, over the SDK file's `#FF0B6CF8` | `resources.py` `PHONE_ACCENTS` | The same registry key's `Themes\{0,1}\Accents\5`. The phone's 20 accents equal the 8.1 SDK files' but for Cobalt; `gen.py` stops if the SDK file ever agrees |
+| Cobalt's 8.0 value `#FF0050EF`, in Cobalt's comment | `gen.py` | The 8.0 SDK's `AccentColors\Cobalt.xaml`, compared in PR #45 |
 | `Transparent`, `White`, `Black` as `#AARRGGBB` | `resources.py` `NAMED` | The XAML named colours |
 | Font weight names as numbers (`Light` 300, `SemiLight` 350, `Semibold` 600 and so on) | `crosscheck.py` `WEIGHTS`, `gen.py` `WNUM` | The OpenType weight classes |
 | The two known differences and their reasons | `gen.py` `DIFFER` | Cornflower's reading of run `20261108-1443-dev11`, PR #45 |
