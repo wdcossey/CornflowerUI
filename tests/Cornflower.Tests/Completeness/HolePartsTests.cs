@@ -166,6 +166,23 @@ public class HolePartsTests
         Assert.True(CfTilt.GetIsEnabled(PlainButtons(host).Single()));
     }
 
+    // A theme under Wp81 keyed by Button but targeting another type (copied from another control's file) is no
+    // Button theme: the hole's Button keeps Wp81's rather than take it.
+    [AvaloniaFact]
+    public void A_Mis_Keyed_Theme_Under_Wp81_Isnt_Taken()
+    {
+        var host = new AppControl
+        {
+            Template = new FuncControlTemplate<AppControl>((_, _) => new Button { Name = "Inner", Content = "inner" }),
+        };
+        var under = new Styles { Resources = { [typeof(AppControl)] = new ControlTheme(typeof(AppControl)), [typeof(Button)] = new ControlTheme(typeof(ToggleButton)) } };
+        using var scene = new Scene(host, themes: [under, new Wp81Theme()]);
+
+        var inner = PlainButtons(host).Single();
+        Assert.Null(inner.Theme);
+        Assert.True(CfTilt.GetIsEnabled(inner));
+    }
+
     /// <summary>A templated control of an app's own, which no theme knows.</summary>
     public class AppControl : TemplatedControl;
 }
