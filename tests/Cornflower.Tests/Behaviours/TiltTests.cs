@@ -21,9 +21,11 @@ using CfTilt = Cornflower.Controls.Tilt;
 namespace Cornflower.Tests.Behaviours;
 
 /// <summary>
-/// The tilt on stock Buttons laid out as the reference app's probes laid them out, on the reference
+/// The tilt on Buttons laid out as the reference app's probes laid them out, on the reference
 /// profile, pressed with headless touch and mouse input, against the emulator's readings
-/// (<see cref="TiltReadings"/>). Time is a <see cref="TestClock"/>: a frame is 16 ms.
+/// (<see cref="TiltReadings"/>). Time is a <see cref="TestClock"/>: a frame is 16 ms. The Buttons are
+/// the shipped configuration's, Simple then Wp81, so Wp81's Button with its tilted <c>Grid</c>, unless a
+/// test is about another template's shape: Simple's, whose root tilts, or a hit layer of the test's own.
 /// </summary>
 public class TiltTests
 {
@@ -70,8 +72,7 @@ public class TiltTests
                 Layouts[layout.Name] = layout;
             }
 
-            // Simple's Button, whose template root is what tilts: these tests are about the behaviour, not Wp81's Button.
-            _scene = new Scene(canvas, width: width, height: height, scaling: scaling, themes: [new SimpleTheme()]);
+            _scene = new Scene(canvas, width: width, height: height, scaling: scaling);
         }
 
         public Dictionary<string, Button> Buttons { get; } = [];
@@ -385,7 +386,7 @@ public class TiltTests
     public void A_Tilted_Press_Still_Clicks()
     {
         using var clock = new TestClock();
-        using var page = new Page(GridButtons);
+        using var page = new Page(GridButtons, SimpleButtonTheme());
         var button = page.Buttons["A"];
         var clicks = 0;
         button.Click += (_, _) => clicks++;
@@ -397,6 +398,12 @@ public class TiltTests
 
         Assert.Equal(1, clicks);
     }
+
+    /// <summary>Simple's Button theme, whose template root is what tilts, for the tests about that shape.</summary>
+    private static ControlTheme SimpleButtonTheme() =>
+        new SimpleTheme().TryGetResource(typeof(Button), ThemeVariant.Dark, out var theme) && theme is ControlTheme found
+            ? found
+            : throw new InvalidOperationException("SimpleTheme has no Button theme.");
 
     /// <summary>
     /// A Button template in the shape the tilt asks for: an untilted root that takes the hits,
@@ -452,7 +459,7 @@ public class TiltTests
     public void With_The_Root_Tilted_Avalonia_Misses_A_Tap_Just_Inside_An_Edge()
     {
         using var clock = new TestClock();
-        using var page = new Page(FirstButton);
+        using var page = new Page([FirstButton], SimpleButtonTheme());
         var button = page.Buttons[FirstButton.Name];
         var clicks = 0;
         button.Click += (_, _) => clicks++;
@@ -494,12 +501,14 @@ public class TiltTests
     {
         using var page = new Page(FirstButton);
         var button = page.Buttons[FirstButton.Name];
+        var target = CfTilt.TargetOf(button);
         var inner = new Border();
         CfTilt.SetIsTarget(inner, true);
         button.Content = inner;
         Dispatcher.UIThread.RunJobs();
 
-        Assert.Same(button.GetVisualChildren().Single(), CfTilt.TargetOf(button));
+        Assert.Same(target, CfTilt.TargetOf(button));
+        Assert.NotSame(inner, target);
     }
 
     // The toolkit tilts only the nearest tiltable element: a tilting Button inside a tilting item
@@ -938,7 +947,7 @@ public class TiltTests
         Assert.Same(content, pointer!.Captured);
         button.Content = null;                                      // the captured element goes
         Dispatcher.UIThread.RunJobs();
-        Assert.Same(CfTilt.TargetOf(button), pointer.Captured);
+        Assert.True(pointer.Captured is Visual captured && button.IsVisualAncestorOf(captured), $"captured by {pointer.Captured}");
 
         page.Window.TouchEnd(touch, at);
         clock.At(SettleMs + 1000);
@@ -978,7 +987,7 @@ public class TiltTests
         using var page = new Page(GridButtons);
         var button = page.Buttons["B"];
         var styled = new ScaleTransform(1, 1);
-        var style = new Style(x => x.OfType<Button>().Template().OfType<Avalonia.Controls.Presenters.ContentPresenter>())
+        var style = new Style(x => x.OfType<Button>().Template().OfType<Panel>().Name("Grid"))     // Wp81's tilted part
         {
             Setters = { new Setter(Visual.RenderTransformProperty, styled) },
         };
