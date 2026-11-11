@@ -2,6 +2,8 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
+using Avalonia.Data;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
@@ -185,6 +187,74 @@ public class PageTimingTests
         Assert.Empty(lines);
     }
 
+    // On the Pixel, the first device run after #74 reported page=412x720 in a view of 411.43x914.29 with a safe area of
+    // 0,50.29,0,24, where the page settles at about 840 tall: the safe area (or the view) changed after the page's first
+    // frame, and the line was read at the start of the next render pass, before its layout, with the page's old size
+    // beside the new view and safe area. Avalonia gives the safe area to the top level's content, the shell on a phone,
+    // as its Padding at style priority; the headless window has no insets manager, so the test sets that Padding as
+    // Avalonia would, and the line's safe= stays 0: only view= and page= are held here.
+    [AvaloniaTheory]
+    [InlineData("safe area", "view=450x800", "page=450x725.42")]
+    [InlineData("view", "view=450x700", "page=450x700")]
+    public void A_Change_After_The_First_Frame_Is_In_The_Pages_Size(string change, string view, string page)
+    {
+        var lines = new List<string>();
+        var shell = ShellOf(lines);
+        shell.HasBackRail = false;
+        using var scene = new Scene(shell);
+
+        // A callback asked for with the shell's first runs in the same render pass, after it: once it has, that pass's
+        // layout and frame are done, and the shell's second callback waits for the next.
+        var firstRan = false;
+        shell.Open("plain");
+        scene.Window.RequestAnimationFrame(_ => firstRan = true);
+        DrawUntil(() => firstRan);
+        Assert.Empty(lines);
+        if (change == "safe area")
+            shell.SetValue(TemplatedControl.PaddingProperty, new Thickness(0, 50.29, 0, 24), BindingPriority.Style);
+        else
+            scene.Window.Height = 700;
+        Draw();
+
+        // The padding, each side rounded to the raw pixel grid at 2.4, or the new view, is in the page's size, and the
+        // line says so.
+        var shown = Assert.IsType<Plain>(shell.Shown);
+        Assert.Equal(page, string.Create(CultureInfo.InvariantCulture, $"page={shown.Bounds.Width:0.##}x{shown.Bounds.Height:0.##}"));
+        var line = Assert.Single(Ready(lines));
+        Assert.Contains($" {view} ", line, StringComparison.Ordinal);
+        Assert.EndsWith($" {page} title=plain", line, StringComparison.Ordinal);
+    }
+
+    // A change can also come after that pass, before the line's own job, as a platform's resize can: Avalonia lays it
+    // out in a render pass, at a higher priority than the line's job, so the line still has the page's new size.
+    [AvaloniaFact]
+    public void A_Change_Between_The_Pass_And_The_Line_Is_Laid_Out_First()
+    {
+        var lines = new List<string>();
+        var shell = ShellOf(lines);
+        shell.HasBackRail = false;
+        using var scene = new Scene(shell);
+
+        // Asked for before the shell's first callback, so the one it asks for runs in the next pass just before the shell's
+        // second, and its change, posted at the line's own priority, runs after that pass's layout and frame, and just
+        // before the line's job. With the frame in flight, no layout can run between them.
+        var changed = false;
+        scene.Window.RequestAnimationFrame(_ => scene.Window.RequestAnimationFrame(_ => Dispatcher.UIThread.Post(
+            () =>
+            {
+                shell.SetValue(TemplatedControl.PaddingProperty, new Thickness(0, 50.29, 0, 24), BindingPriority.Style);
+                changed = true;
+            },
+            DispatcherPriority.Loaded)));
+        shell.Open("plain");
+        DrawUntil(() => changed);
+        Draw();
+
+        var shown = Assert.IsType<Plain>(shell.Shown);
+        Assert.Equal(725.42, Math.Round(shown.Bounds.Height, 2));
+        Assert.EndsWith(" page=450x725.42 title=plain", Assert.Single(Ready(lines)), StringComparison.Ordinal);
+    }
+
     // As on a phone: App opens the start page before Avalonia puts the shell in its view.
     [AvaloniaFact]
     public void A_Page_Opened_Before_The_Shell_Is_In_A_Window_Reports_Once_Drawn()
@@ -284,6 +354,19 @@ public class PageTimingTests
             AvaloniaHeadlessPlatform.ForceRenderTimerTick();
             Dispatcher.UIThread.RunJobs();
         }
+    }
+
+    /// <summary>Frames, one at a time, until <paramref name="done"/>; a frame's render pass is over when it returns.</summary>
+    private static void DrawUntil(Func<bool> done)
+    {
+        for (var frame = 0; frame < 8 && !done(); frame++)
+        {
+            Dispatcher.UIThread.RunJobs();
+            if (!done())
+                AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+        }
+
+        Assert.True(done());
     }
 
     private static int OpenMs(string line) =>
