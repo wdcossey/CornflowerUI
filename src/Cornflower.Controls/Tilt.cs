@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -28,7 +29,17 @@ namespace Cornflower.Controls;
 /// The tilt is drawn on the template's root, where the phone puts it, or on the control itself if
 /// it has no template. Its transform goes on the root's <c>RenderTransform</c> at animation
 /// priority, over the root's own value, which is back untouched at rest. The control's own space
-/// isn't tilted, so <c>GetPosition</c> on it, and its layout, are unchanged.
+/// isn't tilted, so <c>GetPosition</c> on it, and its layout, are unchanged. If a template gives
+/// the tilted part a transform of its own, the tilt is drawn after it, as the phone draws a
+/// <c>PlaneProjection</c> after a <c>RenderTransform</c>, and the finger's point is taken back
+/// through both. That transform changing in place (an animation on its scale, say) shows at once.
+/// A new value for it, local or styled, set while a press has settled, shows at the next move or
+/// the return: Avalonia 12.1.4 raises no change for a value set under an animation-priority one.
+/// </para>
+/// <para>
+/// A press in a popup the control owns is routed through the control but isn't on it, so it
+/// doesn't tilt it. A new template ends a press: the old part goes back to rest, and the next press
+/// tilts the new one.
 /// </para>
 /// <para>
 /// Avalonia hit-tests through a <c>RenderTransform</c>. Pressed within about 3 px of an edge, the
@@ -118,12 +129,16 @@ public static class Tilt
         return null;
     }
 
-    /// <summary>Whether a tilt-enabled control nearer the press than <paramref name="control"/> will tilt instead: only the nearest tilts, as the toolkit's.</summary>
+    /// <summary>
+    /// Whether a tilt-enabled control nearer the press than <paramref name="control"/> will tilt
+    /// instead: only the nearest tilts, as the toolkit's. One that won't take the press (its target
+    /// has no size, it's outside a window, or it's already pressed) leaves it to the next one out.
+    /// </summary>
     private static bool NearerTiltBelow(Control control, object? source)
     {
         for (var v = source as Visual; v is not null && !ReferenceEquals(v, control); v = v.GetVisualParent())
         {
-            if (v is Control c && GetIsEnabled(c)) return true;
+            if (v is Control c && c.GetValue(TrackerProperty) is { } nearer && nearer.Takes(source, out _)) return true;
         }
 
         return false;
@@ -144,16 +159,16 @@ public static class Tilt
     private sealed class Tracker
     {
         private readonly Control _control;
+        private readonly MatrixTransform _transform = new();     // the tilt's, one for the tracker's life
         private Phase _phase;
         private IPointer? _pointer;
         private Point _press;          // the finger, in the target's parent's space
-        private Point _eye;            // the point under the eye, in the target's space, for this press
+        private Point _eye;            // the point under the eye, in the target's space, as of the last frame
         private TimeSpan _released;
         private TiltState _held;
-        private IDisposable? _pending;
-        private bool _stepPending;
+        private IDisposable? _pending; // in Pressed, a step; in Paused or Returning, the return
         private Visual? _target;
-        private MatrixTransform? _transform;
+        private ITransform? _own;      // the target's own transform under the tilt, watched while shown
         private IDisposable? _shown;   // the transform on the target, above its own values; disposed, they're back
 
         public Tracker(Control control)
@@ -178,27 +193,44 @@ public static class Tilt
             ToRest();
         }
 
+        /// <summary>
+        /// Whether a press from <paramref name="source"/> would tilt this control, and what it would
+        /// tilt. It has to be on the control: a press in a popup the control owns is routed through
+        /// it, but is in another visual tree. And the control has to be free, with a target that has
+        /// a size, in a window.
+        /// </summary>
+        public bool Takes(object? source, [NotNullWhen(true)] out Visual? target)
+        {
+            target = null;
+            if (source is not Visual hit || !(ReferenceEquals(hit, _control) || _control.IsVisualAncestorOf(hit)))
+                return false;
+            if (_phase is Phase.Pressed or Phase.Paused)
+                return false;
+
+            var part = TargetOf(_control);
+            if (part.GetVisualParent() is not { } parent || part.Bounds.Width <= 0 || part.Bounds.Height <= 0 ||
+                EyeFor(part, parent) is null)
+                return false;
+
+            target = part;
+            return true;
+        }
+
         private void OnPressed(object? sender, PointerPressedEventArgs e)
         {
-            if (!e.GetCurrentPoint(_control).Properties.IsLeftButtonPressed || NearerTiltBelow(_control, e.Source))
-                return;
-            if (_phase is Phase.Pressed or Phase.Paused)
-                return;
-            if (TargetOf(_control) is not { } target || target.GetVisualParent() is not { } parent)
-                return;
-            if (target.Bounds.Width <= 0 || target.Bounds.Height <= 0 || EyeFor(target, parent) is not { } eye)
+            if (!e.GetCurrentPoint(_control).Properties.IsLeftButtonPressed || NearerTiltBelow(_control, e.Source) ||
+                !Takes(e.Source, out var target))
                 return;
 
             if (!ReferenceEquals(target, _target))
             {
                 ToRest();
-                _target = target;
+                Retarget(target);
             }
 
             _phase = Phase.Pressed;
             _pointer = e.Pointer;
-            _press = e.GetPosition(parent);
-            _eye = eye;
+            _press = e.GetPosition(target.GetVisualParent());
             Step();
         }
 
@@ -224,9 +256,10 @@ public static class Tilt
                 return;
             }
 
+            var stepping = _phase == Phase.Pressed && _pending is not null;
             _phase = Phase.Pressed;
             _press = press;
-            if (!_stepPending) Step();               // else the frame already asked for steps from here
+            if (!stepping) Step();                   // else the frame already asked for steps from here
         }
 
         private void OnReleased(object? sender, PointerReleasedEventArgs e)
@@ -240,6 +273,19 @@ public static class Tilt
         }
 
         private void OnDetached(object? sender, VisualTreeAttachmentEventArgs e) => ToRest();
+
+        /// <summary>The target left the tree: a new template took it away. The press is over, and the next one tilts the new target.</summary>
+        private void OnTargetDetached(object? sender, VisualTreeAttachmentEventArgs e) => ToRest();
+
+        /// <summary>The target's own transform changed in place.</summary>
+        private void OnOwnChanged(object? sender, EventArgs e) => Redraw();
+
+        private void Retarget(Visual? target)
+        {
+            if (_target is not null) _target.DetachedFromVisualTree -= OnTargetDetached;
+            _target = target;
+            if (_target is not null) _target.DetachedFromVisualTree += OnTargetDetached;
+        }
 
         /// <summary>The target is still this control's: not swapped out by a new template, and laid out.</summary>
         private bool TargetStands() =>
@@ -257,16 +303,14 @@ public static class Tilt
             }
 
             var bounds = _target!.Bounds;
-            var next = TiltModel.Step(State, bounds.Size, _press - bounds.Position, _eye);
+            Look();
+            var next = TiltModel.Step(State, bounds.Size, _press - bounds.Position, _eye, OwnMatrix(bounds.Size));
             var moved = Math.Abs(next.RotationX - State.RotationX) + Math.Abs(next.RotationY - State.RotationY) +
                         Math.Abs(next.OffsetZ - State.OffsetZ);
             Show(next, bounds.Size);
 
             if (moved > TiltModel.Settled)
-            {
                 _pending = CornflowerClock.RequestFrame(_control, Step);
-                _stepPending = true;
-            }
         }
 
         /// <summary>The finger is up, or the pointer was taken: the tilt returns, if it isn't already, and the press is over.</summary>
@@ -299,8 +343,15 @@ public static class Tilt
                 return;
             }
 
+            Look();
             Show(_held.Scale(factor), _target!.Bounds.Size);
             _pending = CornflowerClock.RequestFrame(_control, Return);
+        }
+
+        /// <summary>The eye for this frame: the control may have moved, or its window been resized, since the last.</summary>
+        private void Look()
+        {
+            if (_target?.GetVisualParent() is { } parent && EyeFor(_target, parent) is { } eye) _eye = eye;
         }
 
         /// <summary>
@@ -317,19 +368,46 @@ public static class Tilt
             return screenCentre is { } centre ? TiltModel.Eye(bounds.Size, centre - bounds.Center) : null;
         }
 
+        /// <summary>
+        /// The target's own transform, its local or styled value under the tilt's, as drawn on its
+        /// space (origin top left), or identity. Watched for changes in place while the tilt shows.
+        /// </summary>
+        private Matrix OwnMatrix(Size size)
+        {
+            var own = _target!.GetBaseValue(Visual.RenderTransformProperty).GetValueOrDefault();
+            if (!ReferenceEquals(own, _own))
+            {
+                if (_own is Transform before) before.Changed -= OnOwnChanged;
+                _own = own;
+                if (_own is Transform after) after.Changed += OnOwnChanged;
+            }
+
+            if (own is null) return Matrix.Identity;
+
+            // Avalonia draws a RenderTransform about RenderTransformOrigin.
+            var origin = _target.RenderTransformOrigin.ToPixels(size);
+            return Matrix.CreateTranslation(-origin) * own.Value * Matrix.CreateTranslation(origin);
+        }
+
         private void Show(TiltState state, Size size)
         {
             State = state;
             if (_target is null) return;
 
-            _transform ??= new MatrixTransform();
-
             // Avalonia draws a RenderTransform about RenderTransformOrigin; the model's matrix is about
-            // the top left, so it's moved there and back.
+            // the top left, so it's moved there and back. The target's own transform, about its origin,
+            // is drawn first, then the tilt: (own about the origin) × tilt, moved to the origin.
             var origin = _target.RenderTransformOrigin.ToPixels(size);
-            _transform.Matrix = Matrix.CreateTranslation(origin) * TiltModel.ToMatrix(state, size, _eye) *
+            var own = OwnMatrix(size);
+            _transform.Matrix = Matrix.CreateTranslation(origin) * own * TiltModel.ToMatrix(state, size, _eye) *
                                 Matrix.CreateTranslation(-origin);
             Put();
+        }
+
+        /// <summary>The target's own transform changed while the tilt shows: the same tilt, drawn over the new one.</summary>
+        private void Redraw()
+        {
+            if (_shown is not null && _target is not null) Show(State, _target.Bounds.Size);
         }
 
         /// <summary>
@@ -338,7 +416,7 @@ public static class Tilt
         /// </summary>
         private void Put()
         {
-            if (_shown is null && _target is not null && _transform is not null)
+            if (_shown is null && _target is not null)
                 _shown = _target.SetValue(Visual.RenderTransformProperty, _transform, BindingPriority.Animation);
         }
 
@@ -346,7 +424,6 @@ public static class Tilt
         {
             _pending?.Dispose();
             _pending = null;
-            _stepPending = false;
         }
 
         /// <summary>No tilt showing: the target's own transform back, nothing pending. A press still down stays down.</summary>
@@ -354,9 +431,11 @@ public static class Tilt
         {
             Cancel();
             State = TiltState.Rest;
-            _shown?.Dispose();
+            var shown = _shown;
             _shown = null;
-            _transform = null;
+            shown?.Dispose();
+            if (_own is Transform own) own.Changed -= OnOwnChanged;
+            _own = null;
         }
 
         /// <summary>Back to rest at once, and the press forgotten.</summary>
@@ -365,7 +444,7 @@ public static class Tilt
             Clear();
             _phase = Phase.Rest;
             _pointer = null;
-            _target = null;
+            Retarget(null);
         }
     }
 }

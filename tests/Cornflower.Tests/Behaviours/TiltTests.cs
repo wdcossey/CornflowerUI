@@ -522,6 +522,79 @@ public class TiltTests
         Assert.Equal(TiltState.Rest, CfTilt.Current(item));
     }
 
+    // A nearer tilting control that won't take the press (here its part has no size) leaves it to
+    // the item, which tilts, rather than nothing tilting.
+    [AvaloniaFact]
+    public void When_The_Nearer_Tilting_Control_Wont_Take_The_Press_The_Outer_One_Tilts()
+    {
+        using var clock = new TestClock();
+        var flat = new ControlTheme(typeof(Button))
+        {
+            Setters =
+            {
+                new Setter(TemplatedControl.TemplateProperty, new FuncControlTemplate<Button>((_, _) =>
+                {
+                    var part = new Border { Width = 0 };
+                    CfTilt.SetIsTarget(part, true);
+                    return new Grid { Background = Brushes.Transparent, Children = { part } };
+                })),
+            },
+        };
+        var button = new Button { Width = 200, Height = 80, Theme = flat };
+        CfTilt.SetIsEnabled(button, true);
+        var item = new ContentControl { Content = button, Padding = new Thickness(20) };
+        CfTilt.SetIsEnabled(item, true);
+        var canvas = new Canvas { Children = { item } };
+        Canvas.SetLeft(item, 50);
+        Canvas.SetTop(item, 100);
+        using var scene = new Scene(canvas);
+        Assert.Equal(0, CfTilt.TargetOf(button).Bounds.Width);
+
+        scene.Window.TouchBegin(new Point(50 + 20 + 30, 100 + 20 + 20));
+        clock.At(SettleMs);
+
+        Assert.Equal(TiltState.Rest, CfTilt.Current(button));
+        Assert.NotEqual(TiltState.Rest, CfTilt.Current(item));
+    }
+
+    // A popup's content is routed through the control that owns the popup, but it isn't on the
+    // control: a press there, far from the control, would tilt it to a clamped corner.
+    [AvaloniaFact]
+    public void A_Press_In_A_Popup_The_Control_Owns_Doesnt_Tilt_It()
+    {
+        using var clock = new TestClock();
+        var inPopup = new Border { Width = 100, Height = 100, Background = Brushes.Transparent };
+        var popup = new Popup { Child = inPopup, Placement = PlacementMode.Bottom };
+        var item = new ContentControl
+        {
+            Width = 300,
+            Height = 120,
+            Content = new Panel { Background = Brushes.Transparent, Children = { popup } },
+        };
+        CfTilt.SetIsEnabled(item, true);
+        var canvas = new Canvas { Children = { item } };
+        Canvas.SetLeft(item, 50);
+        Canvas.SetTop(item, 100);
+        using var scene = new Scene(canvas);
+        popup.IsOpen = true;
+        Dispatcher.UIThread.RunJobs();
+        // Headless, a popup is hosted in the window's overlay layer: in the window, not in the item.
+        var popupRoot = TopLevel.GetTopLevel(inPopup)!;
+        Assert.False(item.IsVisualAncestorOf(inPopup));
+        var at = inPopup.TranslatePoint(new Point(50, 50), popupRoot)!.Value;
+        var routed = false;
+        item.AddHandler(InputElement.PointerPressedEvent, (_, _) => routed = true, RoutingStrategies.Tunnel);
+
+        popupRoot.MouseDown(at, MouseButton.Left);
+        clock.At(SettleMs);
+
+        Assert.True(routed);                                        // through the control
+        Assert.Equal(TiltState.Rest, CfTilt.Current(item));
+        Assert.Null(CfTilt.TargetOf(item).RenderTransform);
+        popupRoot.MouseUp(at, MouseButton.Left);
+        popup.IsOpen = false;
+    }
+
     // A new template mid-press (a theme swapped, say) takes the captured part away without a
     // release: the tilt goes to rest, and the next press tilts the new root.
     [AvaloniaFact]
@@ -546,6 +619,144 @@ public class TiltTests
         Assert.NotEqual(TiltState.Rest, CfTilt.Current(button));
         Assert.NotSame(oldPart, CfTilt.TargetOf(button));
         Assert.IsType<MatrixTransform>(CfTilt.TargetOf(button).RenderTransform);
+    }
+
+    // The same once the press has settled, when no step is pending to notice: the old part goes
+    // to rest at once, and the press is over, so a second finger tilts the new part.
+    [AvaloniaFact]
+    public void A_New_Template_After_The_Press_Settles_Ends_It_And_Another_Finger_Tilts_The_New_Part()
+    {
+        using var clock = new TestClock();
+        using var page = new Page([FirstButton], HitLayerTheme());
+        var button = page.Buttons[FirstButton.Name];
+
+        page.Window.TouchBegin(page.At(FirstButton.Name, new Point(30, 20)));
+        clock.At(SettleMs);
+        Assert.Equal(0, clock.Pending);                             // settled
+        var oldPart = CfTilt.TargetOf(button);
+        button.Theme = HitLayerTheme();
+        Dispatcher.UIThread.RunJobs();
+        Assert.NotSame(oldPart, CfTilt.TargetOf(button));
+        Assert.Equal(TiltState.Rest, CfTilt.Current(button));
+        Assert.Null(oldPart.RenderTransform);
+
+        page.Window.TouchBegin(page.At(FirstButton.Name, new Point(250, 100)));
+        clock.At(2 * SettleMs);
+        Assert.NotEqual(TiltState.Rest, CfTilt.Current(button));
+        Assert.IsType<MatrixTransform>(CfTilt.TargetOf(button).RenderTransform);
+    }
+
+    // The eye is towards the screen's centre from the control, so it moves with the control. Moved
+    // mid-press, with the finger kept on the same point of it, the control settles where a new
+    // press there would.
+    [AvaloniaFact]
+    public void A_Control_Moved_Mid_Press_Tilts_For_Where_It_Is_Now()
+    {
+        using var clock = new TestClock();
+        using var page = new Page(GridButtons);
+        var button = page.Buttons["A"];
+        var inButton = new Point(30.002, 15.016);
+
+        var touch = page.Window.TouchBegin(page.At("A", inButton));
+        clock.At(SettleMs);
+        Canvas.SetTop(button, 700);                                 // below D, clear of it
+        Dispatcher.UIThread.RunJobs();
+        var now = new Point(page.Layouts["A"].Left, 700) + inButton;
+        page.Window.TouchMove(touch, now);
+        clock.At(2 * SettleMs);
+        var moved = CfTilt.Current(button);
+        page.Window.TouchEnd(touch, now);
+        clock.At(2 * SettleMs + 1000);
+
+        page.Window.TouchBegin(now);
+        clock.At(3 * SettleMs + 1000);
+        AssertNear(CfTilt.Current(button), moved, angle: 1e-3, depth: 1e-3);
+    }
+
+    // The phone draws the projection after the part's RenderTransform. So does the tilt: a part
+    // scaled to half by its own transform is drawn half-size and tilted, and settles at the rule
+    // for the point of the part Avalonia's hit testing finds under the finger.
+    [AvaloniaFact]
+    public void The_Parts_Own_Transform_Is_Drawn_Under_The_Tilt()
+    {
+        using var clock = new TestClock();
+        using var page = new Page(GridButtons);
+        var button = page.Buttons["B"];
+        var root = CfTilt.TargetOf(button);
+        root.RenderTransform = new ScaleTransform(0.5, 0.5);
+        Dispatcher.UIThread.RunJobs();
+        var (w, h) = (root.Bounds.Width, root.Bounds.Height);
+        var inButton = new Point(100, 45);                          // on the half-size part, left of its centre
+
+        page.Window.TouchBegin(page.At("B", inButton));
+        clock.At(SettleMs);
+
+        Assert.InRange(DrawnWidth(root, button), 0.45 * w, 0.55 * w);
+        var seen = button.TranslatePoint(inButton, root)!.Value;
+        AssertNear(TiltModel.ForOffset(seen.X / w - 0.5, seen.Y / h - 0.5), CfTilt.Current(button), angle: 2e-3, depth: 2e-3);
+    }
+
+    // The part's own transform changing in place once the press has settled (an animation on its
+    // scale, say) is drawn under the tilt at once. A new value isn't seen until the next frame:
+    // Avalonia 12.1.4 raises no change for a value set under the tilt's, at animation priority.
+    [AvaloniaFact]
+    public void A_Change_To_The_Parts_Own_Transform_Mid_Press_Is_Drawn()
+    {
+        using var clock = new TestClock();
+        using var page = new Page(GridButtons);
+        var button = page.Buttons["B"];
+        var root = CfTilt.TargetOf(button);
+        var own = new ScaleTransform(1, 1);
+        root.RenderTransform = own;
+        Dispatcher.UIThread.RunJobs();
+        var w = root.Bounds.Width;
+        var at = page.At("B", new Point(150, 60));
+        var raised = 0;
+        root.PropertyChanged += (_, e) => raised += e.Property == Visual.RenderTransformProperty ? 1 : 0;
+
+        var touch = page.Window.TouchBegin(at);
+        clock.At(SettleMs);
+        Assert.Equal(0, clock.Pending);                             // settled
+        Assert.InRange(DrawnWidth(root, button), 0.9 * w, w);
+
+        own.ScaleX = 0.5;
+        Assert.InRange(DrawnWidth(root, button), 0.45 * w, 0.55 * w);
+
+        raised = 0;
+        root.RenderTransform = new ScaleTransform(1, 1);
+        Assert.Equal(0, raised);
+        Assert.InRange(DrawnWidth(root, button), 0.45 * w, 0.55 * w);
+        page.Window.TouchMove(touch, at);                           // the next frame
+        Assert.InRange(DrawnWidth(root, button), 0.9 * w, w);
+    }
+
+    /// <summary>How wide <paramref name="part"/> is drawn across its middle, in <paramref name="within"/>'s space.</summary>
+    private static double DrawnWidth(Visual part, Visual within)
+    {
+        var (w, h) = (part.Bounds.Width, part.Bounds.Height);
+        return part.TranslatePoint(new Point(w, h / 2), within)!.Value.X - part.TranslatePoint(new Point(0, h / 2), within)!.Value.X;
+    }
+
+    // One transform for the tracker's life, not one for each press.
+    [AvaloniaFact]
+    public void Every_Press_Draws_With_The_Same_Transform()
+    {
+        using var clock = new TestClock();
+        using var page = new Page(GridButtons);
+        var button = page.Buttons["B"];
+        var at = page.At("B", new Point(75, 30));
+
+        var touch = page.Window.TouchBegin(at);
+        clock.At(SettleMs);
+        var first = CfTilt.TargetOf(button).RenderTransform;
+        page.Window.TouchEnd(touch, at);
+        clock.At(SettleMs + 1000);
+        Assert.Equal(TiltState.Rest, CfTilt.Current(button));
+
+        page.Window.TouchBegin(at);
+        clock.At(2 * SettleMs + 1000);
+        Assert.IsType<MatrixTransform>(first);
+        Assert.Same(first, CfTilt.TargetOf(button).RenderTransform);
     }
 
     // The pointer is captured by what was hit. If that leaves the tree mid-press (content swapped),

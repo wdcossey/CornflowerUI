@@ -96,6 +96,34 @@ public class TiltModelTests
         Assert.Equal(offsetZ, tilt.OffsetZ, 1e-9);
     }
 
+    // An element 60,000 px across, pressed 10 px from its left end, 7,000 px from the eye: once
+    // tilted, the line from the eye through the press meets the plane behind the eye, and the
+    // steps swung between corners every frame. The press is taken as it is, and the step settles.
+    [Fact]
+    public void A_Press_No_Point_Of_The_Tilted_Element_Is_Drawn_Under_Still_Settles()
+    {
+        var size = new Size(60000, 100);
+        var eye = TiltModel.Eye(size, new Vector(225 - 30000, 350));
+        var press = new Point(10, 50);
+        var tilt = TiltState.Rest;
+
+        for (var frame = 0; frame < 10; frame++)
+        {
+            var next = TiltModel.Step(tilt, size, press, eye);
+            Assert.True(double.IsFinite(next.RotationX) && double.IsFinite(next.RotationY) && double.IsFinite(next.OffsetZ), $"{next}");
+            var moved = Math.Abs(next.RotationX - tilt.RotationX) + Math.Abs(next.RotationY - tilt.RotationY) +
+                        Math.Abs(next.OffsetZ - tilt.OffsetZ);
+            tilt = next;
+            if (moved <= TiltModel.Settled)
+            {
+                Assert.Equal(TiltModel.ForOffset(press.X / size.Width - 0.5, 0), tilt);
+                return;
+            }
+        }
+
+        Assert.Fail($"not settled after 10 frames: {tilt}");
+    }
+
     [Theory]
     [InlineData(0, 1)]
     [InlineData(180, 1)]
