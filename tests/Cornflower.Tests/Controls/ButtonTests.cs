@@ -121,6 +121,22 @@ public class ButtonTests
         Assert.Equal(ContentHeight, presenter.Bounds.Height, 0.001);
     }
 
+    // HorizontalContentAlignment and VerticalContentAlignment Center: the content in the middle of the space the
+    // padding leaves, as the dump's ContentPresenter is (its middle 54.79 across, the Border's 54.58; the font's width
+    // decides the rest).
+    [AvaloniaFact]
+    public void The_Content_Is_Centred_In_The_Padding()
+    {
+        using var stage = new Stage(button: new Button { Content = "button", Width = 300 });
+        var border = BorderOf(stage.Button);
+        var presenter = PresenterOf(stage.Button);
+        var box = new Rect(presenter.TranslatePoint(default, border)!.Value, presenter.Bounds.Size);
+
+        Assert.Equal(border.Bounds.Width / 2, box.Center.X, 0.5);
+        Assert.True(box.Width < 150, $"the content is {box.Width} wide: stretched, not centred");
+        Assert.Equal(ContentTop - BorderBounds.Y, box.Y, 0.001);
+    }
+
     // A string's line is the phone's, 1.33 em, at the Button's own size too (ADR 0003).
     [AvaloniaFact]
     public void A_Strings_Line_Is_The_Phones_At_Any_Size()
