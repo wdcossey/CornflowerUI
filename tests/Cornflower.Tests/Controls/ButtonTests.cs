@@ -2,6 +2,7 @@ using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
+using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
@@ -161,6 +162,51 @@ public class ButtonTests
         Assert.Equal(1.33 * 30, text.LineHeight, 0.02);
     }
 
+    // The phone's ContentPresenter puts any content that isn't an element in a TextBlock with Segoe WP's line: a
+    // number as much as a string.
+    [AvaloniaFact]
+    public void A_Numbers_Line_Is_The_Phones_Too()
+    {
+        using var stage = new Stage(button: new Button { Content = 42 });
+        var text = PresenterOf(stage.Button).GetVisualDescendants().OfType<TextBlock>().Single();
+
+        Assert.Equal("42", text.Text);
+        Assert.Equal(1.33 * FontSize, text.LineHeight, 0.01);
+        Assert.Equal(ContentHeight, PresenterOf(stage.Button).Bounds.Height, 0.001);
+    }
+
+    // The theme adds no data template, so a string DataTemplate the application defines is found as without it, and
+    // what it makes keeps its own line.
+    [AvaloniaFact]
+    public void An_Applications_String_DataTemplate_Wins()
+    {
+        var template = new FuncDataTemplate<string>((s, _) => new TextBlock { Name = "Apps", Text = s });
+        var templates = Application.Current!.DataTemplates;
+        templates.Add(template);
+        try
+        {
+            using var stage = new Stage();
+            var text = PresenterOf(stage.Button).GetVisualDescendants().OfType<TextBlock>().Single();
+
+            Assert.Equal("Apps", text.Name);
+            Assert.True(double.IsNaN(text.LineHeight), $"the app's TextBlock was given a LineHeight of {text.LineHeight}");
+        }
+        finally
+        {
+            templates.Remove(template);
+        }
+    }
+
+    // Content that is an element is the app's: a TextBlock in a Button keeps its own line.
+    [AvaloniaFact]
+    public void A_TextBlock_In_The_Content_Keeps_Its_Own_Line()
+    {
+        var own = new TextBlock { Text = "own" };
+        using var stage = new Stage(button: new Button { Content = own });
+
+        Assert.True(double.IsNaN(own.LineHeight));
+    }
+
     // The app's own ContentTemplate still decides how its content is shown.
     [AvaloniaFact]
     public void The_Apps_ContentTemplate_Wins_Over_The_Strings_Line()
@@ -272,6 +318,21 @@ public class ButtonTests
         AssertBorder(frame, Foreground(dark), Page(dark));
     }
 
+    // The phone's template has no FocusStates group: keyboard focus draws nothing, where Avalonia would put the
+    // control's FocusAdorner (left unset, Simple's under Wp81 draws a rectangle) in the window's adorner layer.
+    [AvaloniaFact]
+    public void Keyboard_Focus_Draws_Nothing()
+    {
+        using var stage = new Stage();
+        stage.Window.Focus();
+        stage.Window.KeyPressQwerty(PhysicalKey.Tab, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.True(stage.Button.IsFocused, "Tab didn't reach the Button");
+        var layer = AdornerLayer.GetAdornerLayer(stage.Button);
+        Assert.True(layer is null || layer.Children.Count == 0, $"{layer?.Children.Count} adorners drawn");
+    }
+
     // ThemeResource: the colours follow a change of variant.
     [AvaloniaFact]
     public void The_Colours_Follow_A_Change_Of_Variant()
@@ -372,18 +433,51 @@ public class ButtonTests
         Assert.Equal(EdgeTaps, clicked);
     }
 
+    // A new theme mid-press (an app swapping its Button's theme) takes the tilted Grid away without a release: the
+    // tilt goes to rest, the old Grid keeps no transform, and the next press tilts the new template.
+    [AvaloniaFact]
+    public void A_New_Theme_Mid_Press_Puts_The_Tilt_At_Rest_And_The_Next_Press_Tilts()
+    {
+        using var clock = new TestClock();
+        using var stage = new Stage();
+        var button = stage.Button;
+        var grid = Part<Panel>(button, "Grid");
+
+        var touch = stage.Window.TouchBegin(stage.Centre);
+        clock.At(SettleMs);
+        Assert.IsType<MatrixTransform>(grid.RenderTransform);
+
+        button.Theme = new Avalonia.Themes.Simple.SimpleTheme().TryGetResource(typeof(Button), ThemeVariant.Dark, out var simple)
+            ? (ControlTheme)simple! : throw new InvalidOperationException();
+        Dispatcher.UIThread.RunJobs();
+        clock.At(2 * SettleMs);
+        Assert.Equal(TiltState.Rest, CfTilt.Current(button));
+        Assert.Null(grid.RenderTransform);
+        stage.Window.TouchEnd(touch, stage.Centre);
+
+        CfTilt.SetIsEnabled(button, true);                         // Simple's theme doesn't turn it on
+        stage.Window.TouchBegin(stage.Centre);
+        clock.At(3 * SettleMs);
+        Assert.NotEqual(TiltState.Rest, CfTilt.Current(button));
+        Assert.NotSame(grid, CfTilt.TargetOf(button));
+    }
+
     // The touch target is the whole Button, the overhang above and below the border included, as the phone's Grid is.
     [AvaloniaFact]
     public void A_Tap_On_The_Overhang_Clicks()
     {
+        using var clock = new TestClock();                                                  // the tilt's frames, under the test's control
         using var stage = new Stage();
         var clicks = 0;
         stage.Button.Click += (_, _) => clicks++;
         var above = stage.Button.TranslatePoint(new Point(54, 4), stage.Window)!.Value;     // 4 DIP down: above the border's 9.58
 
         stage.Window.MouseDown(above, MouseButton.Left);
+        clock.At(SettleMs);
         stage.Window.MouseUp(above, MouseButton.Left);
 
         Assert.Equal(1, clicks);
+        clock.At(SettleMs + 1000);
+        Assert.Equal(TiltState.Rest, CfTilt.Current(stage.Button));
     }
 }

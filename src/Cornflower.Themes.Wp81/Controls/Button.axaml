@@ -22,12 +22,14 @@
 
     The visual states: Pressed (Avalonia's :pressed) sets the accent background and the text over it, and
     the tilt runs; Disabled (:disabled) dims the border and the text. PointerOver changes nothing on the
-    phone, so :pointerover has no style. The phone has no focus states.
+    phone, so :pointerover has no style. The phone has no focus states, so FocusAdorner is cleared: left unset,
+    the theme under Wp81 would draw its own on keyboard focus.
     The ContentPresenter's Foreground is inherited from the Button, where the phone's binds it: the same value.
 
-    A string's TextBlock gets the phone's own line, 1.33 em, through PhoneTextLine (ADR 0003: a template
-    whose text sets no LineHeight gets the phone's line), so the content is as tall as on the phone and its
-    baseline 0.025 em above the phone's.
+    The TextBlock the presenter makes of content that isn't an element (a string, a number) gets the phone's
+    own line, 1.33 em, through PhoneContentLine (ADR 0003: a template whose text sets no LineHeight gets the
+    phone's line), so the content is as tall as on the phone and its baseline 0.025 em above the phone's. An
+    app's ContentTemplate or DataTemplate keeps its own.
   -->
   <ControlTheme x:Key="{x:Type Button}" TargetType="Button">
     <Setter Property="Background" Value="Transparent" />
@@ -45,7 +47,10 @@
     <!-- Not set by the phone's style: WinRT's own defaults for a Control, which Avalonia's are not. -->
     <Setter Property="HorizontalContentAlignment" Value="Center" />
     <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="FocusAdorner" Value="{x:Null}" />
     <Setter Property="cf:Tilt.IsEnabled" Value="True" />
+    <!-- In the template of a control Wp81 doesn't theme yet, the theme under Wp81's Button instead (HoleParts). -->
+    <Setter Property="wp81:HoleParts.FallBack" Value="True" />
     <Setter Property="Template">
       <ControlTemplate>
         <Panel x:Name="Root" Background="Transparent">
@@ -60,13 +65,8 @@
                                 HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                 VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
                                 Content="{TemplateBinding Content}"
-                                ContentTemplate="{TemplateBinding ContentTemplate}">
-                <ContentPresenter.DataTemplates>
-                  <DataTemplate DataType="x:String">
-                    <TextBlock Text="{Binding}" wp81:PhoneTextLine.MaxHeightLineHeight="0" />
-                  </DataTemplate>
-                </ContentPresenter.DataTemplates>
-              </ContentPresenter>
+                                ContentTemplate="{TemplateBinding ContentTemplate}"
+                                wp81:PhoneContentLine.IsEnabled="True" />
             </Border>
           </Panel>
         </Panel>
