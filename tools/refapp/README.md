@@ -23,6 +23,7 @@ powershell -ExecutionPolicy Bypass -File tools\refapp\run.ps1 -Popups only -Grab
 powershell -ExecutionPolicy Bypass -File tools\refapp\run.ps1 -Demo                            # the demo page, left open in the emulator
 powershell -ExecutionPolicy Bypass -File tools\refapp\run.ps1 -Probe tilt                        # one probe, with real touches (see Probes)
 powershell -ExecutionPolicy Bypass -File tools\refapp\run.ps1 -Probe pages -Record               # a probe, with a recording of the screen (see Motion)
+powershell -ExecutionPolicy Bypass -File tools\refapp\run.ps1 -Native -Device 13                 # what the phone computes, read through its API, in about 4 minutes (see Native readings)
 ```
 
 Results go to `R:\cornflower-reference\refapp\<yyyyMMdd-HHmm>-dev<n>\`: one PNG and one JSON per
@@ -83,6 +84,16 @@ the signed-in desktop. Run from an SSH session, `ISETool` starts a hidden second
   offset is recorded, so a JSON rectangle maps to PNG pixels as
   `(elementInStage + bounds) × rawPixelsPerViewPixel`. Not `resolutionScale`: it reports 180 on
   every profile read so far, including the 1080p ones at 2.4 and 2.2.
+- **`Suite.Native.cs`** (`run.ps1 -Native`) captures nothing: it reads the values the phone computes
+  in native code through the public API and writes them to `native.json`. The display's scale and
+  DPI; the system tray's `OccludedRect`, `BackgroundOpacity` and colours, the view's
+  `VisibleBounds`, `Window.Current.Bounds` and where the page and its content sit, with the tray
+  shown and hidden, under both `ApplicationViewBoundsMode`s, in portrait and both landscapes
+  (the app asks for each with `DisplayInformation.AutoRotationPreferences`, and the phone turns
+  to it); then every `TemplateSettings` property of ComboBox, ProgressBar, ProgressRing and
+  ToggleSwitch, for the catalogue's specimens at rest and in every state their templates declare,
+  each forced on a fresh instance as the suite forces it, and for ComboBoxes opened inline. It is
+  the only mode that leaves the tray shown at launch; the others hide it first, as before.
 
 What a capture is and isn't:
 
@@ -148,6 +159,172 @@ All three: 504 captures, 0 errors, accent `#FF3E65FF`. The reference profile is 
 | 10 | U1 720P 4.7" | `20261108-0754-dev10` | 1.8 | 400 × 711.11 | 180 |
 | 11 | U1 1080P 5.5" | `20261108-1443-dev11` | 2.4 | 450 × 800 | 180 |
 | 12 | U1 1080P 6" | `20261108-1451-dev12` | 2.2 | 490.91 × 872.73 | 180 |
+
+## Native readings (2026-11-11, devices 7 to 13)
+
+`run.ps1 -Native`, once on each Update 1 profile, each from a cold emulator with no other emulator
+running: 110 readings and 0 errors per run, about 2 minutes in the app. The folders, under
+`R:\cornflower-reference\refapp\`, are named in the first table. All values are in view pixels
+unless they say raw.
+
+### Display
+
+| Device | Profile | Folder | `RawPixelsPerViewPixel` | `RawDpiX` × `RawDpiY` | `LogicalDpi` | `ResolutionScale` | Window, portrait |
+|---|---|---|---|---|---|---|---|
+| 7 | U1 WVGA 4" 512MB | `20261111-1822-dev7` | 1.2 | 234 × 233 | 115.2 | 140 | 400 × 666.67 |
+| 8 | U1 WVGA 4" | `20261111-1817-dev8` | 1.2 | 234 × 233 | 115.2 | 140 | 400 × 666.67 |
+| 9 | U1 WXGA 4.5" | `20261111-1813-dev9` | 2 | 330 × 331 | 192 | 180 | 384 × 640 |
+| 10 | U1 720P 4.7" | `20261111-1802-dev10` | 1.8 | 309 × 312 | 172.8 | 180 | 400 × 711.11 |
+| **11** | U1 1080P 5.5" | `20261111-1759-dev11` | 2.4 | 403 × 399 | 230.4 | 180 | 450 × 800 |
+| 12 | U1 1080P 6" | `20261111-1804-dev12` | 2.2 | 365 × 366 | 211.2 | 180 | 490.91 × 872.73 |
+| 13 | U1 qHD 5" | `20261111-1809-dev13` | 1.2 | 221 × 219 | 115.2 | 140 | 450 × 800 |
+
+- **WVGA runs at 1.2, not 1.0**: a 400 × 666.67 view. qHD runs at 1.2 too, with the reference's
+  450 × 800 view; WXGA at 2.0, 384 × 640.
+- **`ResolutionScale` is 140 on the three 1.2 profiles** and 180 on the rest, so it still isn't
+  the scale. `LogicalDpi` is 96 × `RawPixelsPerViewPixel` on all seven.
+- **The reference profile reads 403 × 399 dpi**, where the ToggleSwitch section above worked out
+  about 400 from its diagonal: a view pixel there is 0.152 mm, as that section took it.
+- Devices 7 and 8 differ only in memory, and read the same in everything below.
+
+### The system tray
+
+The app left the tray as it launched, then showed and hid it with `StatusBar.ShowAsync` and
+`HideAsync`, under each bounds mode, in portrait, `Landscape` and `LandscapeFlipped`, and read
+everything a second after each change. The tray is shown at launch: the first reading equals the
+"shown" one. With the tray shown:
+
+| Device | `OccludedRect`, portrait | raw px tall | `Landscape` | `LandscapeFlipped` | raw px wide |
+|---|---|---|---|---|---|
+| 7, 8 | 0, 0, 400 × 26.67 | 32 | 0, 0, 60 × 400 | 606.67, 0, 60 × 400 | 72 |
+| 9 | 0, 0, 384 × 25.5 | 51 | 0, 0, 57.5 × 384 | 582.5, 0, 57.5 × 384 | 115 |
+| 10 | 0, 0, 400 × 26.67 | 48 | 0, 0, 60 × 400 | 651.11, 0, 60 × 400 | 108 |
+| **11** | 0, 0, 450 × 27.92 | 67 | 0, 0, 62.92 × 450 | 737.08, 0, 62.92 × 450 | 151 |
+| 12 | 0, 0, 490.91 × 25.45 | 56 | 0, 0, 57.27 × 490.91 | 815.45, 0, 57.27 × 490.91 | 126 |
+| 13 | 0, 0, 450 × 27.5 | 33 | 0, 0, 62.5 × 450 | 737.5, 0, 62.5 × 450 | 75 |
+
+- **The tray is a band across the top in portrait, and down the side in landscape**: on the left
+  in `Landscape`, on the right in `LandscapeFlipped`. In landscape it is more than twice as wide
+  as it is tall in portrait.
+- **Its size is per profile**, a whole number of raw pixels: 25.45 to 27.92 view pixels tall,
+  neither a constant in view pixels nor in raw ones.
+- **`BackgroundOpacity` is 0, and `BackgroundColor` and `ForegroundColor` are null** (unset), in
+  every reading on every profile. Those are the app's own settings, which the app never sets;
+  what colour the shell draws for the tray is not in the API.
+- Hidden, `OccludedRect` is 0, 0, 0 × 0 in every orientation and mode.
+
+### Visible bounds
+
+`Window.Current.Bounds` and `CoreWindow.Bounds` are the whole screen, and don't change with the
+tray or the bounds mode; they swap width and height in landscape. `ApplicationView.VisibleBounds`
+is the window less the tray, in both bounds modes:
+
+| Device | `Window.Current.Bounds` | `VisibleBounds`, tray shown, portrait | `Landscape` | `LandscapeFlipped` |
+|---|---|---|---|---|
+| 7, 8 | 400 × 666.67 | 0, 26.67, 400 × 640 | 60, 0, 606.67 × 400 | 0, 0, 606.67 × 400 |
+| 9 | 384 × 640 | 0, 25.5, 384 × 614.5 | 57.5, 0, 582.5 × 384 | 0, 0, 582.5 × 384 |
+| 10 | 400 × 711.11 | 0, 26.67, 400 × 684.44 | 60, 0, 651.11 × 400 | 0, 0, 651.11 × 400 |
+| **11** | 450 × 800 | 0, 27.92, 450 × 772.08 | 62.92, 0, 737.08 × 450 | 0, 0, 737.08 × 450 |
+| 12 | 490.91 × 872.73 | 0, 25.45, 490.91 × 847.27 | 57.27, 0, 815.45 × 490.91 | 0, 0, 815.45 × 490.91 |
+| 13 | 450 × 800 | 0, 27.5, 450 × 772.5 | 62.5, 0, 737.5 × 450 | 0, 0, 737.5 × 450 |
+
+With the tray hidden, `VisibleBounds` is the window, in every orientation and mode.
+
+**Where the page goes.** The root `Frame` and the `Page` fill the window in every reading, tray
+shown or not. What moves is the page's content (`Page.Content`, here the page's root `Grid`):
+
+- **`UseVisible`, the default:** the content is laid out in `VisibleBounds` exactly, on all seven
+  profiles and in all three orientations (on the reference, at 0, 27.92, 450 × 772.08). So the
+  page itself, and its background, reach under the tray, and nothing of the content does.
+- **`UseCoreWindow`:** the content fills the window, 0, 0, under the tray.
+
+So with the tray shown, the phone lays no content under it unless the app asks for `UseCoreWindow`.
+`ApplicationView.Orientation` reports `Landscape` for both landscapes; `DisplayInformation.CurrentOrientation`
+tells them apart. The suite's captures are unaffected: they hide the tray, and the window and
+`VisibleBounds` are then the same.
+
+### `TemplateSettings`
+
+Every property each type has (the winmd lists 4 on `ComboBoxTemplateSettings`, 7 on
+ProgressBar's, 3 on ProgressRing's and 8 on ToggleSwitch's), dark. **No forced visual state
+changes any value**: each specimen reads the same at rest and in every state its template declares,
+on all seven profiles. Only opening a ComboBox, and the control's size, change them. Each is
+listed as the phone returns it, rounded to 0.01.
+
+**ComboBox** (`SelectedItemDirection` is `Top` in every reading):
+
+| Device | `DropDownClosedHeight` | `DropDownOpenedHeight`, open, 3 / 4 / 5 items | `DropDownOffset`, closed, item 0 / 2 / 4 of 5 selected | Item step |
+|---|---|---|---|---|
+| 7, 8, 10, 13 | 27.17 | 155 / 206.67 / 258.33 | −8.5 / −111.83 / −215.17 | 51.67 |
+| 9 | 27 | 154.5 / 206 / 257.5 | −8.5 / −111.5 / −214.5 | 51.5 |
+| **11** | 27.17 | 155 / 206.67 / 258.33 | −8.5 / −111.83 / −215.17 | 51.67 |
+| 12 | 27.32 | 155.45 / 207.27 / 259.09 | −8.5 / −112.14 / −215.77 | 51.82 |
+
+- **`DropDownOpenedHeight` is 0 until the first open**, then the items' height: the item count
+  times the step (51.67 on the reference). It keeps that value when the box closes again.
+- **`DropDownOffset` is 0 while open**, and closed it is −8.5 less the selected index times the
+  step: it lifts the items so the selected one sits in the closed box. The −8.5 is the probe's
+  "`TranslateY` eases from −8.5 to 0" in [Flyouts, pickers and the dialog](#flyouts-pickers-and-the-dialog).
+- The values are set as soon as `IsDropDownOpen` is set, before the next frame. The catalogue's
+  closed ComboBox (3 items, 140 tall) reads as the 3-item one opened on its 400-tall stage.
+
+**ProgressBar** (the catalogue's two, 40% and indeterminate, at the page's width less its margins):
+
+| Device | Width | `ContainerAnimationStartPosition` | `ContainerAnimationEndPosition` | `EllipseAnimationWellPosition` | `EllipseAnimationEndPosition` | `EllipseDiameter` | `EllipseOffset` | `IndicatorLengthDelta`, 40% |
+|---|---|---|---|---|---|---|---|---|
+| 7, 8 | 361.67 | −63 | 94.41 | 120.56 | 241.11 | 6 | 9 | −144.67 |
+| 9 | 346 | −63 | 87.59 | 115.33 | 230.67 | 6 | 9 | −138.4 |
+| 10 | 362.22 | −63 | 94.65 | 120.74 | 241.48 | 6 | 9 | −144.89 |
+| **11** | 412.08 | −63 | 116.35 | 137.36 | 274.72 | 6 | 9 | −164.83 |
+| 12 | 452.73 | −63 | 134.04 | 150.91 | 301.82 | 6 | 9 | −181.09 |
+| 13 | 411.67 | −63 | 116.17 | 137.22 | 274.44 | 6 | 9 | −164.67 |
+
+On all seven: the well is a third of the width and the end two thirds; the container's travel,
+end less start, is 0.43522 of the width; `IndicatorLengthDelta` is minus the indicator's length
+(40% of the width), and 0 on the indeterminate bar, whose other values are the same.
+
+**ProgressRing**: `EllipseDiameter`, `EllipseOffset`'s top (its other sides are 0) and
+`MaxSideLength`, for the catalogue's ring (which stretches to its 120-tall stage's slot), a ring at
+its default size, and one 120 square, the ring probe's two:
+
+| Device | Catalogue's | Default size | 120 × 120 |
+|---|---|---|---|
+| 7, 8 | 361.67 × 108.33: 10.83, 43.33, 108.33 | 57.5 × 57.5: 5.75, 23, 57.5 | 12, 48, 120 |
+| 9 | 346 × 108: 10.8, 43.2, 108 | 57.5 × 57.5: 5.75, 23, 57.5 | 12, 48, 120 |
+| 10 | 362.22 × 107.78: 10.78, 43.11, 107.78 | 57.22 × 57.22: 5.72, 22.89, 57.22 | 12, 48, 120 |
+| **11** | 412.08 × 107.92: 10.79, 43.17, 107.92 | 57.5 × 57.5: 5.75, 23, 57.5 | 12, 48, 120 |
+| 12 | 452.73 × 108.18: 10.82, 43.27, 108.18 | 57.73 × 57.73: 5.77, 23.09, 57.73 | 12, 48, 120 |
+| 13 | 411.67 × 108.33: 10.83, 43.33, 108.33 | 57.5 × 57.5: 5.75, 23, 57.5 | 12, 48, 120 |
+
+`MaxSideLength` is the ring's smaller side, the diameter a tenth of it and the offset four tenths,
+on all seven. The `SizeStates` (`Large`, `Small`) don't change them.
+
+**ToggleSwitch** (the catalogue's three, off, on and without a header, read the same):
+
+| Device | Width | `KnobOnToOffOffset` | `CurtainOnToOffOffset` |
+|---|---|---|---|
+| 7, 8, 13 | 361.67, 411.67 | 55.83 (67 raw) | 60.83 (73 raw) |
+| 9 | 346 | 56.5 (113 raw) | 61 (122 raw) |
+| 10 | 362.22 | 56.67 (102 raw) | 62.22 (112 raw) |
+| **11** | 412.08 | 56.67 (136 raw) | 61.25 (147 raw) |
+| 12 | 452.73 | 56.36 (124 raw) | 60 (132 raw) |
+
+`KnobOffToOnOffset` and `CurtainOffToOnOffset` are the same negated. The four `Current` offsets
+(`KnobCurrentToOnOffset`, `KnobCurrentToOffOffset`, `CurtainCurrentToOnOffset`,
+`CurtainCurrentToOffOffset`) are 0 at rest, straight after `IsOn` is set from code and once the
+slide is over. The knob's offset is a whole number of raw pixels, so it moves with the profile:
+on the reference it is 56.67, where the template's `On` state sets 56.5 and the recording measured
+a travel of 56.56 ([the knob's slide](#toggleswitch-the-knobs-slide)).
+
+### What this didn't read
+
+- **The `Current` offsets during a drag.** They are what a drag's release animates from, so they
+  can only be non-zero mid-drag; reading them needs a touch probe (`toggleswitch` drags, but
+  doesn't read them).
+- **The tray's pixels.** Whether its background is opaque, and what colour, is the shell's
+  drawing: the API reports only the app's own `BackgroundOpacity` (0). A `-Grab` screenshot
+  with the tray shown would settle it.
+- **Light theme.** The `TemplateSettings` were read in dark only; nothing in them is a colour.
 
 ## Popups on the reference profile (2026-11-08, device 11)
 
