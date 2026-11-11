@@ -68,6 +68,9 @@ namespace RefApp
                 case "ring":
                     await probe.Ring(host);
                     break;
+                case "ringsize":
+                    await probe.RingSize(host);
+                    break;
                 default:
                     await probe.Finish("unknown probe " + name);
                     break;

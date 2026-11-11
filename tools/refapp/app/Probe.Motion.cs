@@ -219,6 +219,145 @@ namespace RefApp
         }
 
         /// <summary>
+        /// B6, for #28. <b>The size threshold:</b> one active ring, square, stepped by 1 view px from 40 to 130 and back,
+        /// then by 0.05 over the pixel either side of where <c>SizeStates</c> changed, then wide-and-short and
+        /// tall-and-narrow either side of it. Each step logs the state, <c>SixthCircle</c>'s visibility and
+        /// <c>MaxSideLength</c>. <b>The clock:</b> the <c>Active</c> storyboard's own time
+        /// (<see cref="Storyboard.GetCurrentTime"/>) logged every frame against the stopwatch, for 10 s from a restart;
+        /// then a storyboard of known length, a 4 s opacity animation, three times, logging its own time every frame
+        /// and the stopwatch at its <c>Completed</c>.
+        /// </summary>
+        private async Task RingSize(Grid host)
+        {
+            var ring = new ProgressRing { Name = "ring", IsActive = true, Width = 40, Height = 40, Margin = new Thickness(19, 120, 0, 0), HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top };
+            var marker = new Windows.UI.Xaml.Shapes.Rectangle { Width = 20, Height = 20, Fill = new SolidColorBrush(Colors.White), Margin = new Thickness(19, 400, 0, 0), HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top };
+            var page = await Page(host, ring, marker);
+            WatchStates(ring);
+
+            Func<Task> sequence = async () =>
+            {
+                var root = VisualTreeHelper.GetChildrenCount(ring) > 0 ? VisualTreeHelper.GetChild(ring, 0) as FrameworkElement : null;
+                var groups = root != null ? VisualStateManager.GetVisualStateGroups(root).ToList() : new List<VisualStateGroup>();
+                var sizes = groups.FirstOrDefault(g => g.Name == "SizeStates");
+                var actives = groups.FirstOrDefault(g => g.Name == "ActiveStates");
+                var sixth = Find(ring, "SixthCircle");
+                if (sizes == null || actives == null || sixth == null)
+                {
+                    Log("error", "the template has no " + (sizes == null ? "SizeStates" : actives == null ? "ActiveStates" : "SixthCircle"));
+                    return;
+                }
+
+                // One step: set the size, let layout and the state settle, log what the template shows.
+                Func<double, double, Task<string>> at = async (w, h) =>
+                {
+                    ring.Width = w;
+                    ring.Height = h;
+                    await Task.Delay(120);
+                    var state = sizes.CurrentState != null ? sizes.CurrentState.Name : "-";
+                    Log("size", Num(w) + " x " + Num(h) + " actual " + Num(ring.ActualWidth) + " x " + Num(ring.ActualHeight) + " state " + state + " sixth " + sixth.Visibility + " max " + Num(ring.TemplateSettings.MaxSideLength));
+                    return state;
+                };
+
+                Log("step", "square, up by 1");
+                string last = null;
+                var changedAt = double.NaN;
+                for (double s = 40; s <= 130; s += 1)
+                {
+                    var state = await at(s, s);
+                    if (last != null && state != last && double.IsNaN(changedAt))
+                    {
+                        changedAt = s;
+                    }
+
+                    last = state;
+                }
+
+                Log("step", "square, down by 1");
+                for (double s = 130; s >= 40; s -= 1)
+                {
+                    await at(s, s);
+                }
+
+                if (double.IsNaN(changedAt))
+                {
+                    Log("step", "no change of SizeStates from 40 to 130");
+                }
+                else
+                {
+                    Log("step", "square, up by 0.05 from " + Num(changedAt - 1) + " to " + Num(changedAt));
+                    for (var i = 0; i <= 20; i++)
+                    {
+                        await at(changedAt - 1 + i * 0.05, changedAt - 1 + i * 0.05);
+                    }
+
+                    Log("step", "not square, either side");
+                    foreach (var side in new[] { changedAt - 1, changedAt })
+                    {
+                        await at(200, side);
+                        await at(side, 200);
+                    }
+                }
+
+                // The clock. Restarted, so that the storyboard's time and the stopwatch start together.
+                var activeState = actives.States.FirstOrDefault(st => st.Name == "Active");
+                var active = activeState != null ? activeState.Storyboard : null;
+                if (active == null)
+                {
+                    Log("error", "no Active storyboard");
+                    return;
+                }
+
+                Log("step", "Active's clock, 10 s, ring 120 x 120");
+                await at(120, 120);
+                ring.IsActive = false;
+                await Task.Delay(300);
+                var clockOn = true;
+                WatchValue("active", sample =>
+                {
+                    if (clockOn)
+                    {
+                        sample.Type = typeof(Storyboard);
+                        sample.Add("ms", active.GetCurrentTime().TotalMilliseconds);
+                        sample.Add("state", (int)active.GetCurrentState());
+                    }
+                });
+                ring.IsActive = true;
+                Log("event", "IsActive true");
+                await Task.Delay(10000);
+                clockOn = false;
+
+                var known = new Storyboard();
+                var fade = new DoubleAnimation { From = 1, To = 0.2, Duration = new Duration(TimeSpan.FromSeconds(4)) };
+                Storyboard.SetTarget(fade, marker);
+                Storyboard.SetTargetProperty(fade, "Opacity");
+                known.Children.Add(fade);
+                var began = 0.0;
+                known.Completed += (s, e) => Log("event", "known Completed, " + Num(_clock.Elapsed.TotalMilliseconds - began) + " ms on the stopwatch for 4000");
+                var knownOn = false;
+                WatchValue("known", sample =>
+                {
+                    if (knownOn)
+                    {
+                        sample.Type = typeof(DoubleAnimation);
+                        sample.Add("ms", known.GetCurrentTime().TotalMilliseconds);
+                    }
+                });
+                for (var i = 0; i < 3; i++)
+                {
+                    Log("step", "known 4 s storyboard, run " + (i + 1));
+                    knownOn = true;
+                    began = _clock.Elapsed.TotalMilliseconds;
+                    known.Begin();
+                    await Task.Delay(5000);
+                    knownOn = false;
+                    known.Stop();
+                    await Task.Delay(300);
+                }
+            };
+            await RunAfterTap(page, sequence);
+        }
+
+        /// <summary>
         /// Calibration for the recordings of <see cref="Pages"/>: a full-window panel drawn like <see cref="ProbePage"/>
         /// (a white sheet inset 19, 60) is given known PlaneProjections, each held 400 ms, so the recording shows how a
         /// projection's angle, centre and depth come out on the screen. The log's "step" lines give each one.

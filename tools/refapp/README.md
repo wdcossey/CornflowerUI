@@ -395,7 +395,8 @@ last touch has settled. `touch.log` says where each step landed on the VM's scre
   phone in batches, so a probe reads a position, not a speed. Press and release times are kept.
 
 Probes: `toggleswitch` (#25), `tilt`, `tiltedge` and `tiltgrid` (#22), and for #24 `motion`, `pages`,
-`projections` and `ring` ([Motion](#motion-2026-11-10-device-11-24)). Each frame's value is read on the UI thread in
+`projections` and `ring` ([Motion](#motion-2026-11-10-device-11-24)), and `ringsize` for #28 (B6:
+[the size threshold and the clock](#progressring-the-size-threshold-and-the-clock)). Each frame's value is read on the UI thread in
 `CompositionTarget.Rendering`. That reads the animated values of the theme animations too: the
 tilt's `PlaneProjection` moves every 15 ms in the log.
 
@@ -540,6 +541,16 @@ page transitions and the ProgressRing. Two ways of reading it:
 run, so the distinct values of many runs, in order, are its steps, one per 15.625 ms, at a finer
 timing than the recording's.
 
+**But its frames are 15.0 ms apart, so animations run 25/24 fast** (`-Probe ringsize`,
+`20261111-2316-dev11`; see [ProgressRing: the clock](#progressring-the-size-threshold-and-the-clock)). The
+15.625 ms is the step of *animation* time each frame, read from `Storyboard.GetCurrentTime()`; the frames
+themselves come every 15.0 ms by the app's stopwatch (66.7 a second). So a storyboard's own time runs
+1.0416 times the stopwatch's, and anything timed against the stopwatch is 4% shorter than its
+storyboard says. Counting 15.625 ms steps, as above, gives animation time, which is what a template's
+key times are in. Durations read off the stopwatch are 4% short of animation time: multiply by 25/24
+before comparing one with a key time. The recordings are timed by the VM's clock, not the emulator's;
+whether the two agree isn't checked yet, so a duration from a recording may be short in the same way.
+
 **A PlaneProjection's camera** (`-Probe projections`, `20261110-0756-dev11`): a full-window panel given
 known projections (`RotationY` ±10°, ±30°, ±60° about `CenterOfRotationX` 0, 0.5 and −0.25, and
 `GlobalOffsetZ` ±100) fits a pinhole 999 view px in front of the screen, looking at the element's
@@ -637,9 +648,35 @@ default size, 57.5 view px, shows five dots, and one 120 px wide shows six. Each
 rotates and its `Ellipse` hides and shows as the template's storyboard says, the dots 150 to 167 ms
 apart (the template's `BeginTime`s are 0.167 s apart). One cycle takes 4.13 s by the app's clock
 (nine cycles), and a dot hides 3.10 s into it. The template's keyframes give 4.31 s (the last dot's
-`BeginTime` and its 3.47 s) and 3.22 s: the same shape, 4% faster. Whether that is the emulator or
-the storyboard's clock is open; #28 should compare its own timing with the template's keyframes and
-with this log.
+`BeginTime` and its 3.47 s) and 3.22 s: the same shape, 4% faster. **That is the emulator's clock**
+(below): 4.305 s and 3.22 s of animation time are 4.13 s and 3.09 s on the stopwatch. The keyframes
+are what to build.
+
+### ProgressRing: the size threshold and the clock
+
+`20261111-2316-dev11` (`-Probe ringsize`, device 11, B6 for #28). One active ring, its `Width` and
+`Height` stepped by 1 from 40 to 130 and back, then by 0.05 from 60 to 61, then 200 wide and 60 or 61
+tall and the other way round; each step held 120 ms.
+
+- **`SizeStates` is `Large` when the ring's smaller laid-out side is over 60 view px, else `Small`.**
+  The sizes snap to raw pixels (0.417 view px at 2.4), so: 60 gives `Small`, the next step, 60.417,
+  `Large`. The same going down, at the same place (no hysteresis). Not square, it is the smaller side
+  that counts: 200 × 60 and 60 × 200 are `Small`, 200 × 61 and 61 × 200 `Large`. The side is the one `MaxSideLength` reports,
+  which is the smaller of `ActualWidth` and `ActualHeight`; below the 57.5 `MinWidth`/`MinHeight`, it is
+  57.5. `Large` makes `SixthCircle` visible and `Small` collapses it, the change landing within the
+  same frame as the size.
+- **The `Active` storyboard's own time runs 1.0416 times the stopwatch.** Read each frame from
+  `Storyboard.GetCurrentTime()` on the `Active` state's storyboard, from `IsActive` going true, for 10 s:
+  it advances 15.625 ms a frame (all 666 frames), and the frames are 15.0 ms apart by the stopwatch
+  (mean 15.017). It wraps after 4,296.9 ms of its own time (the cycle is the keyframes' 4.305 s, wrapping
+  at the frame that passes it), 4,137 ms on the stopwatch.
+- **A storyboard of known length agrees**: a 4 s `DoubleAnimation` of our own, three runs, fires
+  `Completed` 3,856.5, 3,862.6 and 3,861.1 ms after `Begin()` on the stopwatch; its own time runs at
+  1.0416 and 1.0415 the stopwatch's.
+
+25/24 is 1.04167: the frames come at 66.7 a second and each moves animation time by 1/64 s. So the
+4.13 s cycle and the dots' 150 to 167 ms spacing above are the keyframes' 4.305 s and 0.167 s on a fast
+clock, and nothing in the template is different from what it says.
 
 ## The page's app bar (2026-11-09, device 11, #23)
 
