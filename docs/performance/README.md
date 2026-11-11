@@ -48,6 +48,28 @@ meant to be raised; the point is that it's a decision.
 limit going past it. When the theme gets there, stop and run the benchmark on the Pixel 8 before
 going on, to decide on real numbers.
 
+## What a resource hook costs
+
+`TypeRampCostBenchmark` (#69) is the same benchmark applied to the text styles: 5,000 `TextBlock`s
+at depth 20, each style five ways (no style, all `StaticResource`, brushes and fonts dynamic, all
+`DynamicResource`, and the theme as shipped). Most of the cost is the first `DynamicResource` on an
+element, about 12 µs, which the brushes need anyway to follow the theme variant. The size hooks the
+extension pack needs ([ADR 0004](../decisions/0004-larger-screens-as-an-extension-pack.md)) add 1 to
+2 µs per styled `TextBlock`. µs per `TextBlock`, Release, headless, on the desktop PC, 2026-11-10
+(four earlier runs put every difference between columns within 2.6 µs of these):
+
+| Style | No style | All `StaticResource` | Brushes and fonts dynamic | All `DynamicResource` | The theme |
+|---|---|---|---|---|---|
+| `BodyTextBlockStyle` | 13.8 | 21.1 | 33.5 | 35.6 | 35.3 |
+| `GroupHeaderTextBlockStyle` | 14.6 | 25.5 | 36.5 | 37.8 | 43.8 |
+
+The theme's column adds `PhoneTextLine`: nothing measurable for Body, 6.0 for GroupHeader, which
+also has letter spacing. The maintainer judges the cost (`D-type-ramp-cost`).
+
+```
+CORNFLOWER_BENCHMARK=/absolute/path/ramp.md dotnet test tests/Cornflower.Tests -c Release --filter FullyQualifiedName~TypeRampCostBenchmark
+```
+
 ## The trend
 
 Run by hand at each tier's roll-up, on the same machine, and add a row. Timings in CI would mean
@@ -66,8 +88,11 @@ straight in the table.
 | When | Themed | Rules | Alternatives | `TextBlock` | `Border` |
 |---|---|---|---|---|---|
 | 2026-11-09 | 0 | 0 | 0 | 12.7 to 12.7 (+0.0) | 2.1 to 2.4 (+0.3) |
+| 2026-11-11, Tier 0 done (#61 to #69) | 1 | 0 | 0 | 11.9 to 12.0 (+0.1) | 1.8 to 2.1 (+0.3) |
 
-The first row is before any control: what the tokens and fonts cost, with no global rules.
+The first row is before any control: what the tokens and fonts cost, with no global rules. The second is
+Tier 0's end: one themed control (`LucideIcon`; the 16 text styles are keyed, so a `TextBlock` without
+one pays nothing), still no global rule, and the difference within the run-to-run noise.
 
 ## In a Debug build
 
@@ -152,6 +177,8 @@ Copied from Avonic's `v2` branch. What changed:
 - The benchmark measures `Wp81Theme` against no theme, and counts themed controls through the holes
   list.
 - `tools/breakage/run.js` finds the test project itself, so another library can copy it unchanged.
-- Not carried over yet: `tools/real-window/drive.ps1`, which drives the desktop sample's real
-  window. It waits for the desktop sample
-  ([#9](https://github.com/wdcossey/CornflowerUI/issues/9)).
+- `tools/real-window/drive.ps1`, which drives the desktop sample's real window, came with the
+  desktop sample ([#9](https://github.com/wdcossey/CornflowerUI/issues/9), #68). It opens every
+  page with a real click and saves a frame, and checks buttons with no size, the Debug line, the
+  page's 450 × 800 from the ready line, Back, Alt+Left and resizing; its per-control sections come
+  back with controls.
