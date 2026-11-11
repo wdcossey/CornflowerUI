@@ -127,6 +127,7 @@ Log ("display window at {0},{1}, {2} x {3}; view {4} x {5}; {6:0.####} x {7:0.##
 # memory and written at the end, for the same reason.
 $steps = New-Object System.Collections.Generic.List[string]
 if ($Mode -eq 'real') { [XdeMouse]::Front([IntPtr]$window); Start-Sleep -Milliseconds 300 }
+Log "playing $($lines.Count - 1) lines"
 $clock = [Diagnostics.Stopwatch]::StartNew()
 $at = 0.0
 foreach ($line in $lines[1..($lines.Count - 1)]) {

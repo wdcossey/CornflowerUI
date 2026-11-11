@@ -371,6 +371,18 @@ with the mouse, which the emulator turns into touches. The app logs every pointe
 state change and watched value to `probe.txt`, in milliseconds, and writes `done.txt` when the
 last touch has settled. `touch.log` says where each step landed on the VM's screen.
 
+- **A touch that can't land stops the run before it starts.** Just before it writes
+  `gestures.txt`, the app reads the view and checks each step is inside it, and that the topmost
+  element under each press is the control it is for, or inside it. If any fails, it writes
+  `gestures.txt` and a `done.txt` naming every such step by its line in `gestures.txt`, and no
+  `ready.txt`, so nothing is played.
+- **A run whose touches never arrive still ends with its log.** `ready.txt` gives the app's
+  timeout: the touches' planned time and 3 minutes, at least 5 minutes (a tap-started probe: 9
+  minutes). `touch.ps1` plays each step at its planned time from its start, so a late step doesn't
+  delay the rest. If `touch.ps1` fails before its first step, `session.ps1` stops the recording
+  and reports at once; if it fails mid-run, `session.ps1` stops the recording, then waits for the
+  app's `done.txt`, up to a minute past that timeout, and pulls the log with it.
+
 - **Touches move the VM's real cursor** (`-TouchMode real`, the default), so the emulator has to
   be in front and the VM's mouse left alone during the run. `-TouchMode post` posts mouse
   messages to the display window instead; the emulator ignored them (2026-11-09).
@@ -382,7 +394,7 @@ last touch has settled. `touch.log` says where each step landed on the VM's scre
 - **Moves arrive in bursts about 100 ms apart.** The emulator delivers the mouse's moves to the
   phone in batches, so a probe reads a position, not a speed. Press and release times are kept.
 
-Probes: `toggleswitch` (#25), `tilt` and `tiltgrid` (#22), and for #24 `motion`, `pages`,
+Probes: `toggleswitch` (#25), `tilt`, `tiltedge` and `tiltgrid` (#22), and for #24 `motion`, `pages`,
 `projections` and `ring` ([Motion](#motion-2026-11-10-device-11-24)). Each frame's value is read on the UI thread in
 `CompositionTarget.Rendering`. That reads the animated values of the theme animations too: the
 tilt's `PlaneProjection` moves every 15 ms in the log.
@@ -457,9 +469,9 @@ centre as a fraction of its width and height (−0.5 to 0.5):
 
 | Value | Rule | Fit |
 |---|---|---|
-| `RotationY` | −g(`dx`): a press left of centre tilts positive | over the four sizes, rms 0.08° once each button's offset (the bias below) is taken out; against the raw readings rms 0.38°, worst 1.26° (button A) |
-| `RotationX` | g(`dy`): a press above centre tilts negative | |
-| g(d) | 17.19° × d × (1 + 0.08 \|d\|); 17.19° is 0.3 rad | |
+| `RotationY` | −g(`dx`): a press left of centre tilts positive | rms 0.06° once each button's offset (the bias below) is taken out; against the raw readings rms 0.17°, worst 0.41° (button D, pressed 5% across and 95% down) |
+| `RotationX` | g(`dy`): a press above centre tilts negative | rms 0.10° once each button's offset is taken out; against the raw readings rms 0.51°, worst 1.26° (button A, pressed at its centre; A's bias, −0.83° below, is two thirds of it) |
+| g(d) | 17.19° × d × (1 + 0.08 \|d\|); 17.19° is 0.3 rad | both axes over the four sizes: rms 0.08° with the offsets taken out, 0.38° raw |
 | `GlobalOffsetZ` | −25 × (1 − (\|`RotationX`\| + \|`RotationY`\|) / 17.19°), in view px | from the angles read: worst residual 0.002 px over 100 presses, with 17.19° as 0.3 rad exactly |
 | `CenterOfRotation` | 0.5, 0.5, 0 | always |
 | `RenderTransform` | a `CompositeTransform` translating by 0.8 × (the screen's centre − the button's centre), with `GlobalOffsetX` and `GlobalOffsetY` the opposite | exact for all four buttons and the first run's, and on the 720p profile (`20261110-0738-dev10`, `-Probe tilt`: translate −20, 76.44) |
@@ -497,8 +509,9 @@ centre as a fraction of its width and height (−0.5 to 0.5):
   from the finger, but the phone still counts the press as on the button.
 - **On the 720p profile** (`20261110-0851-dev10`, `-Probe tiltgrid`, C narrowed to 362 to fit the
   400 wide view; 100 presses, no errors): the same rule fits within 0.08° once each button's offset
-  is taken out (0.33° raw, worst 1.04°), the depth within 0.002 px. The offsets are the bias again,
-  for the buttons' places on a smaller screen (A −0.72° on `RotationX`, D +0.35°): #65 can check
+  is taken out (0.33° raw, worst 1.04° on `RotationX`, button A at its centre, of which A's bias
+  there is −0.72°; 0.36° on `RotationY`), the depth within 0.002 px. The offsets are the bias again, for the buttons' places on a smaller
+  screen (A −0.72° and D +0.35°, both on `RotationX`): #65 can check
   whether its eye distance scales with the screen.
 
 ## Motion (2026-11-10, device 11, #24)

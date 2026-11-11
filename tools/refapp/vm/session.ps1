@@ -52,7 +52,8 @@ if ($Demo) {
 }
 
 # A probe lays its page out, then writes the touches it wants as gestures.txt and ready.txt. Pull them, and play
-# them on the emulator's display with vm\touch.ps1. The app writes done.txt once the last touch has settled.
+# them on the emulator's display with vm\touch.ps1. The app writes done.txt once the last touch has settled, or when
+# its timeout (in ready.txt) runs out; when touch.ps1 fails, wait for that too, so that the app's log is pulled.
 $out = Join-Path $Root 'out'
 function Pull {
     Remove-Item $out -Recurse -Force -ErrorAction SilentlyContinue
@@ -80,8 +81,10 @@ function Stop-Recorder {
     $script:recorder = $null
 }
 
+$appTimeoutMinutes = 0
+$touchFailed = 0
 if ($Probe) {
-    # A probe that can't run (an unknown name, a template without the part) writes done.txt and no ready.txt.
+    # A probe that can't run (an unknown name, a template without the part, a touch that would miss) writes done.txt and no ready.txt.
     Status 'probing: waiting for the app to write ready.txt'
     $listing = ''
     for ($i = 0; $i -lt 40 -and $listing -notmatch '(ready|done)\.txt'; $i++) {
@@ -99,7 +102,22 @@ if ($Probe) {
     $in = Join-Path $Root 'probe-in'
     Remove-Item $in -Recurse -Force -ErrorAction SilentlyContinue
     New-Item -ItemType Directory -Force $in | Out-Null
-    & $ise ts "deviceindex:$Device" $ProductId $in 2>&1 | Add-Content -Path $log
+    # ready.txt's "timeout <ms>": how long after it the app finishes and writes its log, whether the touches came or not.
+    # The app writes it whole (under another name, then renamed); pull again if the line isn't there yet.
+    $timeoutLine = $null
+    for ($i = 0; $i -lt 3 -and -not $timeoutLine; $i++) {
+        if ($i -gt 0) { Start-Sleep -Seconds 2 }
+        & $ise ts "deviceindex:$Device" $ProductId $in 2>&1 | Add-Content -Path $log
+        $timeoutLine = Get-Content (Join-Path $in 'IsolatedStore\ready.txt') -ErrorAction SilentlyContinue | Where-Object { $_ -match '^timeout \d' } | Select-Object -First 1
+    }
+
+    $parsed = 0.0
+    if ($timeoutLine -and [double]::TryParse(($timeoutLine -split ' ')[1], [Globalization.NumberStyles]::Float, [Globalization.CultureInfo]::InvariantCulture, [ref]$parsed)) {
+        $appTimeoutMinutes = $parsed / 60000
+    }
+    else {
+        Add-Content -Path $log -Value "$(Get-Date -Format s) ready.txt gives no timeout ('$timeoutLine'); a probe may take 8 minutes"
+    }
     # More than one emulator can be running, one per profile: touch the one this device is, by its window title.
     $name = (& $deploy /EnumerateDevices 2>&1 | Where-Object { $_ -match "^\s*$Device\s+(.+?)\s*$" } | ForEach-Object { $Matches[1] } | Select-Object -First 1)
     if (-not $name) {
@@ -137,17 +155,24 @@ if ($Probe) {
     Status "probing: playing the touches on '$name'"
     & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $Root 'vm\touch.ps1') -Gestures (Join-Path $in 'IsolatedStore\gestures.txt') -Log (Join-Path $Root 'touch.log') -Title $name -Mode $TouchMode
     if ($LASTEXITCODE -ne 0) {
-        $code = $LASTEXITCODE
+        $touchFailed = $LASTEXITCODE
         Stop-Recorder
-        Pull
-        Status "failed: touch.ps1 exit $code; see touch.log; partial results pulled"
-        exit 1
+        # touch.ps1 logs "playing" just before its first step. Failed before it, nothing was touched: say so at once.
+        if (-not (Select-String -Path (Join-Path $Root 'touch.log') -Pattern ' playing ' -SimpleMatch -Quiet)) {
+            Pull
+            Status "failed: touch.ps1 exit $touchFailed before playing any touch; see touch.log; partial results pulled"
+            exit 1
+        }
+
+        # Failed mid-run: the app holds its log until it finishes, so wait below for its done.txt, which its timeout
+        # bounds, then pull.
+        Add-Content -Path $log -Value "$(Get-Date -Format s) touch.ps1 exit $touchFailed mid-run; waiting for the app to time out and write its log"
     }
 }
 
 $grabber = $null
 $stopGrab = Join-Path $Root 'grab.stop'
-if ($Grab) {
+if ($Grab -and -not $touchFailed) {
     Remove-Item $stopGrab, (Join-Path $Root 'frames') -Recurse -Force -ErrorAction SilentlyContinue
     $grabber = Start-Process powershell.exe -PassThru -WindowStyle Hidden -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', (Join-Path $Root 'vm\grab-loop.ps1'), '-Out', (Join-Path $Root 'frames'), '-StopFile', $stopGrab)
     Add-Content -Path $log -Value "$(Get-Date -Format s) grabbing the emulator window, pid $($grabber.Id)"
@@ -155,7 +180,15 @@ if ($Grab) {
 
 $started = Get-Date
 Status 'running: app launched, waiting for done.txt'
-$deadline = $started.AddMinutes($TimeoutMinutes)
+# A probe that wrote no done.txt by its limit has stalled: 8 minutes, or a minute past the app's own timeout from
+# ready.txt, which started before this; never past -TimeoutMinutes, which run.ps1 and the task's time limit allow for.
+$probeLimit = [Math]::Max(8, $appTimeoutMinutes + 1)
+if ($Probe -and $probeLimit -gt $TimeoutMinutes) {
+    Add-Content -Path $log -Value "$(Get-Date -Format s) the app's timeout passes -TimeoutMinutes $TimeoutMinutes; waiting $TimeoutMinutes"
+    $probeLimit = $TimeoutMinutes
+}
+
+$deadline = $started.AddMinutes($(if ($Probe) { $probeLimit } else { $TimeoutMinutes }))
 $done = $false
 $stalled = $false
 $lastPngs = -1
@@ -173,7 +206,7 @@ while ((Get-Date) -lt $deadline) {
     $pngs = ([regex]::Matches($listing, '\.png')).Count
     if ($pngs -ne $lastPngs) { $lastPngs = $pngs; $lastChange = Get-Date }
     elseif (-not ($Probe -or $Native) -and ((Get-Date) - $lastChange).TotalMinutes -ge 3) { $stalled = $true; break }
-    elseif (($Probe -or $Native) -and ((Get-Date) - $started).TotalMinutes -ge 8) { $stalled = $true; break }
+    elseif ($Native -and ((Get-Date) - $started).TotalMinutes -ge 8) { $stalled = $true; break }
     $elapsed = ((Get-Date) - $started).TotalSeconds
     if ($Native) {
         # A native run makes no PNGs; its progress.txt names the step it is on. Pulling the folder takes a few seconds,
@@ -185,6 +218,9 @@ while ((Get-Date) -lt $deadline) {
         $step = Get-Content (Join-Path $peek 'IsolatedStore\progress.txt') -ErrorAction SilentlyContinue
         Status ('running: {0} after {1:N0} s' -f $(if ($step) { $step } else { 'starting' }), $elapsed)
     }
+    elseif ($Probe -and $touchFailed) {
+        Status ('running: touch.ps1 failed, waiting for the app to time out and write its log, {0:N0} s of up to {1:N0}' -f $elapsed, ($probeLimit * 60))
+    }
     elseif ($Probe) {
         # A probe writes nothing until its touches have settled; its log comes back with done.txt.
         Status ('running: touches played, waiting for the probe to settle, {0:N0} s' -f $elapsed)
@@ -193,6 +229,8 @@ while ((Get-Date) -lt $deadline) {
         Status ('running: {0} PNGs so far after {1:N0} s' -f $pngs, $elapsed)
     }
 }
+
+if ($Probe -and -not $done) { $stalled = $true }
 
 if ($grabber) {
     Set-Content -Path $stopGrab -Value stop
@@ -204,9 +242,15 @@ Stop-Recorder
 Status "pulling the app's local folder"
 Pull
 
+if ($touchFailed) {
+    $summary = Get-Content (Join-Path $out 'IsolatedStore\done.txt') -ErrorAction SilentlyContinue
+    Status "failed: touch.ps1 exit $touchFailed; see touch.log; app reports $(if ($summary) { $summary } else { 'no done.txt' }); partial results pulled"
+    exit 1
+}
+
 # A run that stalls or runs out of time still leaves what it wrote, including progress.txt, the last item started.
 if (-not $done) {
-    $why = if ($stalled -and ($Probe -or $Native)) { 'the app wrote no done.txt in 8 minutes' } elseif ($stalled) { "no new PNG for 3 minutes at $lastPngs" } else { "no done.txt after $TimeoutMinutes minutes" }
+    $why = if ($stalled -and $Probe) { "the app wrote no done.txt in $probeLimit minutes" } elseif ($stalled -and $Native) { 'the app wrote no done.txt in 8 minutes' } elseif ($stalled) { "no new PNG for 3 minutes at $lastPngs" } else { "no done.txt after $TimeoutMinutes minutes" }
     $last = Get-Content (Join-Path $out 'IsolatedStore\progress.txt') -ErrorAction SilentlyContinue
     Status "failed: $why; last started: $last; partial results pulled"
     exit 1

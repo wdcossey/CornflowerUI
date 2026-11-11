@@ -44,7 +44,7 @@ namespace RefApp
             var opener = new Button { Content = "open", Margin = new Thickness(19, 170, 0, 0), HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top };
             var combo6 = Combo("combo6", 6, 260);
             var combo5 = Combo("combo5", 5, 360);
-            var page = await MotionPage(host, toggle, opener, combo6, combo5);
+            var page = await Page(host, toggle, opener, combo6, combo5);
             WatchStates(toggle);
             toggle.Toggled += (s, e) => Log("toggled", "IsOn " + toggle.IsOn);
             WatchTree("toggle", toggle);
@@ -210,7 +210,7 @@ namespace RefApp
         {
             var ring = new ProgressRing { Name = "ring", IsActive = true, Margin = new Thickness(19, 120, 0, 0), HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top };
             var large = new ProgressRing { Name = "large", IsActive = true, Width = 120, Height = 120, Margin = new Thickness(19, 300, 0, 0), HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top };
-            var page = await MotionPage(host, ring, large);
+            var page = await Page(host, ring, large);
             WatchStates(ring);
             WatchStates(large);
             WatchTree("ring", ring);
@@ -229,7 +229,7 @@ namespace RefApp
             var panel = new Grid { Background = new SolidColorBrush(Colors.Black), Children = { sheet } };
             var projection = new PlaneProjection();
             panel.Projection = projection;
-            var page = await MotionPage(host, false, panel);
+            var page = await Page(host, panel);
 
             Func<Task> sequence = async () =>
             {
@@ -275,7 +275,7 @@ namespace RefApp
             Log("layout", "root frame transitions " + (rootTransitions == null ? "none" : string.Join(",", rootTransitions.Select(t => t.GetType().Name))));
             var frame = new Frame { Name = "frame" };
             frame.ContentTransitions = new TransitionCollection { new NavigationThemeTransition() };
-            var page = await MotionPage(host, frame);
+            var page = await Page(host, frame);
             frame.Navigated += (s, e) => Log("event", "Navigated " + e.NavigationMode + " " + e.Parameter + (e.NavigationTransitionInfo != null ? " " + e.NavigationTransitionInfo.GetType().Name : ""));
             frame.Navigate(typeof(ProbePage), "A");
             await Task.Delay(1000);
@@ -313,42 +313,11 @@ namespace RefApp
             await RunAfterTap(page, sequence);
         }
 
-        /// <summary>Puts the controls on a dark page in the host and waits for their templates; returns the page.</summary>
-        private static Task<Grid> MotionPage(Grid host, params FrameworkElement[] children)
-        {
-            return MotionPage(host, true, children);
-        }
-
-        /// <summary>As above; <paramref name="settle"/> false for a page with no templated control, which Settle would wait 10 s for.</summary>
-        private static async Task<Grid> MotionPage(Grid host, bool settle, params FrameworkElement[] children)
-        {
-            var page = new Grid { RequestedTheme = ElementTheme.Dark, Background = new SolidColorBrush(Colors.Black) };
-            foreach (var c in children)
-            {
-                page.Children.Add(c);
-            }
-
-            host.HorizontalAlignment = HorizontalAlignment.Stretch;
-            host.VerticalAlignment = VerticalAlignment.Stretch;
-            host.Children.Add(page);
-            if (settle)
-            {
-                await Settle(page);
-            }
-            else
-            {
-                await Task.Delay(500);
-            }
-
-            return page;
-        }
-
         /// <summary>
         /// Asks for one tap near the bottom left of the page, on the page's own background, and runs the sequence when
-        /// it lands, then finishes. It writes gestures.txt and ready.txt itself rather than through Ready(), whose
-        /// watchdog counts touches: this one gives up 3 minutes after ready if the tap never comes, and otherwise 6
-        /// minutes after the tap, so that the log is written before vm\session.ps1 gives up on the probe, 8 minutes
-        /// after the app started.
+        /// it lands, then finishes. It starts its tap with StartTouches rather than through Ready(), whose watchdog counts
+        /// touches: this one gives up 3 minutes after ready if the tap never comes, and otherwise 6 minutes after the tap.
+        /// ready.txt gives vm\session.ps1 the 9 minutes of the two; it waits that long for done.txt, and a minute more.
         /// </summary>
         private async Task RunAfterTap(Grid page, Func<Task> sequence)
         {
@@ -373,20 +342,19 @@ namespace RefApp
                 }
 
                 await Task.Delay(1000);
-                CompositionTarget.Rendering -= OnTreeFrame;
                 await Finish("sequence done");
             }), true);
 
-            var b = Window.Current.Bounds;
-            _gestures.AppendLine("down 30 " + Num(b.Height - 30));
-            _gestures.AppendLine("wait 80");
-            _gestures.AppendLine("up 30 " + Num(b.Height - 30));
-            _gestures.AppendLine("wait 1000");
-            var display = Windows.Graphics.Display.DisplayInformation.GetForCurrentView();
-            await Write("gestures.txt", "view " + Num(b.Width) + " " + Num(b.Height) + "\n" + _gestures);
-            _clock.Start();
-            Log("ready", "one tap starts the sequence; raw-per-view " + Num(display.RawPixelsPerViewPixel));
-            await Write("ready.txt", "touches 1");
+            var view = Window.Current.Bounds;
+            Step("down", 30, view.Height - 30, page);
+            Wait(80);
+            Step("up", 30, view.Height - 30);
+            Wait(1000);
+            if (!await StartTouches("one tap starts the sequence;", 1, TimeSpan.FromMinutes(3 + 6).TotalMilliseconds))
+            {
+                return;
+            }
+
             for (var waited = 0; !started && waited < 180; waited++)
             {
                 await Task.Delay(1000);
@@ -400,22 +368,6 @@ namespace RefApp
 
             await Task.WhenAny(_done.Task, Task.Delay(TimeSpan.FromMinutes(6)));
             await Finish("timed out after 6 minutes of the sequence");
-        }
-
-        /// <summary>Logs every visual state change of the control's template (without <see cref="Watch"/>'s pointer handlers, whose release count ends a touch probe).</summary>
-        private void WatchStates(Control control)
-        {
-            var root = VisualTreeHelper.GetChildrenCount(control) > 0 ? VisualTreeHelper.GetChild(control, 0) as FrameworkElement : null;
-            if (root == null)
-            {
-                return;
-            }
-
-            foreach (var group in VisualStateManager.GetVisualStateGroups(root))
-            {
-                var g = group;
-                g.CurrentStateChanged += (s, e) => Log("state", (control.Name.Length > 0 ? control.Name + " " : "") + g.Name + " " + (e.OldState != null ? e.OldState.Name : "-") + " > " + (e.NewState != null ? e.NewState.Name : "-"));
-            }
         }
 
         /// <summary>Watches a tree every frame from this element down (see the class summary).</summary>
