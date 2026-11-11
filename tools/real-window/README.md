@@ -7,11 +7,14 @@ Avonic, the first run of its version of this found a control bug that 1,486 test
 back and closes only the window it opened.
 
 ```powershell
-dotnet build samples/Cornflower.Sample.Desktop
 powershell -ExecutionPolicy Bypass -File tools\real-window\drive.ps1
 ```
 
-A Debug build also checks the performance line. For a Release build, pass `-Exe`. Frames go to a
+It builds the sample first, from the repo so that `global.json` picks the SDK, as
+`tools/android/run.ps1` does: a stale build runs the old code, and fails checks the new code passes.
+`-Configuration Release` builds and runs Release instead of Debug; only a Debug build has the
+performance line to check. `-NoBuild` runs the build as it is. **Close the sample first** if it's
+open: it locks its files, so the script stops rather than build. Frames go to a
 new folder in the temp folder for each run, which it prints, unless you pass `-Out`; the sample's
 standard output goes there too, as `stdout.txt`. It exits 1 if a check fails.
 
