@@ -7,13 +7,25 @@
 # Ported from Avonic's tools/real-window/drive.ps1 (wdcossey/Avonic, v2 at edf87b8): the window, the input,
 # the frames and the every-page loop. Avonic's per-control sections come back here as Cornflower's controls do.
 param(
-    # The sample to run. Build it first. A Debug build also has the performance line to check.
-    [string]$Exe = (Join-Path $PSScriptRoot '..\..\samples\Cornflower.Sample.Desktop\bin\Debug\net10.0\Cornflower.Sample.Desktop.exe'),
+    # The sample to run. Left out, the script builds the Debug sample first and runs that. Given, it runs the
+    # file as it is: build it first. A Debug build also has the performance line to check.
+    [string]$Exe,
     # Where the frames go. By default a new folder for each run, so that an old frame can't pass for a new one.
-    [string]$Out = (Join-Path ([IO.Path]::GetTempPath()) ('cornflower-real-window\' + (Get-Date -Format 'yyyyMMdd-HHmmss')))
+    [string]$Out = (Join-Path ([IO.Path]::GetTempPath()) ('cornflower-real-window\' + (Get-Date -Format 'yyyyMMdd-HHmmss'))),
+    # Run the Debug sample as it is, without building it first.
+    [switch]$NoBuild
 )
 
 $ErrorActionPreference = 'Stop'
+if (-not $Exe) {
+    $project = Join-Path $PSScriptRoot '..\..\samples\Cornflower.Sample.Desktop'
+    $Exe = Join-Path $project 'bin\Debug\net10.0\Cornflower.Sample.Desktop.exe'
+    # A stale build runs the old code and its failures look like the new code's.
+    if (-not $NoBuild) {
+        & dotnet build $project -c Debug --nologo -v quiet
+        if ($LASTEXITCODE -ne 0) { throw "The sample didn't build (dotnet build exited $LASTEXITCODE)." }
+    }
+}
 if (-not (Test-Path $Exe)) { throw "No sample at $Exe. Build it first." }
 New-Item -ItemType Directory -Force $Out | Out-Null
 $Out = (Resolve-Path $Out).Path

@@ -7,11 +7,12 @@ Avonic, the first run of its version of this found a control bug that 1,486 test
 back and closes only the window it opened.
 
 ```powershell
-dotnet build samples/Cornflower.Sample.Desktop
 powershell -ExecutionPolicy Bypass -File tools\real-window\drive.ps1
 ```
 
-A Debug build also checks the performance line. For a Release build, pass `-Exe`. Frames go to a
+It builds the Debug sample first, so that a stale build can't fail checks the code passes; `-NoBuild`
+runs it as it is. A Debug build also checks the performance line. For another build, such as
+Release, build it and pass its `.exe` as `-Exe`; that file runs as it is. Frames go to a
 new folder in the temp folder for each run, which it prints, unless you pass `-Out`; the sample's
 standard output goes there too, as `stdout.txt`. It exits 1 if a check fails.
 
