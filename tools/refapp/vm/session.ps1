@@ -13,7 +13,8 @@ param(
     [switch]$Grab,
     [switch]$Probe,
     [ValidateSet('post', 'real')][string]$TouchMode = 'real',
-    [switch]$Record
+    [switch]$Record,
+    [switch]$Native
 )
 
 $ErrorActionPreference = 'Continue'
@@ -171,8 +172,8 @@ while ((Get-Date) -lt $deadline) {
 
     $pngs = ([regex]::Matches($listing, '\.png')).Count
     if ($pngs -ne $lastPngs) { $lastPngs = $pngs; $lastChange = Get-Date }
-    elseif (-not $Probe -and ((Get-Date) - $lastChange).TotalMinutes -ge 3) { $stalled = $true; break }
-    elseif ($Probe -and ((Get-Date) - $started).TotalMinutes -ge 8) { $stalled = $true; break }
+    elseif (-not ($Probe -or $Native) -and ((Get-Date) - $lastChange).TotalMinutes -ge 3) { $stalled = $true; break }
+    elseif (($Probe -or $Native) -and ((Get-Date) - $started).TotalMinutes -ge 8) { $stalled = $true; break }
     Status ('running: {0} PNGs so far after {1:N0} s' -f $pngs, ((Get-Date) - $started).TotalSeconds)
 }
 
@@ -188,7 +189,7 @@ Pull
 
 # A run that stalls or runs out of time still leaves what it wrote, including progress.txt, the last item started.
 if (-not $done) {
-    $why = if ($stalled -and $Probe) { 'the probe wrote no done.txt in 8 minutes' } elseif ($stalled) { "no new PNG for 3 minutes at $lastPngs" } else { "no done.txt after $TimeoutMinutes minutes" }
+    $why = if ($stalled -and ($Probe -or $Native)) { 'the app wrote no done.txt in 8 minutes' } elseif ($stalled) { "no new PNG for 3 minutes at $lastPngs" } else { "no done.txt after $TimeoutMinutes minutes" }
     $last = Get-Content (Join-Path $out 'IsolatedStore\progress.txt') -ErrorAction SilentlyContinue
     Status "failed: $why; last started: $last; partial results pulled"
     exit 1

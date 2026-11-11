@@ -11,7 +11,8 @@ namespace RefApp
     /// <c>popups=only</c> or <c>popups=also</c> adds the popups, which a run leaves out by default;
     /// <c>demo</c> shows the demo page instead of running the suite; <c>hold=&lt;ms&gt;</c> holds each popup open,
     /// full window, for the screen grabs (run.ps1 -Grab); <c>probe=&lt;name&gt;</c> runs one <see cref="Probe"/> instead
-    /// of the suite (run.ps1 -Probe).
+    /// of the suite (run.ps1 -Probe); <c>native</c> reads the values the phone computes (<see cref="Suite.RunNativeAsync"/>,
+    /// run.ps1 -Native) instead of the suite, with the system tray left shown at launch.
     /// </summary>
     internal sealed class Options
     {
@@ -32,6 +33,9 @@ namespace RefApp
 
         /// <summary>The <see cref="Probe"/> to run instead of the suite, or null.</summary>
         public string Probe;
+
+        /// <summary>Read the display, the system tray, the visible bounds and the TemplateSettings instead of running the suite.</summary>
+        public bool Native;
 
         public bool Matches(string name) =>
             string.IsNullOrEmpty(Only) || Regex.IsMatch(name, Only, RegexOptions.IgnoreCase);
@@ -60,6 +64,10 @@ namespace RefApp
                     else if (line.StartsWith("probe=", StringComparison.Ordinal))
                     {
                         options.Probe = line.Substring(6);
+                    }
+                    else if (line == "native")
+                    {
+                        options.Native = true;
                     }
                     else if (line == "demo")
                     {

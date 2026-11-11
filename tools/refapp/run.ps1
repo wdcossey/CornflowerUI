@@ -35,6 +35,10 @@
   -Grab holds each popup open for 5 s while vm\grab-loop.ps1 grabs the emulator's window, and
   writes <id>__screen.png beside each popup's dumps. Use it with -Popups only, with the
   emulator's zoom at 100%, so the window is 1080 x 1920, one pixel per phone pixel.
+  -Native reads, instead of the suite, what the phone computes in native code, through its API: the display's
+  scale and DPI, the system tray's occluded rectangle and opacity and the view's visible bounds (tray shown and
+  hidden, portrait and both landscapes), and the TemplateSettings of ComboBox, ProgressBar, ProgressRing and
+  ToggleSwitch (app\Suite.Native.cs). They come back as native.json. It captures nothing.
 
   Device indexes come from AppDeployCmd /EnumerateDevices: 7 to 13 are the 8.1 Update 1 profiles,
   10 is 720p 4.7", 13 is qHD 5". See R:\cornflower-reference\wp81-emulator-profiles.md.
@@ -48,6 +52,7 @@ param(
     [string]$Probe = '',
     [ValidateSet('post', 'real')][string]$TouchMode = 'real',
     [switch]$Record,
+    [switch]$Native,
     [string]$HostAlias = 'cornflower-ref',
     [string]$Out = 'R:\cornflower-reference\refapp',
     [int]$TimeoutMinutes = 40
@@ -55,6 +60,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 if ($Record -and -not $Probe) { throw '-Record goes with -Probe' }
+if ($Native -and ($Probe -or $Demo -or $Grab -or $Popups -or $Only)) { throw '-Native runs on its own' }
 $here = $PSScriptRoot
 $remote = 'C:\cornflower\refapp'
 $task = 'cornflower-refapp'
@@ -95,6 +101,7 @@ if ($Popups) { $lines += "popups=$Popups" }
 if ($Demo) { $lines += 'demo' }
 if ($Grab) { $lines += 'hold=5000' }
 if ($Probe) { $lines += "probe=$Probe" }
+if ($Native) { $lines += 'native' }
 if ($lines) { Set-Content -Path $options -Value $lines -Encoding ASCII } else { Remove-Item $options -ErrorAction SilentlyContinue }
 try {
     Copy-Scp @((Join-Path $here 'app'), (Join-Path $here 'vm'), "${HostAlias}:C:/cornflower/refapp/")
@@ -113,7 +120,7 @@ if (-not ($build -match '^built ')) {
 $build | Select-Object -Last 3 | ForEach-Object { Write-Host "  $_" }
 
 Write-Host "3/5 starting the session task for device $Device"
-$taskArgs = "-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File $remote\vm\session.ps1 -Device $Device -ProductId $productId -Root $remote -TimeoutMinutes $TimeoutMinutes$(if ($Demo) { ' -Demo' })$(if ($Grab) { ' -Grab' })$(if ($Probe) { " -Probe -TouchMode $TouchMode" })$(if ($Record) { ' -Record' })"
+$taskArgs = "-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File $remote\vm\session.ps1 -Device $Device -ProductId $productId -Root $remote -TimeoutMinutes $TimeoutMinutes$(if ($Demo) { ' -Demo' })$(if ($Grab) { ' -Grab' })$(if ($Probe) { " -Probe -TouchMode $TouchMode" })$(if ($Record) { ' -Record' })$(if ($Native) { ' -Native' })"
 Remote @"
 `$a = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument '$taskArgs'
 `$p = New-ScheduledTaskPrincipal -UserId `$env:USERNAME -LogonType Interactive -RunLevel Highest
@@ -183,6 +190,12 @@ if ($Probe) {
 
     Write-Host "  probe $Probe`: $(Get-Content (Join-Path $dest 'done.txt'))"
     Write-Host "  log in $(Join-Path $dest 'probe.txt')"
+    return
+}
+
+if ($Native) {
+    Write-Host "  native: $(Get-Content (Join-Path $dest 'done.txt'))"
+    Write-Host "  readings in $(Join-Path $dest 'native.json')"
     return
 }
 
