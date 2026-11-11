@@ -1,7 +1,9 @@
 // Expected token values, written out here because CI can't read the reference folder.
 // Source: themeresources.xaml of the Windows Phone 8.1 SDK (Windows Phone Kits\8.1\Include\abi\Xaml\Design):
-// its Default (dark) and Light dictionaries, and the entries outside them; the named accents from the 8.1 SDK's
-// design files (AccentColors\<Name>.xaml). "run" names a capture of refapp run 20261108-1443-dev11 (device 11,
+// its Default (dark) and Light dictionaries, and the entries outside them. The default and the named accents
+// from the phone's registry (the 8.1 Update 1 image's config\SOFTWARE, Control Panel\Theme: DefaultAccent and
+// Accents\<i>), with the SDK's AccentColors\<Name>.xaml compared in each source.
+// "run" names a capture of refapp run 20261108-1443-dev11 (device 11,
 // the reference profile) in which the phone resolved the same value.
 // Values: colours and brushes #AARRGGBB, with a brush's Opacity after "@"; thicknesses left,top,right,bottom;
 // font weights as numbers.
@@ -337,27 +339,27 @@ internal static class TokenExpectations
     /// <summary>The keys that are the same in both themes: key, kind, value, source.</summary>
     internal static readonly SharedToken[] Shared =
     [
-        new("SystemColorControlAccentColor", TokenKind.Color, "#FF3E65FF", "the default accent, Cobalt; the 8.1 Update 1 registry, Control Panel\\Theme DefaultAccent 5; run index.json, PhoneAccentBrush in dark and light"),
-        new("CornflowerAccentAmberColor", TokenKind.Color, "#FFF0A30A", "AccentColors\\Amber.xaml PhoneAccentColor"),
-        new("CornflowerAccentBrownColor", TokenKind.Color, "#FF825A2C", "AccentColors\\Brown.xaml PhoneAccentColor"),
-        new("CornflowerAccentCobaltColor", TokenKind.Color, "#FF3E65FF", "the 8.1 Update 1 registry, Control Panel\\Theme accent 5"),
-        new("CornflowerAccentCrimsonColor", TokenKind.Color, "#FFA20025", "AccentColors\\Crimson.xaml PhoneAccentColor"),
-        new("CornflowerAccentCyanColor", TokenKind.Color, "#FF1BA1E2", "AccentColors\\Cyan.xaml PhoneAccentColor"),
-        new("CornflowerAccentEmeraldColor", TokenKind.Color, "#FF008A00", "AccentColors\\Emerald.xaml PhoneAccentColor"),
-        new("CornflowerAccentGreenColor", TokenKind.Color, "#FF60A917", "AccentColors\\Green.xaml PhoneAccentColor"),
-        new("CornflowerAccentIndigoColor", TokenKind.Color, "#FF6A00FF", "AccentColors\\Indigo.xaml PhoneAccentColor"),
-        new("CornflowerAccentLimeColor", TokenKind.Color, "#FFA4C400", "AccentColors\\Lime.xaml PhoneAccentColor"),
-        new("CornflowerAccentMagentaColor", TokenKind.Color, "#FFD80073", "AccentColors\\Magenta.xaml PhoneAccentColor"),
-        new("CornflowerAccentMauveColor", TokenKind.Color, "#FF76608A", "AccentColors\\Mauve.xaml PhoneAccentColor"),
-        new("CornflowerAccentOliveColor", TokenKind.Color, "#FF6D8764", "AccentColors\\Olive.xaml PhoneAccentColor"),
-        new("CornflowerAccentOrangeColor", TokenKind.Color, "#FFFA6800", "AccentColors\\Orange.xaml PhoneAccentColor"),
-        new("CornflowerAccentPinkColor", TokenKind.Color, "#FFF472D0", "AccentColors\\Pink.xaml PhoneAccentColor"),
-        new("CornflowerAccentRedColor", TokenKind.Color, "#FFE51400", "AccentColors\\Red.xaml PhoneAccentColor"),
-        new("CornflowerAccentSteelColor", TokenKind.Color, "#FF647687", "AccentColors\\Steel.xaml PhoneAccentColor"),
-        new("CornflowerAccentTaupeColor", TokenKind.Color, "#FF87794E", "AccentColors\\Taupe.xaml PhoneAccentColor"),
-        new("CornflowerAccentTealColor", TokenKind.Color, "#FF00ABA9", "AccentColors\\Teal.xaml PhoneAccentColor"),
-        new("CornflowerAccentVioletColor", TokenKind.Color, "#FFAA00FF", "AccentColors\\Violet.xaml PhoneAccentColor"),
-        new("CornflowerAccentYellowColor", TokenKind.Color, "#FFE3C800", "AccentColors\\Yellow.xaml PhoneAccentColor"),
+        new("SystemColorControlAccentColor", TokenKind.Color, "#FF3E65FF", "the default accent; the registry, DefaultAccent 5 (Cobalt); run index.json, PhoneAccentBrush in dark and light"),
+        new("CornflowerAccentAmberColor", TokenKind.Color, "#FFF0A30A", "the registry, Accents\\13; AccentColors\\Amber.xaml PhoneAccentColor agrees"),
+        new("CornflowerAccentBrownColor", TokenKind.Color, "#FF825A2C", "the registry, Accents\\15; AccentColors\\Brown.xaml PhoneAccentColor agrees"),
+        new("CornflowerAccentCobaltColor", TokenKind.Color, "#FF3E65FF", "the registry, Accents\\5; AccentColors\\Cobalt.xaml has #FF0B6CF8, the 8.0 SDK #FF0050EF"),
+        new("CornflowerAccentCrimsonColor", TokenKind.Color, "#FFA20025", "the registry, Accents\\10; AccentColors\\Crimson.xaml PhoneAccentColor agrees"),
+        new("CornflowerAccentCyanColor", TokenKind.Color, "#FF1BA1E2", "the registry, Accents\\4; AccentColors\\Cyan.xaml PhoneAccentColor agrees"),
+        new("CornflowerAccentEmeraldColor", TokenKind.Color, "#FF008A00", "the registry, Accents\\2; AccentColors\\Emerald.xaml PhoneAccentColor agrees"),
+        new("CornflowerAccentGreenColor", TokenKind.Color, "#FF60A917", "the registry, Accents\\1; AccentColors\\Green.xaml PhoneAccentColor agrees"),
+        new("CornflowerAccentIndigoColor", TokenKind.Color, "#FF6A00FF", "the registry, Accents\\6; AccentColors\\Indigo.xaml PhoneAccentColor agrees"),
+        new("CornflowerAccentLimeColor", TokenKind.Color, "#FFA4C400", "the registry, Accents\\0; AccentColors\\Lime.xaml PhoneAccentColor agrees"),
+        new("CornflowerAccentMagentaColor", TokenKind.Color, "#FFD80073", "the registry, Accents\\9; AccentColors\\Magenta.xaml PhoneAccentColor agrees"),
+        new("CornflowerAccentMauveColor", TokenKind.Color, "#FF76608A", "the registry, Accents\\18; AccentColors\\Mauve.xaml PhoneAccentColor agrees"),
+        new("CornflowerAccentOliveColor", TokenKind.Color, "#FF6D8764", "the registry, Accents\\16; AccentColors\\Olive.xaml PhoneAccentColor agrees"),
+        new("CornflowerAccentOrangeColor", TokenKind.Color, "#FFFA6800", "the registry, Accents\\12; AccentColors\\Orange.xaml PhoneAccentColor agrees"),
+        new("CornflowerAccentPinkColor", TokenKind.Color, "#FFF472D0", "the registry, Accents\\8; AccentColors\\Pink.xaml PhoneAccentColor agrees"),
+        new("CornflowerAccentRedColor", TokenKind.Color, "#FFE51400", "the registry, Accents\\11; AccentColors\\Red.xaml PhoneAccentColor agrees"),
+        new("CornflowerAccentSteelColor", TokenKind.Color, "#FF647687", "the registry, Accents\\17; AccentColors\\Steel.xaml PhoneAccentColor agrees"),
+        new("CornflowerAccentTaupeColor", TokenKind.Color, "#FF87794E", "the registry, Accents\\19; AccentColors\\Taupe.xaml PhoneAccentColor agrees"),
+        new("CornflowerAccentTealColor", TokenKind.Color, "#FF00ABA9", "the registry, Accents\\3; AccentColors\\Teal.xaml PhoneAccentColor agrees"),
+        new("CornflowerAccentVioletColor", TokenKind.Color, "#FFAA00FF", "the registry, Accents\\7; AccentColors\\Violet.xaml PhoneAccentColor agrees"),
+        new("CornflowerAccentYellowColor", TokenKind.Color, "#FFE3C800", "the registry, Accents\\14; AccentColors\\Yellow.xaml PhoneAccentColor agrees"),
         new("AppBarBottomBorderThemeThickness", TokenKind.Thickness, "0,1.5,0,0", "themeresources.xaml"),
         new("AppBarBottomThemePadding", TokenKind.Thickness, "0,0,0,1.5", "themeresources.xaml"),
         new("AppBarItemBackgroundThemeBrush", TokenKind.Brush, "#00FFFFFF", "themeresources.xaml; run dark__AppBarButton__default__base.json"),

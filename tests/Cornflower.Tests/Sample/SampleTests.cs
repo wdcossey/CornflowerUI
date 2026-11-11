@@ -61,7 +61,8 @@ public class SampleTests
 
     [AvaloniaTheory]
     [InlineData("Lime", 0xFFA4C400u)]
-    [InlineData("Cobalt", 0xFF3E65FFu)] // the phone's Cobalt, its default accent; the 8.1 SDK file has #FF0B6CF8 (ADR 0002)
+    [InlineData("Cobalt", 0xFF3E65FFu)] // the phone's Cobalt; the 8.1 SDK file has #FF0B6CF8 (ADR 0002). It is also the default
+    [InlineData("Cyan", 0xFF1BA1E2u)]   // so the cases that aren't the default carry the check that a swatch draws its own key
     [InlineData("Taupe", 0xFF87794Eu)]
     public void A_Named_Accent_Swatch_Draws_Its_Token(string name, uint expected)
     {

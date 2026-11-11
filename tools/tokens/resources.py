@@ -13,19 +13,33 @@ import xml.etree.ElementTree as ET
 
 X = '{http://schemas.microsoft.com/winfx/2006/xaml}'
 
-# The phone supplies SystemColorControlAccentColor; themeresources.xaml doesn't define it. This is
-# Cornflower's default accent, the phone's default, Cobalt. In the 8.1 Update 1 image's registry
-# (config\SOFTWARE, Microsoft\Windows\CurrentVersion\Control Panel\Theme), DefaultAccent is 5, and accent 5
-# is #FF3E65FF in both themes, named "Cobalt" by UIXMobileRes.dll.mui string 10022. The emulator's
-# PhoneAccentBrush reads the same in both themes (refapp run 20261108-1443-dev11, index.json). ADR 0002.
-ACCENT_KEY = 'SystemColorControlAccentColor'
-ACCENT = '#FF3E65FF'
+# The phone's accent palette: registry index, name, colour. Read from the 8.1 Update 1 image's registry
+# (config\SOFTWARE, Microsoft\Windows\CurrentVersion\Control Panel\Theme): Themes\0\Accents\<i> and
+# Themes\1\Accents\<i> (light and dark, the same) give each Color, and AccentDisplayNames\<i> names it by a
+# UIXMobileRes.dll string id, which UIXMobileRes.dll.mui (en-US) resolves (ids 10017-10026 and 10050-10059).
+# The RTM image's registry is the same. gen.py writes the named accents from this table and checks the SDK's
+# AccentColors\<Name>.xaml against it.
+PHONE_ACCENTS = [
+    (0, 'Lime', '#FFA4C400'), (1, 'Green', '#FF60A917'), (2, 'Emerald', '#FF008A00'),
+    (3, 'Teal', '#FF00ABA9'), (4, 'Cyan', '#FF1BA1E2'), (5, 'Cobalt', '#FF3E65FF'),
+    (6, 'Indigo', '#FF6A00FF'), (7, 'Violet', '#FFAA00FF'), (8, 'Pink', '#FFF472D0'),
+    (9, 'Magenta', '#FFD80073'), (10, 'Crimson', '#FFA20025'), (11, 'Red', '#FFE51400'),
+    (12, 'Orange', '#FFFA6800'), (13, 'Amber', '#FFF0A30A'), (14, 'Yellow', '#FFE3C800'),
+    (15, 'Brown', '#FF825A2C'), (16, 'Olive', '#FF6D8764'), (17, 'Steel', '#FF647687'),
+    (18, 'Mauve', '#FF76608A'), (19, 'Taupe', '#FF87794E'),
+]
 
-# The named accents where the phone's palette differs from the SDK's design files. The palette is the same
-# registry key's Themes\{0,1}\Accents\0-19, named by UIXMobileRes.dll.mui strings 10017-10026 and
-# 10050-10059; it is the same in both themes, and in RTM and Update 1. Of the 20, only Cobalt differs from
-# the SDK: the 8.1 SDK's AccentColors\Cobalt.xaml has #FF0B6CF8 (the 8.0 SDK's #FF0050EF). The phone wins.
-PHONE_ACCENTS = {'Cobalt': ACCENT}
+# The phone supplies SystemColorControlAccentColor; themeresources.xaml doesn't define it. Cornflower's
+# default is the phone's: the same registry key's DefaultAccent, 5, Cobalt. The emulator's PhoneAccentBrush
+# reads the same colour in both themes (refapp run 20261108-1443-dev11, index.json). ADR 0002.
+ACCENT_KEY = 'SystemColorControlAccentColor'
+DEFAULT_ACCENT_INDEX = 5
+DEFAULT_ACCENT = next(n for i, n, _ in PHONE_ACCENTS if i == DEFAULT_ACCENT_INDEX)
+ACCENT = next(c for i, _, c in PHONE_ACCENTS if i == DEFAULT_ACCENT_INDEX)
+
+# Where the SDK's design files differ from the phone: name, the 8.1 SDK file's value, the 8.0 SDK file's
+# (compared in PR #45). gen.py stops on any other difference, or if one of these comes to agree.
+SDK_ACCENT_DIFFERS = {'Cobalt': ('#FF0B6CF8', '#FF0050EF')}
 
 # The XAML named colours that appear as values, as #AARRGGBB.
 NAMED = {'Transparent': '#00FFFFFF', 'White': '#FFFFFFFF', 'Black': '#FF000000'}

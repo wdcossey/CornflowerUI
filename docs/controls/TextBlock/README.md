@@ -91,7 +91,6 @@ substituted.
 - **MaxHeight styles' baseline** is 0.025 em high (ADR 0003).
 - **The phone's text-size setting** (`IsTextScaleFactorEnabled`) has no equivalent.
 - **Not captured on the phone**: the two MessageDialog styles, and two-line text.
-- **Not run on the Android device** yet: the phone was locked on 2026-11-10.
 - **Fallback fonts and larger runs**: the `Padding` reads the `TextBlock`'s own face and size, so a first line
   whose fallback font (a script Selawik lacks) or a larger `Run` has a taller ascent sits lower than the phone's
   line by the difference.
