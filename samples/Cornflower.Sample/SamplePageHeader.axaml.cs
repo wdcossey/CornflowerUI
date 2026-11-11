@@ -21,7 +21,9 @@ public partial class SamplePageHeader : UserControl
     protected override void OnAttachedToLogicalTree(LogicalTreeAttachmentEventArgs e)
     {
         base.OnAttachedToLogicalTree(e);
-        var page = this.GetLogicalAncestors().FirstOrDefault(a => a.GetType().GetCustomAttribute<SamplePageAttribute>() is not null);
-        PageTitle.Text = page is null ? null : SamplePageCatalog.TitleOf(page.GetType());
+        // One reflection per ancestor, ending at the page's: its attribute is its title.
+        PageTitle.Text = this.GetLogicalAncestors()
+            .Select(ancestor => ancestor.GetType().GetCustomAttribute<SamplePageAttribute>())
+            .FirstOrDefault(page => page is not null)?.Title;
     }
 }

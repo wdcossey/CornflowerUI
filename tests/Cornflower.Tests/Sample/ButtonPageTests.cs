@@ -1,4 +1,6 @@
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
@@ -27,6 +29,29 @@ public class ButtonPageTests
         Assert.Equal(new Avalonia.Size(40, 40), back.Bounds.Size);
         Assert.False(Cornflower.Controls.Tilt.GetIsEnabled(back));
         Assert.DoesNotContain(back.GetVisualDescendants(), v => v is Panel { Name: "Grid" });
+    }
+
+    // Back's chrome: the pointer over it shows PhoneLowBrush behind it, and keyboard focus draws no rectangle.
+    [AvaloniaFact]
+    public void Back_Shows_The_Pointer_Over_It_And_No_Focus_Rectangle()
+    {
+        var shell = new SampleShell();
+        using var scene = new Scene(shell, width: Scene.ReferenceWidth + 40);
+        shell.ShowPage(new Border(), "a page");
+        Dispatcher.UIThread.RunJobs();
+        var back = shell.FindControl<Button>("BackButton")!;
+        var presenter = back.GetVisualDescendants().OfType<Avalonia.Controls.Presenters.ContentPresenter>().First();
+        var low = (Avalonia.Media.ISolidColorBrush)scene.Window.FindResource(scene.Window.ActualThemeVariant, "PhoneLowBrush")!;
+
+        scene.Window.MouseMove(back.TranslatePoint(new Avalonia.Point(20, 20), scene.Window)!.Value);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(low.Color, Assert.IsAssignableFrom<Avalonia.Media.ISolidColorBrush>(presenter.Background).Color);
+
+        back.Focus(Avalonia.Input.NavigationMethod.Tab);
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(back.IsFocused);
+        var layer = Avalonia.Controls.Primitives.AdornerLayer.GetAdornerLayer(back);
+        Assert.True(layer is null || layer.Children.Count == 0, $"{layer?.Children.Count} adorners drawn");
     }
 
     [AvaloniaFact]

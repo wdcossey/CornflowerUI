@@ -99,7 +99,8 @@ public class SampleTests
         Assert.Equal(18.14, view.FontSize);
         Assert.Contains("Selawik", view.FontFamily.ToString());
         Assert.Contains("SelawikSemilight", Named<TextBlock>(view, "PhoneFontFamilySemiLight").FontFamily.ToString());
-        Assert.Contains("SelawikSemilight", Named<TextBlock>(view, "PageTitle").FontFamily.ToString());
+        Assert.Contains("SelawikSemilight", Named<TextBlock>(view, "PageTitle").FontFamily.ToString());   // the header's
+        Assert.Equal("theme", Named<SamplePageHeader>(view, "Header").Title);
     }
 
     [AvaloniaFact]

@@ -13,7 +13,9 @@
     gesture on a phone).
   -->
   <UserControl.Resources>
-    <!-- Back's theme: an icon on the rail, with none of the phone Button's minimum size, overhang, accent or tilt. -->
+    <!-- Back's theme: an icon on the rail, with none of the phone Button's minimum size, overhang, accent or tilt.
+         The pointer over it shows PhoneLowBrush behind it, the phone's pointer-over brush for its own chrome
+         (ButtonPointerOverBackgroundThemeBrush's colour); a press dims it. -->
     <ControlTheme x:Key="RailButton" TargetType="Button">
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="Padding" Value="0" />
@@ -30,6 +32,11 @@
                             ContentTemplate="{TemplateBinding ContentTemplate}" />
         </ControlTemplate>
       </Setter>
+      <!-- No focus rectangle: the theme under Wp81 would draw its own, and the phone draws none. -->
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+      <Style Selector="^:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource PhoneLowBrush}" />
+      </Style>
       <Style Selector="^:pressed /template/ ContentPresenter#PART_ContentPresenter">
         <Setter Property="Opacity" Value="0.6" />
       </Style>
