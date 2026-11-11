@@ -105,12 +105,23 @@ public class SampleTests
     }
 
     [AvaloniaFact]
+    public void The_Text_Styles_Are_The_Themes_By_Their_Keys()
+    {
+        var view = new MainView();
+        using var scene = new Scene(view);
+        var blocks = Named<StackPanel>(view, "TextStyles").Children.Cast<TextBlock>().ToList();
+
+        Assert.Equal(16, blocks.Count);
+        Assert.All(blocks, block => Assert.Same(scene.Window.FindResource(block.Name!), block.Theme));
+    }
+
+    [AvaloniaFact]
     public void The_Device_Facts_Are_The_Views_Scaling_Size_And_Safe_Area()
     {
         var view = new MainView();
         using var scene = new Scene(view);
 
-        Assert.Equal("scaling=2.4 view=450x800 raw=1080x1920 safe=0,0,0,0", view.DeviceFacts);
+        Assert.Equal("scaling=2.4 view=450x800 raw=1080x1920 safe=0,0,0,0 page=450x800", view.DeviceFacts);
     }
 
     [AvaloniaFact]
