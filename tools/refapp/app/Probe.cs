@@ -548,17 +548,18 @@ namespace RefApp
         /// <summary>Logs every visual state change of the control's template (without <see cref="Watch"/>'s pointer handlers, whose release count ends a touch probe).</summary>
         private void WatchStates(Control control)
         {
-            var root = VisualTreeHelper.GetChildrenCount(control) > 0 ? VisualTreeHelper.GetChild(control, 0) as FrameworkElement : null;
-            if (root == null)
-            {
-                return;
-            }
-
-            foreach (var group in VisualStateManager.GetVisualStateGroups(root))
+            foreach (var group in StateGroups(control))
             {
                 var g = group;
                 g.CurrentStateChanged += (s, e) => Log("state", Tag(control) + g.Name + " " + (e.OldState != null ? e.OldState.Name : "-") + " > " + (e.NewState != null ? e.NewState.Name : "-"));
             }
+        }
+
+        /// <summary>The visual state groups on the root of the control's template; none before it has one.</summary>
+        private static List<VisualStateGroup> StateGroups(Control control)
+        {
+            var root = VisualTreeHelper.GetChildrenCount(control) > 0 ? VisualTreeHelper.GetChild(control, 0) as FrameworkElement : null;
+            return root != null ? VisualStateManager.GetVisualStateGroups(root).ToList() : new List<VisualStateGroup>();
         }
 
         /// <summary>The control's Name and a space, for log lines on pages with several controls; empty if it has none.</summary>

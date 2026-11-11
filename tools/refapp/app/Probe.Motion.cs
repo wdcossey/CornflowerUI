@@ -220,8 +220,8 @@ namespace RefApp
 
         /// <summary>
         /// B6, for #28. <b>The size threshold:</b> one active ring, square, stepped by 1 view px from 40 to 130 and back,
-        /// then by 0.05 over the pixel either side of where <c>SizeStates</c> changed, then wide-and-short and
-        /// tall-and-narrow either side of it. Each step logs the state, <c>SixthCircle</c>'s visibility and
+        /// then by 0.05 over the pixel below the first size at which <c>SizeStates</c> changed, then wide-and-short and
+        /// tall-and-narrow at that size and a pixel below it. Each step logs the state, <c>SixthCircle</c>'s visibility and
         /// <c>MaxSideLength</c>. <b>The clock:</b> the <c>Active</c> storyboard's own time
         /// (<see cref="Storyboard.GetCurrentTime"/>) logged every frame against the stopwatch, for 10 s from a restart;
         /// then a storyboard of known length, a 4 s opacity animation, three times, logging its own time every frame
@@ -236,8 +236,7 @@ namespace RefApp
 
             Func<Task> sequence = async () =>
             {
-                var root = VisualTreeHelper.GetChildrenCount(ring) > 0 ? VisualTreeHelper.GetChild(ring, 0) as FrameworkElement : null;
-                var groups = root != null ? VisualStateManager.GetVisualStateGroups(root).ToList() : new List<VisualStateGroup>();
+                var groups = StateGroups(ring);
                 var sizes = groups.FirstOrDefault(g => g.Name == "SizeStates");
                 var actives = groups.FirstOrDefault(g => g.Name == "ActiveStates");
                 var sixth = Find(ring, "SixthCircle");
@@ -264,7 +263,8 @@ namespace RefApp
                 for (double s = 40; s <= 130; s += 1)
                 {
                     var state = await at(s, s);
-                    if (last != null && state != last && double.IsNaN(changedAt))
+                    // "-" is no state yet, before the template's first GoToState: not a change of size state.
+                    if (last != null && last != "-" && state != "-" && state != last && double.IsNaN(changedAt))
                     {
                         changedAt = s;
                     }
@@ -338,7 +338,7 @@ namespace RefApp
                 {
                     if (knownOn)
                     {
-                        sample.Type = typeof(DoubleAnimation);
+                        sample.Type = typeof(Storyboard);
                         sample.Add("ms", known.GetCurrentTime().TotalMilliseconds);
                     }
                 });
