@@ -7,30 +7,52 @@
 # Ported from Avonic's tools/real-window/drive.ps1 (wdcossey/Avonic, v2 at edf87b8): the window, the input,
 # the frames and the every-page loop. Avonic's per-control sections come back here as Cornflower's controls do.
 param(
-    # The sample to run. Left out, the script builds the Debug sample first and runs that. Given, it runs the
-    # file as it is: build it first. A Debug build also has the performance line to check.
-    [string]$Exe,
+    # The build to run, as tools/android/run.ps1 takes it. A Debug build also has the performance line to check.
+    [ValidateSet('Debug', 'Release')]
+    [string]$Configuration = 'Debug',
+    # Run the build as it is, without building it first. A stale build runs the old code, and its failures
+    # look like the new code's.
+    [switch]$NoBuild,
     # Where the frames go. By default a new folder for each run, so that an old frame can't pass for a new one.
-    [string]$Out = (Join-Path ([IO.Path]::GetTempPath()) ('cornflower-real-window\' + (Get-Date -Format 'yyyyMMdd-HHmmss'))),
-    # Run the Debug sample as it is, without building it first.
-    [switch]$NoBuild
+    [string]$Out = (Join-Path ([IO.Path]::GetTempPath()) ('cornflower-real-window\' + (Get-Date -Format 'yyyyMMdd-HHmmss')))
 )
 
 $ErrorActionPreference = 'Stop'
-if (-not $Exe) {
-    $project = Join-Path $PSScriptRoot '..\..\samples\Cornflower.Sample.Desktop'
-    $Exe = Join-Path $project 'bin\Debug\net10.0\Cornflower.Sample.Desktop.exe'
-    # A stale build runs the old code and its failures look like the new code's.
-    if (-not $NoBuild) {
-        & dotnet build $project -c Debug --nologo -v quiet
-        if ($LASTEXITCODE -ne 0) { throw "The sample didn't build (dotnet build exited $LASTEXITCODE)." }
+function Step([string]$text) { Write-Host "-- $text" }
+
+$repo = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
+$project = Join-Path $repo 'samples\Cornflower.Sample.Desktop'
+$Exe = Join-Path $project "bin\$Configuration\net10.0\Cornflower.Sample.Desktop.exe"
+$debugBuild = $Configuration -eq 'Debug'
+
+if (-not $NoBuild) {
+    # A sample left open locks its files, and the build would fail with only MSBuild's copy errors to say why.
+    $open = @(Get-Process -Name 'Cornflower.Sample.Desktop' -ErrorAction SilentlyContinue |
+        Where-Object { $_.Path -and ($_.Path -ieq $Exe) })
+    if ($open.Count) {
+        throw "The $Configuration sample is open (process $($open[0].Id)), which locks its files. Close it, or pass -NoBuild."
     }
+    Step "Building the $Configuration desktop sample"
+    # From the repo, so that its global.json picks the SDK. 'Continue', as Windows PowerShell 5.1 turns a line
+    # dotnet writes to a redirected stderr into a stopping error; the exit code is what counts.
+    Push-Location $repo
+    $ErrorActionPreference = 'Continue'
+    try {
+        & dotnet build $project -c $Configuration -nologo -v q
+        $built = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = 'Stop'
+        Pop-Location
+    }
+    if ($built -ne 0) { throw "dotnet build failed ($built)." }
+    if (-not (Test-Path $Exe)) {
+        throw "Built, but there's no sample at $Exe. Has the sample's target framework or output path changed?"
+    }
+} elseif (-not (Test-Path $Exe)) {
+    throw "No sample at $Exe. Build it, or leave out -NoBuild."
 }
-if (-not (Test-Path $Exe)) { throw "No sample at $Exe. Build it first." }
 New-Item -ItemType Directory -Force $Out | Out-Null
 $Out = (Resolve-Path $Out).Path
-$Exe = (Resolve-Path $Exe).Path
-$debugBuild = $Exe -match '\\Debug\\'
 $stdout = Join-Path $Out 'stdout.txt'
 
 Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes, System.Drawing, System.Windows.Forms
