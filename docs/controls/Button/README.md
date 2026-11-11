@@ -1,6 +1,6 @@
 # Button
 
-Status: done · [#27](https://github.com/wdcossey/CornflowerUI/issues/27) · owed: the Android device run (`tools/android/run.ps1`) and the real-window run (`tools/real-window/drive.ps1`), each for the maintainer to approve
+Status: done · [#27](https://github.com/wdcossey/CornflowerUI/issues/27) · device run passed 2026-11-11 (Pixel 8, Release, `run.ps1 -Page button`: cold 643 ms, the page opened in 243 ms, every state drawn) · owed: the real-window run (`tools/real-window/drive.ps1`), for the maintainer to approve
 
 The Windows Phone 8.1 Button: Avalonia's `Button`, themed by `Wp81Theme` with the phone's default style and
 template, in `src/Cornflower.Themes.Wp81/Controls/Button.axaml`. The plan, with every value and its source, is
