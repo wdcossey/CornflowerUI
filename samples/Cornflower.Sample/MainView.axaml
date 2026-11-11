@@ -10,7 +10,7 @@
     styles. No other control is themed yet, so this page uses only panels, borders and text. Pages per
     control come with them.
     The view's padding follows the device's safe area (TopLevel.AutoSafeAreaPadding, on by default).
-    In a Debug build, a line along the bottom says what the page cost to open (docs/performance/README.md).
+    SampleShell times the page and writes its ready line; in a Debug build it also shows what the page cost to open.
   -->
   <UserControl.Styles>
     <Style Selector="TextBlock.section">
@@ -20,10 +20,6 @@
     </Style>
   </UserControl.Styles>
 
-  <DockPanel>
-  <TextBlock x:Name="PerformanceLine" DockPanel.Dock="Bottom" IsVisible="False" Margin="19,6"
-             TextWrapping="Wrap" Foreground="{DynamicResource PhoneMidBrush}"
-             FontSize="{DynamicResource TextStyleSmallFontSize}" />
   <ScrollViewer>
     <StackPanel Margin="19,12,19,24" Spacing="6">
       <TextBlock Text="CORNFLOWER" FontFamily="{DynamicResource PhoneFontFamilySemiBold}"
@@ -78,5 +74,4 @@
                  FontSize="{DynamicResource TextStyleMediumFontSize}" />
     </StackPanel>
   </ScrollViewer>
-  </DockPanel>
 </UserControl>

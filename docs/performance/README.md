@@ -96,30 +96,39 @@ one pays nothing), still no global rule, and the difference within the run-to-ru
 
 ## In a Debug build
 
-The sample shows a line along the bottom of its page, once it has been laid out the first time:
+The sample's shell (`SampleShell`) writes a line for each page it opens, once the page's first frame
+has drawn, so a control's page has no code for it: on standard output after the page's ready line,
+as `CORNFLOWER cost <line>` (logcat's `DOTNET` tag on a phone, where `tools/android/run.ps1` keeps
+it as `cost` in `run.json`), and up the rail beside the page on desktop, so that nothing is drawn
+over the page:
 
 ```
-theme: 475 ms, 91 elements, 1 rules (1), layout 1.5, render 18.9
+theme: 163 ms, 107 elements, 1 rules (1), layout 31.2, render 2.2
 ```
 
-That one is from a headless test, in Debug, on the desktop PC (`PerformanceMonitorTests`): the
-page is the first a fresh app opens, so its time includes the cold start. On the Pixel 8, the same
-page in a Debug build, started cold by `tools/android/run.ps1 -Configuration Debug` on 2026-11-09
-(`am start -W` total 994 ms):
+That one is from a headless test, in Debug, on the desktop PC, on 2026-11-11: the theme page opened
+by the shell, the only test in its run, so its time includes the cold start. On the Pixel 8, the
+same page in a Debug build, started cold by `tools/android/run.ps1 -Configuration Debug` on
+2026-11-09 (`am start -W` total 994 ms), when the page still timed itself, to its first layout, and
+had fewer elements:
 
 ```
 theme: 472 ms, 91 elements, 1 rules (1), layout 186.5, render 23.8
 ```
 
-Layout is about 120 times the desktop's headless figure. That's a Debug build, JIT-compiled on
-first use, so it measures first-run cost more than the theme; a Release reading needs a Release
-build of the line, which the sample doesn't have. It hasn't been read in a real desktop window.
+That's a Debug build, JIT-compiled on first use, so it measures first-run cost more than the
+theme. A Release build has the time to open, the `open=` of each page's ready line, but not the
+rest of the line. Neither has been read on the phone since the shell began timing pages, nor in a
+real desktop window.
 
-That's the time to open the page, from before it's made, the elements in it, the global rules it
-is checked against and their alternatives (in the application's `Styles`, and the page's and each
-logical ancestor's: the one here is the page's own `TextBlock.section`), and Avalonia's own layout
-and render times over that time. Layout always comes before the line is read, even with a frame in
-flight, as layout doesn't wait for a render tick (a test holds it). A Release build doesn't have it. **Nothing is added to the library,**
+That's the time to open the page, the shell's, from navigation, before the page is made, to its
+first drawn frame (the same time as the `open=` of the page's ready line, which a Release build
+also writes: `samples/Cornflower.Sample`), the elements in it, the global rules it is checked
+against and their alternatives (in the application's `Styles`, and the page's and each logical
+ancestor's: the one here is the page's own `TextBlock.section`), and Avalonia's own layout and
+render times over that time. Layout has always run by then. The monitor listens only while a page
+opens in a window, as its listener hears every measurement in the process. A Release build doesn't
+have the line. **Nothing is added to the library,**
 because Avalonia has this built in, behind a switch that's off by default:
 
 - `AppContext.SetSwitch("Avalonia.Diagnostics.Diagnostic.IsEnabled", true)`, before Avalonia
@@ -153,8 +162,8 @@ budget, `Scene`'s themes and the monitor, all caught, and one hung test, timed o
 
 - **Only style checks are budgeted.** A slow control, layout or animation wouldn't show here. The
   sample's line is how to spot those.
-- **`render` can read low,** if a page opens within a frame of the last one, because its own render
-  pass hasn't happened yet.
+- **`render` may read low.** It's what Avalonia's meter recorded by the frame after the page's
+  first; that this always includes the page's own first render pass hasn't been checked.
 - **One reading on a phone, in Debug.** The benchmark runs headless on a desktop; the line has
   been read once on the Pixel 8, in a Debug build (above), which says little about Release.
 - **`ItemsControl`, virtualising and scrolling** haven't been measured. These are all times to
