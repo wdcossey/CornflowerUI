@@ -84,9 +84,9 @@ Microsoft's Windows Phone 8.1 SDK files (default templates, theme resources, API
 files, fonts) are the reference. They are read as a specification and **never enter this
 repository**. They live outside it, in `R:\cornflower-reference\` on the maintainer's machine.
 The files taken from the emulator's image are in `flash-update1\` (8.1 Update 1, `6.3.9651.0`, the image the
-reference profiles run: its DLLs, its registry and its runtime templates as XBF, XAML and JSON); that is
-the reference. `flash-vhd\` is the 8.1 RTM image, not the reference. Update 1's runtime templates and theme
-resources equal the SDK's design files. `tools/guard/hash-reference.js` hashes both images.
+reference profiles run: its DLLs and registry, and its runtime templates as XBF and as XAML and JSON
+decompiled from them); that is the reference. `flash-vhd\` is the 8.1 RTM image, not the reference. Update 1's
+runtime templates and theme resources equal the SDK's design files.
 
 ## Rules
 
@@ -100,8 +100,10 @@ resources equal the SDK's design files. `tools/guard/hash-reference.js` hashes b
    `Color.From*`, `Color.Parse`, `Colors.*` or `Brushes.*`. `Transparent` is allowed.
 6. **No Microsoft fonts, templates or SDK files in the repo.** Every template is written new.
    `MicrosoftFileGuardTests` fails on any file git would commit that is a font not on its
-   allowed list, is named `generic.xaml`, `themeresources.xaml` or `*.winmd`, or has the bytes of a
-   file pulled from the reference VM. The hash list is regenerated with
+   allowed list, is named `generic.xaml`, `themeresources.xaml` or `*.winmd`, or has the content of a
+   Microsoft file in the reference folder: pulled from the VM or an emulator image, or decompiled or
+   converted from one. It matches byte for byte and, for text, with the BOM and line endings as git
+   stores them. The hash list covers everything in the folder but our own output, and is regenerated with
    `node tools/guard/hash-reference.js <reference folder>` whenever more files are pulled.
 7. **Add files, don't register them.** A control's theme file is found by auto-discovery; a PR
    for one control touches no shared file, except to delete its own lines from
