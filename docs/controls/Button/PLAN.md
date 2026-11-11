@@ -132,7 +132,8 @@ None. The theme declares nothing; the tilt is `Tilt`'s, from `Cornflower.Control
 Each has a test in `tests/Cornflower.Tests/Controls/ButtonTests.cs` unless named.
 
 1. **The style's values**, dark and light: the twelve setters and the content alignment, the overhang and the
-   padding on the parts (`button.json`, the keys' values, the dump). `The_Style_Sets_What_The_Phone_Read`.
+   padding on the parts (`button.json`, the keys' values, the dump). `The_Style_Sets_What_The_Phone_Read`,
+   `The_Font_Is_The_Phones_Whatever_It_Sits_In`.
 2. **The bounds**: the Button at 19.1667, 27.5 on the stage, 109.1667 × 57.5; the Border 9.5833 down,
    109.1667 × 38.3333; the content 15 down, 24.1667 tall (the dump). `Its_Bounds_Are_The_Phones`.
 3. **The content is centred** in the padding. `The_Content_Is_Centred_In_The_Padding`.

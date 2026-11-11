@@ -97,6 +97,17 @@ public class ButtonTests
         Assert.Equal(Padding, PresenterOf(button).Margin);
     }
 
+    // FontFamily is the style's, not whatever the Button sits in: the window's family is the same key's here.
+    [AvaloniaFact]
+    public void The_Font_Is_The_Phones_Whatever_It_Sits_In()
+    {
+        var button = new Button { Content = "button" };
+        var parent = new ContentControl { FontFamily = new FontFamily("Courier New"), Content = button };
+        using var scene = new Scene(parent);
+
+        Assert.Equal(scene.Window.FindResource("PhoneFontFamilyNormal"), button.FontFamily);
+    }
+
     // The dump's bounds: the Button, its Border inside the overhang, and the content's top and height.
     [AvaloniaFact]
     public void Its_Bounds_Are_The_Phones()
