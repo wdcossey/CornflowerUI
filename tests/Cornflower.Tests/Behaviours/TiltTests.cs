@@ -927,7 +927,9 @@ public class TiltTests
 
     // The pointer is captured by what was hit. If that leaves the tree mid-press (content swapped),
     // Avalonia 12.1.4 hands the capture to its nearest ancestor still in the tree, inside the
-    // control, so the release still arrives and the tilt returns.
+    // control, so the release still arrives and the tilt returns. That ancestor is the content's
+    // presenter: on Simple's Button it is the template's root, which tilts; on Wp81's it is
+    // PART_ContentPresenter, inside the tilted Grid, not the tilt's target.
     [AvaloniaFact]
     public void When_The_Captured_Element_Goes_Mid_Press_The_Release_Still_Arrives()
     {
@@ -945,9 +947,12 @@ public class TiltTests
         var touch = page.Window.TouchBegin(at);
         clock.At(SettleMs);
         Assert.Same(content, pointer!.Captured);
+        var presenter = content.GetVisualParent();
         button.Content = null;                                      // the captured element goes
         Dispatcher.UIThread.RunJobs();
-        Assert.True(pointer.Captured is Visual captured && button.IsVisualAncestorOf(captured), $"captured by {pointer.Captured}");
+        Assert.Same(presenter, pointer.Captured);
+        Assert.Equal("PART_ContentPresenter", ((Control)presenter!).Name);
+        Assert.True(CfTilt.TargetOf(button).IsVisualAncestorOf(presenter), "the presenter is inside the tilted part");
 
         page.Window.TouchEnd(touch, at);
         clock.At(SettleMs + 1000);
