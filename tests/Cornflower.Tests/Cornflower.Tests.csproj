@@ -26,6 +26,8 @@
     <ProjectReference Include="..\..\samples\Cornflower.Sample\Cornflower.Sample.csproj" />
     <!-- The checklist generator, tested on fixtures in Tools/. -->
     <ProjectReference Include="..\..\tools\winrt-api\winrt-api.csproj" />
+    <!-- The Lucide generator, tested on icons of our own in Tools/. -->
+    <ProjectReference Include="..\..\tools\lucide\lucide.csproj" />
   </ItemGroup>
 
   <!-- The theme has no files to discover yet, so the tests prove the manifest target on fixtures
@@ -45,6 +47,11 @@
   <!-- Every templated Avalonia control without a Wp81 theme, for the holes test. -->
   <ItemGroup>
     <EmbeddedResource Include="Completeness/Holes.txt" LogicalName="Cornflower.Tests.Completeness.Holes.txt" />
+  </ItemGroup>
+
+  <!-- The WinRT Symbol to Lucide table, held to the generated icons by Controls/LucideIconTests. -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\tools\lucide\symbols.tsv" LogicalName="Cornflower.Tests.Tools.symbols.tsv" />
   </ItemGroup>
 
   <ItemGroup>

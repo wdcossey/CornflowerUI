@@ -76,6 +76,52 @@ internal sealed class ApiReader : IDisposable
         return chain;
     }
 
+    /// <summary>
+    /// An enum's members and their values, in the metadata's order, read as the enum's own type
+    /// (a WinRT flags enum is <c>UInt32</c>).
+    /// </summary>
+    public IReadOnlyList<(string Name, decimal Value)> EnumMembers(string fullName)
+    {
+        if (!_types.TryGetValue(fullName, out var handle))
+        {
+            throw new ArgumentException($"{fullName} isn't in the metadata.");
+        }
+
+        var type = _md.GetTypeDefinition(handle);
+        if (type.BaseType.IsNil || NameOf(type.BaseType) != "System.Enum")
+        {
+            throw new ArgumentException($"{fullName} isn't an enum.");
+        }
+
+        var members = new List<(string, decimal)>();
+        foreach (var fieldHandle in type.GetFields())
+        {
+            var field = _md.GetFieldDefinition(fieldHandle);
+            if ((field.Attributes & FieldAttributes.Literal) == 0)
+            {
+                continue; // value__, the enum's storage
+            }
+
+            var constant = _md.GetConstant(field.GetDefaultValue());
+            var blob = _md.GetBlobReader(constant.Value);
+            decimal value = constant.TypeCode switch
+            {
+                ConstantTypeCode.SByte => blob.ReadSByte(),
+                ConstantTypeCode.Byte => blob.ReadByte(),
+                ConstantTypeCode.Int16 => blob.ReadInt16(),
+                ConstantTypeCode.UInt16 => blob.ReadUInt16(),
+                ConstantTypeCode.Int32 => blob.ReadInt32(),
+                ConstantTypeCode.UInt32 => blob.ReadUInt32(),
+                ConstantTypeCode.Int64 => blob.ReadInt64(),
+                ConstantTypeCode.UInt64 => blob.ReadUInt64(),
+                var other => throw new BadImageFormatException($"{fullName}.{_md.GetString(field.Name)} is a {other} constant."),
+            };
+            members.Add((_md.GetString(field.Name), value));
+        }
+
+        return members;
+    }
+
     private ApiType Read(string fullName, TypeDefinition type)
     {
         var provider = new TypeNames(this);
