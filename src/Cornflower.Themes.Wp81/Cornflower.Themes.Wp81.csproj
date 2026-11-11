@@ -26,7 +26,7 @@
     <CornflowerDiscoverXaml>true</CornflowerDiscoverXaml>
   </PropertyGroup>
   <ItemGroup>
-    <CornflowerDiscoveredXaml Include="Tokens/**/*.axaml;Controls/**/*.axaml" />
+    <CornflowerDiscoveredXaml Include="Tokens/**/*.axaml;Glyphs/**/*.axaml;Controls/**/*.axaml" />
   </ItemGroup>
 
   <ItemGroup>
