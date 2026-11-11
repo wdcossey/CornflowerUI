@@ -167,6 +167,12 @@ running: 110 readings and 0 errors per run, about 2 minutes in the app. The fold
 `R:\cornflower-reference\refapp\`, are named in the first table. All values are in view pixels
 unless they say raw.
 
+After review the app settles each tray change by polling instead of a fixed second (every
+change settled in 200 to 300 ms), builds each reading apart so a failing one can't break the
+file, and no longer reads the separate 3-item ComboBox. Run again on device 11
+(`20261111-1839-dev11`) and device 13 (`20261111-1842-dev13`), 107 readings and 0 errors each,
+it read every value below the same.
+
 ### Display
 
 | Device | Profile | Folder | `RawPixelsPerViewPixel` | `RawDpiX` × `RawDpiY` | `LogicalDpi` | `ResolutionScale` | Window, portrait |
@@ -265,8 +271,9 @@ listed as the phone returns it, rounded to 0.01.
 - **`DropDownOffset` is 0 while open**, and closed it is −8.5 less the selected index times the
   step: it lifts the items so the selected one sits in the closed box. The −8.5 is the probe's
   "`TranslateY` eases from −8.5 to 0" in [Flyouts, pickers and the dialog](#flyouts-pickers-and-the-dialog).
-- The values are set as soon as `IsDropDownOpen` is set, before the next frame. The catalogue's
-  closed ComboBox (3 items, 140 tall) reads as the 3-item one opened on its 400-tall stage.
+- The values are set as soon as `IsDropDownOpen` is set, before the next frame. The 3-item
+  values are the catalogue's ComboBox, opened on its 140-tall stage; the first runs also read a
+  separate 3-item box on a 400-tall stage, and it read the same, so the app no longer reads it.
 
 **ProgressBar** (the catalogue's two, 40% and indeterminate, at the page's width less its margins):
 
