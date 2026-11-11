@@ -110,6 +110,14 @@ substituted.
   spaced style (GroupHeader, FlyoutPickerTitle, MessageDialogTitle) is spaced for the `TextBlock`'s size.
 - **No `LineHeight`**: a BaselineToBaseline style whose `LineHeight` is taken away (a local `NaN`) gets no
   `Padding`, so Avalonia's own line, as there is no line height for the phone's line to keep.
+- **Stale until the dispatcher runs**: when a value goes (the style taken away, a value cleared), `PhoneTextLine`
+  takes its own values back in a pass posted to the dispatcher, not at once, as acting inside Avalonia's unsetting
+  can stop it (spike 6). Read in the same job, such as a `Measure` straight after `Theme = null`, they are the old
+  style's. The pass is posted at `Normal`, above every priority layout and render run at, so the next layout sees it
+  done.
+- **A value worked out again passes through the value below**: `PhoneTextLine` takes its old value back before
+  setting the new one, to see whether anything else sets the property, so for a moment the property has the value
+  below it (often 0 or none). A transition on `Padding`, `LineHeight` or `LetterSpacing` starts again from there.
 - **A local `LineHeight` on a MaxHeight style** is taken as it is, where the phone would still keep the font's
   line if it were shorter.
 
