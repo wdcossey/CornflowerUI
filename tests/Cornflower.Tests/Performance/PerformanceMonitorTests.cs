@@ -1,19 +1,18 @@
 using System.Diagnostics.Metrics;
-using System.Globalization;
-using System.Text.RegularExpressions;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
-using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
-using Cornflower.Sample;
 using Cornflower.Sample.Diagnostics;
 using Cornflower.Themes.Wp81;
 
 namespace Cornflower.Tests.Performance;
 
-/// <summary>The line along the bottom of the sample in a Debug build.</summary>
+/// <summary>
+/// The line along the bottom of the sample in a Debug build. The shell's use of it, with its own time, is held in
+/// <c>Sample/PageTimingTests</c>.
+/// </summary>
 public class PerformanceMonitorTests
 {
     [Fact]
@@ -25,41 +24,19 @@ public class PerformanceMonitorTests
     }
 
     [AvaloniaFact]
-    public void It_Reports_A_Page_Once_It_Is_In()
+    public void It_Reads_The_Pages_Elements_And_The_Time_It_Is_Given()
     {
         using var monitor = new PerformanceMonitor();
         var host = new ContentControl();
         using var scene = new Scene(host);
         var page = new StackPanel { Children = { new TextBlock(), new TextBlock() } };
-        string? line = null;
 
         monitor.Begin();
         host.Content = page;
-        monitor.Report("a page", page, text => line = text);
-        Assert.Null(line);
         Dispatcher.UIThread.RunJobs();
+        var line = monitor.Read("a page", page, TimeSpan.FromMilliseconds(123.4));
 
-        Assert.NotNull(line);
-        Assert.StartsWith("a page: ", line, StringComparison.Ordinal);
-        Assert.Contains("3 elements", line, StringComparison.Ordinal);
-    }
-
-    // Styles apply as the page is attached, which is before it can be reported.
-    [AvaloniaFact]
-    public void The_Time_Includes_Making_The_Page()
-    {
-        using var monitor = new PerformanceMonitor();
-        var page = new Panel();
-        using var scene = new Scene(page);
-        string? line = null;
-
-        monitor.Begin();
-        Thread.Sleep(60);
-        monitor.Report("a page", page, text => line = text);
-        Dispatcher.UIThread.RunJobs();
-
-        var opened = int.Parse(Regex.Match(line!, "a page: ([0-9]+) ms").Groups[1].Value, CultureInfo.InvariantCulture);
-        Assert.True(opened >= 50, line);
+        Assert.StartsWith("a page: 123 ms, 3 elements, ", line, StringComparison.Ordinal);
     }
 
     // Against a rename in Avalonia: the line would read zero for ever otherwise.
@@ -84,7 +61,7 @@ public class PerformanceMonitorTests
         Assert.Contains(instrument, published);
     }
 
-    // Not render: its pass can come after the line is read. See the known limits in docs/performance/README.md.
+    // Not render: a headless pass with no tick may not have drawn. See the known limits in docs/performance/README.md.
     [AvaloniaFact]
     public void Layout_Comes_From_Avalonias_Own_Meter()
     {
@@ -97,72 +74,12 @@ public class PerformanceMonitorTests
             page.Children.Add(new TextBlock { Text = "x" });
         }
 
-        string? line = null;
         monitor.Begin();
         host.Content = page;
-        monitor.Report("a page", page, text => line = text);
         Dispatcher.UIThread.RunJobs();
+        var line = monitor.Read("a page", page, TimeSpan.Zero);
 
-        Assert.DoesNotContain("layout 0.0", line!, StringComparison.Ordinal);
-    }
-
-    [AvaloniaFact]
-    public void A_Page_That_Has_Gone_Is_Not_Reported()
-    {
-        using var monitor = new PerformanceMonitor();
-        var host = new ContentControl();
-        using var scene = new Scene(host);
-        var page = new Panel();
-        host.Content = page;
-        string? line = null;
-
-        monitor.Begin();
-        monitor.Report("a page", page, text => line = text);
-        host.Content = null;
-        Dispatcher.UIThread.RunJobs();
-
-        Assert.Null(line);
-    }
-
-    // Through the sample's own page, so that this covers the wiring: a Debug build shows it, and a Release build doesn't.
-    [AvaloniaFact]
-    public void The_Sample_Shows_The_Line_Only_In_A_Debug_Build()
-    {
-        var view = new MainView();
-        using var scene = new Scene(view);
-        Dispatcher.UIThread.RunJobs();
-        var line = view.GetControl<TextBlock>("PerformanceLine");
-
-#if DEBUG
-        Assert.True(line.IsVisible);
-        Assert.StartsWith("theme: ", line.Text, StringComparison.Ordinal);
-#else
-        Assert.False(line.IsVisible);
-#endif
-    }
-
-    // Frame callbacks wait for a render tick while a frame is in flight; layout doesn't, so the line
-    // never leaves it out. If this goes red, Report has to wait for the page's layout itself.
-    [AvaloniaFact]
-    public void The_Line_Is_Read_After_Layout_Even_With_A_Frame_In_Flight()
-    {
-        using var monitor = new PerformanceMonitor();
-        var host = new Border { Background = Brushes.Red };
-        using var scene = new Scene(host);
-        host.Background = Brushes.Blue;
-        Dispatcher.UIThread.RunJobs(); // A frame in flight: committed, not yet composed.
-        var page = new StackPanel { Children = { new TextBlock { Text = "x" } } };
-        bool? laidOut = null;
-        var frameRan = false;
-
-        monitor.Begin();
-        host.Child = page;
-        monitor.Report("a page", page, _ => laidOut = page.IsArrangeValid);
-        scene.Window.RequestAnimationFrame(_ => frameRan = true);
-        Dispatcher.UIThread.RunJobs();
-
-        Assert.False(frameRan); // Still in flight.
-        Assert.True(laidOut);
+        Assert.DoesNotContain("layout 0.0", line, StringComparison.Ordinal);
     }
 
     [AvaloniaFact]
@@ -171,13 +88,12 @@ public class PerformanceMonitorTests
         using var monitor = new PerformanceMonitor();
         var page = new Panel();
         using var scene = new Scene(page);
-        string? line = null;
+        string line;
         AppContext.SetSwitch(PerformanceMonitor.DiagnosticsSwitch, false);
         try
         {
             monitor.Begin();
-            monitor.Report("a page", page, text => line = text);
-            Dispatcher.UIThread.RunJobs();
+            line = monitor.Read("a page", page, TimeSpan.Zero);
         }
         finally
         {
@@ -194,16 +110,15 @@ public class PerformanceMonitorTests
         using var monitor = new PerformanceMonitor();
         var page = new Panel();
         using var scene = new Scene(page);
-        string? line = null;
 
         monitor.Begin();
-        monitor.Report("a page", page, text => line = text);
         monitor.Record(PerformanceMonitor.LayoutMeasure, 10000);
         monitor.Record(PerformanceMonitor.LayoutArrange, 20000);
         monitor.Record(PerformanceMonitor.Render, 50000);
         Dispatcher.UIThread.RunJobs();
+        var line = monitor.Read("a page", page, TimeSpan.Zero);
 
-        Assert.Matches("layout 300[0-9][0-9][.][0-9], render 500[0-9][0-9][.][0-9]$", line!);
+        Assert.Matches("layout 300[0-9][0-9][.][0-9], render 500[0-9][0-9][.][0-9]$", line);
     }
 
     [AvaloniaFact]
@@ -214,13 +129,12 @@ public class PerformanceMonitorTests
         using var scene = new Scene(page);
         monitor.Record(PerformanceMonitor.LayoutMeasure, 90000);
         monitor.Record(PerformanceMonitor.Render, 90000);
-        string? line = null;
 
         monitor.Begin();
-        monitor.Report("a page", page, text => line = text);
         Dispatcher.UIThread.RunJobs();
+        var line = monitor.Read("a page", page, TimeSpan.Zero);
 
-        Assert.DoesNotContain("9000", line!, StringComparison.Ordinal);
+        Assert.DoesNotContain("9000", line, StringComparison.Ordinal);
     }
 
     // The application's, as in the sample; the window's, as in a Scene; and the page's own, as in
@@ -241,18 +155,18 @@ public class PerformanceMonitorTests
         var page = new Panel { Styles = { Rule(x => x.OfType<TextBox>()) }, Children = { below } };
         using var scene = new Scene(page, themes: [new Wp81Theme(), new Styles { Rule(x => Selectors.Or(x.OfType<Image>(), x.OfType<Grid>())) }]);
         Application.Current!.Styles.Add(appRule);
-        string? line = null;
+        string line;
         try
         {
             monitor.Begin();
-            monitor.Report("a page", page, text => line = text);
             Dispatcher.UIThread.RunJobs();
+            line = monitor.Read("a page", page, TimeSpan.Zero);
         }
         finally
         {
             Application.Current.Styles.Remove(appRule);
         }
 
-        Assert.Contains("3 rules (4)", line!, StringComparison.Ordinal);
+        Assert.Contains("3 rules (4)", line, StringComparison.Ordinal);
     }
 }

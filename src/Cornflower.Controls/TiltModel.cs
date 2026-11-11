@@ -78,6 +78,14 @@ internal static class TiltModel
     /// <summary>Below this change in a frame, in degrees and view pixels, a press has settled.</summary>
     public const double Settled = 1e-4;
 
+    /// <summary>
+    /// The most frames a press steps for at one point of the finger. Every press the readings
+    /// cover settles in four or five. An element tens of thousands of pixels across, pressed far
+    /// from the eye, can swing between tilts for ever; after this many, it takes the rule for the
+    /// point as it is, untilted (a step from rest), and stops.
+    /// </summary>
+    public const int MaxSteps = 30;
+
     /// <summary>The rule itself, for a press at fractions <paramref name="dx"/>, <paramref name="dy"/> from the centre.</summary>
     public static TiltState ForOffset(double dx, double dy)
     {
@@ -94,9 +102,21 @@ internal static class TiltModel
     /// tilted by <paramref name="current"/> shows it. All points are in the element's own untilted
     /// space; <paramref name="eye"/> is the point under the eye.
     /// </summary>
-    public static TiltState Step(TiltState current, Size size, Point press, Point eye)
+    public static TiltState Step(TiltState current, Size size, Point press, Point eye) =>
+        Step(current, size, press, eye, Matrix.Identity);
+
+    /// <summary>
+    /// <see cref="Step(TiltState, Size, Point, Point)"/> for an element with a transform of its own,
+    /// <paramref name="inner"/>, on its space and drawn before the tilt, as the phone draws a
+    /// <c>RenderTransform</c> before a <c>PlaneProjection</c>: the point under the tilt is taken back
+    /// through it too, to the point of the element. One that can't be undone is left out.
+    /// </summary>
+    public static TiltState Step(TiltState current, Size size, Point press, Point eye, Matrix inner)
     {
         var local = Unproject(current, size, press, eye);
+        if (!inner.IsIdentity && inner.TryInvert(out var back) && back.Transform(local) is var undone &&
+            double.IsFinite(undone.X) && double.IsFinite(undone.Y))
+            local = undone;
         return ForOffset(local.X / size.Width - 0.5, local.Y / size.Height - 0.5);
     }
 
@@ -142,6 +162,12 @@ internal static class TiltModel
     /// The point of the element under <paramref name="press"/>, as the tilted element is drawn: where
     /// the line from the eye through the press meets the tilted plane, in the element's own space.
     /// </summary>
+    /// <remarks>
+    /// For an element thousands of pixels across, pressed far enough from the eye, the line meets
+    /// the plane's extension behind the eye or not at all: no point of the element is drawn there.
+    /// Then the press is taken as it is, untilted, so a step stays finite and settles; without that,
+    /// the steps swing between corners every frame and never settle.
+    /// </remarks>
     public static Point Unproject(TiltState tilt, Size size, Point press, Point eye)
     {
         var r = Rotation(tilt);
@@ -149,15 +175,18 @@ internal static class TiltModel
 
         // The plane's normal, R (0, 0, 1), and a point on it, its centre (cx, cy, z).
         double nx = r.M02, ny = r.M12, nz = r.M22;
-        // The line from the eye (eye, d) through the press (press, 0).
+        // The line from the eye (eye, d) through the press (press, 0): t = 0 at the eye, 1 at the screen.
         double lx = press.X - eye.X, ly = press.Y - eye.Y, lz = -d;
         var t = ((cx - eye.X) * nx + (cy - eye.Y) * ny + (tilt.OffsetZ - d) * nz) / (lx * nx + ly * ny + lz * nz);
+        if (!(t > 0) || !double.IsFinite(t))
+            return press;                                           // parallel, or met behind the eye
         double hx = eye.X + t * lx - cx, hy = eye.Y + t * ly - cy, hz = d + t * lz - tilt.OffsetZ;
 
         // Back into the plane's own axes: Rᵀ.
-        return new Point(
+        var local = new Point(
             cx + r.M00 * hx + r.M10 * hy + r.M20 * hz,
             cy + r.M01 * hx + r.M11 * hy + r.M21 * hz);
+        return double.IsFinite(local.X) && double.IsFinite(local.Y) ? local : press;
     }
 
     /// <summary>

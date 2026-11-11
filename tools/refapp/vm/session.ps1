@@ -13,7 +13,8 @@ param(
     [switch]$Grab,
     [switch]$Probe,
     [ValidateSet('post', 'real')][string]$TouchMode = 'real',
-    [switch]$Record
+    [switch]$Record,
+    [switch]$Native
 )
 
 $ErrorActionPreference = 'Continue'
@@ -171,9 +172,26 @@ while ((Get-Date) -lt $deadline) {
 
     $pngs = ([regex]::Matches($listing, '\.png')).Count
     if ($pngs -ne $lastPngs) { $lastPngs = $pngs; $lastChange = Get-Date }
-    elseif (-not $Probe -and ((Get-Date) - $lastChange).TotalMinutes -ge 3) { $stalled = $true; break }
-    elseif ($Probe -and ((Get-Date) - $started).TotalMinutes -ge 8) { $stalled = $true; break }
-    Status ('running: {0} PNGs so far after {1:N0} s' -f $pngs, ((Get-Date) - $started).TotalSeconds)
+    elseif (-not ($Probe -or $Native) -and ((Get-Date) - $lastChange).TotalMinutes -ge 3) { $stalled = $true; break }
+    elseif (($Probe -or $Native) -and ((Get-Date) - $started).TotalMinutes -ge 8) { $stalled = $true; break }
+    $elapsed = ((Get-Date) - $started).TotalSeconds
+    if ($Native) {
+        # A native run makes no PNGs; its progress.txt names the step it is on. Pulling the folder takes a few seconds,
+        # and the folder holds only progress.txt until the end.
+        $peek = Join-Path $Root 'peek'
+        Remove-Item $peek -Recurse -Force -ErrorAction SilentlyContinue
+        New-Item -ItemType Directory -Force $peek | Out-Null
+        & $ise ts "deviceindex:$Device" $ProductId $peek 2>&1 | Out-Null
+        $step = Get-Content (Join-Path $peek 'IsolatedStore\progress.txt') -ErrorAction SilentlyContinue
+        Status ('running: {0} after {1:N0} s' -f $(if ($step) { $step } else { 'starting' }), $elapsed)
+    }
+    elseif ($Probe) {
+        # A probe writes nothing until its touches have settled; its log comes back with done.txt.
+        Status ('running: touches played, waiting for the probe to settle, {0:N0} s' -f $elapsed)
+    }
+    else {
+        Status ('running: {0} PNGs so far after {1:N0} s' -f $pngs, $elapsed)
+    }
 }
 
 if ($grabber) {
@@ -188,7 +206,7 @@ Pull
 
 # A run that stalls or runs out of time still leaves what it wrote, including progress.txt, the last item started.
 if (-not $done) {
-    $why = if ($stalled -and $Probe) { 'the probe wrote no done.txt in 8 minutes' } elseif ($stalled) { "no new PNG for 3 minutes at $lastPngs" } else { "no done.txt after $TimeoutMinutes minutes" }
+    $why = if ($stalled -and ($Probe -or $Native)) { 'the app wrote no done.txt in 8 minutes' } elseif ($stalled) { "no new PNG for 3 minutes at $lastPngs" } else { "no done.txt after $TimeoutMinutes minutes" }
     $last = Get-Content (Join-Path $out 'IsolatedStore\progress.txt') -ErrorAction SilentlyContinue
     Status "failed: $why; last started: $last; partial results pulled"
     exit 1

@@ -195,7 +195,9 @@ Tier 1.
       `samples/Cornflower.Sample.Desktop`, the `[SamplePage]` catalogue, and
       [`tools/real-window/drive.ps1`](../tools/real-window), from Avonic. Moved up so the extension
       pack has a window to be seen in ([ADR 0004](decisions/0004-larger-screens-as-an-extension-pack.md)).
-      The phone still opens `MainView` alone.
+      The phone opened `MainView` alone until 2026-11-11, when it got the catalogue too, and
+      `run.ps1 -Page` to open a page of it (`Q-phone-catalogue`); the shell times every page since
+      (`D-page-timing`).
 - [x] The Android sample and a first device run on the Pixel 8
       ([#10](https://github.com/wdcossey/CornflowerUI/issues/10)), with
       [`tools/android/run.ps1`](../tools/android/README.md) (2026-11-09). Start times are in its
