@@ -122,7 +122,7 @@ rest of the line. Neither has been read on the phone since the shell began timin
 real desktop window.
 
 That's the time to open the page, the shell's, from navigation, before the page is made, to its
-first drawn frame (the same time as the `open=` of the page's ready line, which a Release build
+first drawn frame, read once the next frame's layout is done (the same time as the `open=` of the page's ready line, which a Release build
 also writes: `samples/Cornflower.Sample`), the elements in it, the global rules it is checked
 against and their alternatives (in the application's `Styles`, and the page's and each logical
 ancestor's: the one here is the page's own `TextBlock.section`), and Avalonia's own layout and
