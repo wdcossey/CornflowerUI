@@ -43,15 +43,19 @@ start, naming the titles it has, and the script stops with the app's crash repor
    CORNFLOWER ready open=<ms>ms scaling=<s> view=<w>x<h> raw=<w>x<h> safe=<l>,<t>,<r>,<b> page=<w>x<h> title=<title>
    ```
 
-   `open` is the shell's time from navigation, before the page is made, to that frame; on a cold
-   start it includes making the app's view. `view` is the window's size in view pixels and `raw` in
-   raw pixels, `safe` the safe area, `page` the page's own size, and the title is last, as it can
-   have spaces. On a phone, Avalonia gives the safe area to the shell, the view's content, as its
-   padding, so `page` is the view less the safe area: on the Pixel 8, 840 tall (914.29 − 50.29 − 24).
-   Before the shell, the page was the view's content and padded itself, so it read 915. The shell
-   lays the page out before it reads its size, so a safe area or view that changed after the
-   page's first frame is in it (the first run after the shell read `page=412x720`). The script checks that the title is the page `-Page` asked for, in any case. A
-   Debug build also writes `CORNFLOWER cost <line>` after it, what the page cost to open
+   `open` is the shell's time from navigation, before the page is made, to the frame after the
+   page's first, once that frame's layout is done; on a cold start it includes making the app's
+   view. `view` is the window's size in view pixels and `raw` in raw pixels, `safe` the safe area,
+   `page` the page's own size, laid out in the same frame as `open`, and the title is last, as it
+   can have spaces. On a phone, Avalonia gives the safe area to the shell, the view's content, as
+   its padding, so `page` is the view less the safe area, each side rounded to the raw pixel grid:
+   on the Pixel 8, about 840 tall (914.29 less 50.29 and 24), to be confirmed by a device run.
+   Before the shell, the page was the view's content and padded itself, so it read 915. The first
+   run after the shell read `page=412x720`: the line was read before the layout of a safe area or
+   view that had changed since the page's first frame.
+
+   The script checks that the title is the page `-Page` asked for, in any case. A Debug build also
+   writes `CORNFLOWER cost <line>` after the ready line, what the page cost to open
    ([`docs/performance`](../../docs/performance/README.md#in-a-debug-build)).
 6. Saves the screen with `screencap` on the phone and pulls it, so the PNG's bytes aren't
    re-encoded by PowerShell 5.1.

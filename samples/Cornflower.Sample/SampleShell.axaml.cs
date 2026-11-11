@@ -6,6 +6,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Reactive;
+using Avalonia.Threading;
 using Cornflower.Sample.Diagnostics;
 
 namespace Cornflower.Sample;
@@ -160,27 +161,49 @@ public partial class SampleShell : UserControl
         top.RequestAnimationFrame(_ => top.RequestAnimationFrame(_ => Drawn(opening, top)));
     }
 
+    /// <summary>
+    /// The page's first frame has drawn. An animation-frame callback runs at the start of a render pass, before that
+    /// pass's layout, so a view or safe area that changed since (as a phone's does while it starts) would be in the
+    /// facts but not yet in the page's size. So the line waits for this pass to finish: a job just below the render
+    /// pass's priority runs once its layout and frame are done. A change that comes before the job is laid out before
+    /// it too, as Avalonia queues the layout it needs as a render pass, at the higher priority
+    /// (<c>MediaContext.BeginInvokeOnRender</c>, 12.1.4).
+    /// </summary>
     private void Drawn(Opening opening, TopLevel top)
     {
-        // Frame requests can't be cancelled: a page left, or a shell that has left its window since, says nothing.
-        if (!ReferenceEquals(opening, _opening) || !ReferenceEquals(top, _top))
+        if (IsCurrent(opening, top))
+            Dispatcher.UIThread.Post(() => Settled(opening, top), DispatcherPriority.Loaded);
+    }
+
+    /// <summary>The pass after the page's first frame is done: the page's time and size are of the same frame.</summary>
+    private void Settled(Opening opening, TopLevel top)
+    {
+        if (!IsCurrent(opening, top))
             return;
 
         _opening = null;
-        var elapsed = Stopwatch.GetElapsedTime(opening.Started);
-        // A frame callback runs before its pass's layout, so a view or safe area that changed since the page's first
-        // frame (as a phone's does while it starts) is already in the facts but not yet in the page's size. Lay the page
-        // out now, as this pass was about to, so that page= agrees with view= and safe=.
-        opening.Page.UpdateLayout();
-        Report(ReadyLine(elapsed, DeviceFacts.Of(top, opening.Page), opening.Title));
+        try
+        {
+            var elapsed = Stopwatch.GetElapsedTime(opening.Started);
+            Report(ReadyLine(elapsed, DeviceFacts.Of(top, opening.Page), opening.Title));
 #if DEBUG
-        var cost = opening.Read(elapsed);
-        Report($"{CostMarker} {cost}");
-        PerformanceLine.Text = cost;
-        PerformanceLine.IsVisible = true;
+            var cost = opening.Read(elapsed);
+            Report($"{CostMarker} {cost}");
+            PerformanceLine.Text = cost;
+            PerformanceLine.IsVisible = true;
 #endif
-        opening.Dispose();
+        }
+        finally
+        {
+            opening.Dispose();
+        }
     }
+
+    /// <summary>
+    /// Whether <paramref name="opening"/> is still the page being opened, in <paramref name="top"/>: frame requests and
+    /// posted jobs can't be cancelled, and a page left, or a shell that has left its window since, says nothing.
+    /// </summary>
+    private bool IsCurrent(Opening opening, TopLevel top) => ReferenceEquals(opening, _opening) && ReferenceEquals(top, _top);
 
     private void HidePerformance()
     {
