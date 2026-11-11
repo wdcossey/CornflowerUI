@@ -34,8 +34,10 @@ PHONE_ACCENTS = [
 # reads the same colour in both themes (refapp run 20261108-1443-dev11, index.json). ADR 0002.
 ACCENT_KEY = 'SystemColorControlAccentColor'
 DEFAULT_ACCENT_INDEX = 5
-DEFAULT_ACCENT = next(n for i, n, _ in PHONE_ACCENTS if i == DEFAULT_ACCENT_INDEX)
-ACCENT = next(c for i, _, c in PHONE_ACCENTS if i == DEFAULT_ACCENT_INDEX)
+_default = [(n, c) for i, n, c in PHONE_ACCENTS if i == DEFAULT_ACCENT_INDEX]
+if len(_default) != 1:
+    raise ValueError(f'DEFAULT_ACCENT_INDEX {DEFAULT_ACCENT_INDEX} is not one row of PHONE_ACCENTS')
+DEFAULT_ACCENT, ACCENT = _default[0]
 
 # Where the SDK's design files differ from the phone: name, the 8.1 SDK file's value, the 8.0 SDK file's
 # (compared in PR #45). gen.py stops on any other difference, or if one of these comes to agree.

@@ -123,6 +123,40 @@ def theme_dict(name, d, srcname):
 HEAD = '''<ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">'''
 
+# ---------- the accents: read and checked before any file is written
+# The named accents are the phone's palette (resources.PHONE_ACCENTS), by name; the SDK's files are checked
+# against it, and every difference must be a known one (SDK_ACCENT_DIFFERS). sys.exit, not assert: python -O
+# would drop an assert.
+if sorted(i for i, _, _ in PHONE_ACCENTS) != list(range(20)) or len({n for _, n, _ in PHONE_ACCENTS}) != 20:
+    sys.exit('PHONE_ACCENTS must have the registry indices 0-19 once each, under 20 distinct names')
+ACCENTS = {n: (i, norm_color(c)) for i, n, c in sorted(PHONE_ACCENTS, key=lambda a: a[1])}
+for n in SDK_ACCENT_DIFFERS:
+    if n not in ACCENTS:
+        sys.exit(f'SDK_ACCENT_DIFFERS names {n!r}, which is not one of the phone\'s accents')
+SDK_ACCENTS = {}
+for f in sorted(os.listdir(args.accents)):
+    if f.endswith('.xaml'):
+        with open(os.path.join(args.accents, f), encoding='utf-8-sig') as fh:
+            m = re.search(r'<Color x:Key="PhoneAccentColor">([^<]+)</Color>', fh.read())
+        if not m:
+            sys.exit(f'{os.path.join(args.accents, f)} has no PhoneAccentColor')
+        SDK_ACCENTS[f[:-5]] = norm_color(m.group(1).strip())
+if sorted(SDK_ACCENTS) != sorted(ACCENTS):
+    sys.exit(f'the accent files in {args.accents} ({len(SDK_ACCENTS)}) are not the phone\'s 20 names')
+for n, (_, c) in ACCENTS.items():
+    if n in SDK_ACCENT_DIFFERS:
+        if norm_color(SDK_ACCENT_DIFFERS[n][0]) != SDK_ACCENTS[n]:
+            sys.exit(f'{n}: the SDK file has {SDK_ACCENTS[n]}, not the {SDK_ACCENT_DIFFERS[n][0]} SDK_ACCENT_DIFFERS records')
+        if SDK_ACCENTS[n] == c:
+            sys.exit(f'{n}: the phone and the SDK file now agree ({c}); drop it from SDK_ACCENT_DIFFERS')
+    elif SDK_ACCENTS[n] != c:
+        sys.exit(f'{n}: the SDK file has {SDK_ACCENTS[n]}, the phone {c}; a new difference: look, then list it in SDK_ACCENT_DIFFERS')
+if SDK_ACCENT_DIFFERS:
+    DIFFER_TEXT = 'agree but for ' + '; '.join(
+        f'{n}, where the phone has {ACCENTS[n][1]} and the SDK file {norm_color(v81)}' for n, (v81, _) in SDK_ACCENT_DIFFERS.items())
+else:
+    DIFFER_TEXT = 'agree'
+
 # ---------- Colors.axaml
 dl, nc, nb, no = theme_dict('Dark', dark, 'Default')
 ll, _, _, _ = theme_dict('Light', light, 'Light')
@@ -158,24 +192,6 @@ L.append('</ResourceDictionary>')
 open(TOK + 'Colors.axaml', 'w', encoding='utf-8', newline='\n').write('\n'.join(L) + '\n')
 
 # ---------- Accent.axaml
-SDK_ACCENTS = {}
-for f in sorted(os.listdir(args.accents)):
-    if f.endswith('.xaml'):
-        with open(os.path.join(args.accents, f), encoding='utf-8-sig') as fh:
-            m = re.search(r'<Color x:Key="PhoneAccentColor">([^<]+)</Color>', fh.read())
-        SDK_ACCENTS[f[:-5]] = norm_color(m.group(1).strip())
-# The named accents are the phone's palette (resources.PHONE_ACCENTS), by name; the SDK's files are checked
-# against it, and every difference must be a known one (SDK_ACCENT_DIFFERS). Not asserts: python -O keeps them.
-ACCENTS = {n: (i, norm_color(c)) for i, n, c in sorted(PHONE_ACCENTS, key=lambda a: a[1])}
-if len(ACCENTS) != 20 or sorted(SDK_ACCENTS) != sorted(ACCENTS):
-    sys.exit(f'the accent files in {args.accents} ({len(SDK_ACCENTS)}) are not the phone\'s 20 names')
-for n, (_, c) in ACCENTS.items():
-    if n in SDK_ACCENT_DIFFERS:
-        if norm_color(SDK_ACCENT_DIFFERS[n][0]) != SDK_ACCENTS[n]:
-            sys.exit(f'{n}: the SDK file has {SDK_ACCENTS[n]}, not the {SDK_ACCENT_DIFFERS[n][0]} SDK_ACCENT_DIFFERS records')
-    elif SDK_ACCENTS[n] != c:
-        sys.exit(f'{n}: the SDK file has {SDK_ACCENTS[n]}, the phone {c}; a new difference: look, then list it in SDK_ACCENT_DIFFERS')
-DIFFER_TEXT = '; '.join(f'{n}, where the phone has {ACCENTS[n][1]} and the SDK file {norm_color(v81)}' for n, (v81, _) in SDK_ACCENT_DIFFERS.items())
 A = [HEAD, f'''  <!--
     The accent.
 
@@ -191,7 +207,7 @@ A = [HEAD, f'''  <!--
     The 20 named accents are the phone's accent palette: the same registry key's Themes\\{{0,1}}\\Accents\\0-19,
     the same in both themes, named by UIXMobileRes.dll.mui strings 10017-10026 and 10050-10059. The Windows
     Phone 8.1 SDK's design files (Microsoft SDKs\\Windows Phone\\v8.1\\Design\\AccentColors\\<Name>.xaml, each one
-    PhoneAccentColor) agree but for {DIFFER_TEXT}.
+    PhoneAccentColor) {DIFFER_TEXT}.
     WinRT has no keys for them, so these keys are Cornflower's: CornflowerAccent<Name>Color.
   -->''',
      f'  <Color x:Key="{ACCENT_KEY}">{ACCENT}</Color> <!-- {ACCENT_KEY}; the registry, DefaultAccent {DEFAULT_ACCENT_INDEX} ({DEFAULT_ACCENT}); run: index.json, PhoneAccentBrush in dark and light -->', '',

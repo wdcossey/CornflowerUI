@@ -246,8 +246,9 @@ What exists ([#19](https://github.com/wdcossey/CornflowerUI/issues/19)):
 - The accent is the WinRT key `SystemColorControlAccentColor`, in `Tokens/Accent.axaml`,
   defaulting to `#FF3E65FF`, the phone's default accent, Cobalt: `DefaultAccent` 5 in the 8.1 Update 1
   image's registry, named by `UIXMobileRes.dll.mui` string 10022. The emulator's default
-  `PhoneAccentBrush` reads the same (2026-11-08, in both themes, on three profiles). Every accent brush takes it through a `DynamicResource`, so an app
-  that defines the key in `Application.Resources` moves them all while it runs.
+  `PhoneAccentBrush` reads the same (2026-11-08, in both themes, on three profiles). Every accent
+  brush takes it through a `DynamicResource`, so an app that defines the key in
+  `Application.Resources` moves them all while it runs.
 - The 20 named accents are resources an app can pick from, keyed `CornflowerAccent<Name>Color`
   (WinRT has no keys for them). Their values are the phone's registry palette (`Control Panel\Theme`,
   `Accents\0` to `19`), which equals the 8.1 SDK design files' but for Cobalt: the phone's is `#FF3E65FF`,
