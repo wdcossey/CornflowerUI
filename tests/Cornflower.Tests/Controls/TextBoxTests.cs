@@ -507,6 +507,78 @@ public class TextBoxTests
             Assert.Equal(Hex(White), PixelHex(frame, x, row));
     }
 
+    // A touch drag across long text pans it, as the phone's ContentElement pans (its scroll modes Auto): the theme's
+    // ScrollViewer keeps the gesture recogniser Avalonia's ScrollViewer themes have.
+    [AvaloniaFact]
+    public void A_Touch_Drag_Pans_Long_Text()
+    {
+        var box = Specimen(text: string.Concat(Enumerable.Repeat("MMMMMMMMMM ", 10)));
+        using var stage = new Stage(box: box);
+        var start = stage.At(350, BorderTop + 15);
+
+        var touch = stage.Window.TouchBegin(start);
+        for (var step = 1; step <= 10; step++)
+        {
+            stage.Window.TouchMove(touch, start + new Point(-25 * step, 0));
+            Dispatcher.UIThread.RunJobs();
+        }
+        stage.Window.TouchEnd(touch, start + new Point(-250, 0));
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.True(ScrollViewerOf(box).Offset.X > 100, $"the text panned {ScrollViewerOf(box).Offset.X}");
+    }
+
+    // What the box passes its ScrollViewer and its presenter, as Simple's template does: Avalonia's own properties, an
+    // app's values reach the parts.
+    [AvaloniaFact]
+    public void The_Boxs_Values_Reach_Its_Parts()
+    {
+        var caret = new SolidColorBrush(Colors.Red);
+        var selected = new SolidColorBrush(Colors.Green);
+        var box = Specimen(text: "Agjy 0123");
+        ScrollViewer.SetIsScrollChainingEnabled(box, false);
+        ScrollViewer.SetBringIntoViewOnFocusChange(box, false);
+        ScrollViewer.SetAllowAutoHide(box, false);
+        ScrollViewer.SetIsDeferredScrollingEnabled(box, true);
+        ScrollViewer.SetHorizontalScrollBarVisibility(box, ScrollBarVisibility.Disabled);
+        ScrollViewer.SetVerticalScrollBarVisibility(box, ScrollBarVisibility.Visible);
+        box.CaretBrush = caret;
+        box.CaretBlinkInterval = TimeSpan.FromSeconds(2);
+        box.SelectionForegroundBrush = selected;
+        box.LetterSpacing = 3;
+        box.PasswordChar = '*';
+        box.RevealPassword = true;
+        box.TextAlignment = TextAlignment.Right;
+        using var stage = new Stage(box: box);
+        box.CaretIndex = 4;
+        box.SelectionStart = 1;
+        box.SelectionEnd = 3;
+        Dispatcher.UIThread.RunJobs();
+
+        var viewer = ScrollViewerOf(box);
+        Assert.False(viewer.IsScrollChainingEnabled);
+        Assert.False(viewer.BringIntoViewOnFocusChange);
+        Assert.False(viewer.AllowAutoHide);
+        Assert.True(viewer.IsDeferredScrollingEnabled);
+        Assert.Equal(ScrollBarVisibility.Disabled, viewer.HorizontalScrollBarVisibility);
+        Assert.Equal(ScrollBarVisibility.Visible, viewer.VerticalScrollBarVisibility);
+
+        var text = TextOf(box);
+        Assert.Same(caret, text.CaretBrush);
+        Assert.Equal(TimeSpan.FromSeconds(2), text.CaretBlinkInterval);
+        Assert.Same(selected, text.SelectionForegroundBrush);
+        Assert.Equal(3, text.LetterSpacing);
+        Assert.Equal('*', text.PasswordChar);
+        Assert.True(text.RevealPassword);
+        Assert.Equal(TextAlignment.Right, text.TextAlignment);
+        Assert.Equal(1, text.SelectionStart);
+        Assert.Equal(3, text.SelectionEnd);
+        Assert.Equal(box.CaretIndex, text.CaretIndex);
+        box.CaretIndex = 6;
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(6, text.CaretIndex);
+    }
+
     // The phone's TextBox has no PointerOver state: the pointer over it changes no pixel.
     [AvaloniaFact]
     public void The_Pointer_Over_It_Changes_Nothing()
