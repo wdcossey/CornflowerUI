@@ -1,0 +1,48 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sample="using:Cornflower.Sample"
+             x:Class="Cornflower.Sample.Pages.CheckBoxPage"
+             Background="{DynamicResource ApplicationPageBackgroundThemeBrush}"
+             Foreground="{DynamicResource PhoneForegroundBrush}"
+             FontFamily="{DynamicResource PhoneFontFamilyNormal}"
+             FontSize="{DynamicResource TextStyleLargeFontSize}">
+  <!--
+    The 8.1 CheckBox, as an 8.1 page writes one: no style, no size. Tap one to check it; press and hold to see the
+    accent and the tilt. The three-state one goes checked, indeterminate, unchecked; indeterminate looks unchecked,
+    as on the phone. The light section is the same in the light theme. The section headings are the type ramp's.
+  -->
+  <ScrollViewer>
+    <StackPanel Margin="19,12,19,24">
+      <sample:SamplePageHeader x:Name="Header" />
+
+      <TextBlock Text="default" Theme="{DynamicResource GroupHeaderTextBlockStyle}" />
+      <CheckBox x:Name="Default" Content="check box" IsCheckedChanged="OnChanged" />
+      <TextBlock x:Name="State" Theme="{DynamicResource ControlContextualInfoTextBlockStyle}" />
+      <CheckBox x:Name="Checked" Content="checked" IsChecked="True" />
+      <CheckBox x:Name="ThreeState" Content="three-state" IsThreeState="True" IsChecked="{x:Null}" />
+
+      <TextBlock Text="disabled" Theme="{DynamicResource GroupHeaderTextBlockStyle}" Margin="0,12,0,0" />
+      <CheckBox x:Name="Disabled" Content="unchecked" IsEnabled="False" />
+      <CheckBox x:Name="DisabledChecked" Content="checked" IsChecked="True" IsEnabled="False" />
+
+      <TextBlock Text="longer content" Theme="{DynamicResource GroupHeaderTextBlockStyle}" Margin="0,12,0,0" />
+      <CheckBox x:Name="Longer" Content="a check box with longer content that wraps onto a second line">
+        <CheckBox.ContentTemplate>
+          <DataTemplate>
+            <TextBlock Text="{Binding}" TextWrapping="Wrap" Theme="{DynamicResource BodyTextBlockStyle}" />
+          </DataTemplate>
+        </CheckBox.ContentTemplate>
+      </CheckBox>
+
+      <ThemeVariantScope RequestedThemeVariant="Light" Margin="-19,12,-19,0">
+        <Border Background="{DynamicResource ApplicationPageBackgroundThemeBrush}" Padding="19,6,19,12">
+          <StackPanel>
+            <TextBlock Text="light" Theme="{DynamicResource GroupHeaderTextBlockStyle}" />
+            <CheckBox x:Name="Light" Content="check box" IsChecked="True" />
+            <CheckBox x:Name="LightDisabled" Content="check box" IsChecked="True" IsEnabled="False" />
+          </StackPanel>
+        </Border>
+      </ThemeVariantScope>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>
