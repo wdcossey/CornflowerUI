@@ -190,8 +190,9 @@ Each has a test in `tests/Cornflower.Tests/Controls/CheckBoxTests.cs` unless nam
 16. **No global rule**: `StyleBudgetTests`, unchanged.
 17. **The sample's page**: in the catalogue, every CheckBox on it the theme's, its header from its title, its state
     shown (`Sample/CheckBoxPageTests.cs`).
-18. **A CheckBox in a hole's template keeps the theme under Wp81**: `ManagedFileChooser`'s takes Simple's CheckBox
-    theme, not the phone's size, and no tilt; in an app's own template it is the phone's
+18. **A CheckBox in a hole's template keeps the theme under Wp81**: every hole shown with Simple then Wp81 has as many
+    plain CheckBoxes as with Simple alone, each in Simple's CheckBox theme (today only `ManagedFileChooser`'s), not
+    the phone's size and no tilt; in an app's own template, or an app's theme for a hole, it is the phone's
     (`CheckBoxHolePartsTests.cs`).
 
 ## Decided on the user's behalf
