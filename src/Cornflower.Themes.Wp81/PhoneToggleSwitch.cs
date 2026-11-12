@@ -4,6 +4,8 @@ using Avalonia.Automation.Peers;
 using Avalonia.Automation.Provider;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Data;
+using Avalonia.Animation;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.VisualTree;
@@ -118,6 +120,8 @@ internal static class PhoneToggleSwitch
             _thumb?.RemoveHandler(InputElement.PointerCaptureLostEvent, OnCaptureLost);
             if (_press is not null)
                 PutBack();
+            if (_knob is not null)
+                _knob.PropertyChanged -= OnKnobChanged;
 
             _root = root;
             _thumb = find("SwitchThumb");
@@ -134,6 +138,7 @@ internal static class PhoneToggleSwitch
             _root.AddHandler(InputElement.PointerMovedEvent, OnMoved);
             _root.AddHandler(InputElement.PointerReleasedEvent, OnReleased);
             _thumb.AddHandler(InputElement.PointerCaptureLostEvent, OnCaptureLost);
+            _knob.PropertyChanged += OnKnobChanged;
         }
 
         /// <summary>The knob's travel: <c>PART_SwitchKnob</c>'s width, the phone's <c>KnobOnToOffOffset</c>.</summary>
@@ -162,8 +167,8 @@ internal static class PhoneToggleSwitch
             _press = new Press(e.Pointer, top, e.GetPosition(toggle), e.GetPosition(top), CornflowerClock.Now, on,
                 double.IsNaN(left) ? RestOf(on) : left);
             // The press holds the pointer on the thumb, as Avalonia captures a press's source, so its moves and release
-            // come here wherever the finger goes.
-            _knob!.Transitions = null;
+            // come here wherever the finger goes. The knob is the finger's from its first move: a still press leaves a
+            // slide running.
         }
 
         private void OnMoved(object? sender, PointerEventArgs e)
@@ -194,8 +199,13 @@ internal static class PhoneToggleSwitch
                 // The phone puts the knob back at once (Dragging to Off or On), then slides it from there as it toggles.
                 Canvas.SetLeft(_knob!, RestOf(toggle.IsChecked == true));
                 _knob!.Transitions = toggle.KnobTransitions;
-                if (toggle.IsEffectivelyEnabled)
-                    (ControlAutomationPeer.CreatePeerForElement(toggle).GetProvider<IToggleProvider>())?.Toggle();
+                if (!toggle.IsEffectivelyEnabled)
+                    return;
+                // Avalonia's click, through the switch's toggle pattern; a subclass whose peer has none toggles plainly.
+                if (ControlAutomationPeer.CreatePeerForElement(toggle).GetProvider<IToggleProvider>() is { } pattern)
+                    pattern.Toggle();
+                else
+                    toggle.SetCurrentValue(ToggleButton.IsCheckedProperty, toggle.IsChecked != true);
                 return;
             }
 
@@ -222,7 +232,31 @@ internal static class PhoneToggleSwitch
                 return;
 
             press.Moved = moved;
-            Canvas.SetLeft(_knob!, Math.Clamp(press.StartLeft + moved, 0, Travel));
+            press.Shown = Math.Clamp(press.StartLeft + moved, 0, Travel);
+            if (!press.Following)
+            {
+                press.Following = true;
+                _knob!.Transitions = null;
+            }
+
+            Canvas.SetLeft(_knob!, press.Shown);
+        }
+
+        /// <summary>
+        /// Keeps the knob under the finger while it follows: Avalonia's own ToggleSwitch puts it at its rest when the
+        /// switch's bounds change and gives it back its transitions when it loads or they change, guarded by a drag flag of
+        /// its own, which this press doesn't set.
+        /// </summary>
+        private void OnKnobChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+        {
+            if (_press is not { Following: true } press)
+                return;
+
+            if (e.Property == Canvas.LeftProperty && e.Priority == BindingPriority.LocalValue &&
+                _knob!.GetBaseValue(Canvas.LeftProperty).GetValueOrDefault(double.NaN) is var left && left != press.Shown)
+                Canvas.SetLeft(_knob, press.Shown);
+            else if (e.Property == Animatable.TransitionsProperty && _knob!.Transitions is not null)
+                _knob.Transitions = null;
         }
 
         private void OnCaptureLost(object? sender, PointerCaptureLostEventArgs e)
@@ -262,6 +296,12 @@ internal static class PhoneToggleSwitch
         public double StartLeft { get; } = startLeft;
 
         public double Moved { get; set; }
+
+        /// <summary>Whether the knob follows the finger: from the first move across.</summary>
+        public bool Following { get; set; }
+
+        /// <summary>Where the finger has put the knob, kept between its rests.</summary>
+        public double Shown { get; set; }
 
         public double Farthest { get; set; }
 

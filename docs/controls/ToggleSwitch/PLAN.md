@@ -208,10 +208,13 @@ Each has a test in `tests/Cornflower.Tests/Controls/ToggleSwitchTests.cs` that f
     The knob rests where `IsChecked` is at the release, which code may change during a press,
     `A_Change_From_Code_During_A_Press_Is_Where_The_Knob_Rests`; disabled during a press, nothing toggles,
     `Disabled_During_A_Press_Nothing_Toggles`.
-21. **A drag on the switch never scrolls its page**: `ManipulationMode` None. `A_Drag_On_The_Switch_Never_Scrolls_Its_Page`.
-22. **No pointer-over, pressed or focus look**: the template. `Pointer_Over_And_Press_Change_No_Pixel`,
+21. **The knob stays the finger's**: `Avalonias_Own_Handlers_Leave_A_Followed_Knob_Alone`; a still press mid-slide
+    leaves the slide, `A_Still_Press_Mid_Slide_Leaves_The_Slide`; a subclass whose automation peer has no toggle
+    pattern is still toggled, `A_Tap_Toggles_A_Switch_Without_A_Toggle_Pattern`.
+22. **A drag on the switch never scrolls its page**: `ManipulationMode` None. `A_Drag_On_The_Switch_Never_Scrolls_Its_Page`.
+23. **No pointer-over, pressed or focus look**: the template. `Pointer_Over_And_Press_Change_No_Pixel`,
     `Keyboard_Focus_Changes_No_Pixel` (without the cleared `FocusAdorner`, Simple's dotted one shows).
-23. **The colours follow the variant**. `The_Colours_Follow_A_Change_Of_Variant`.
+24. **The colours follow the variant**. `The_Colours_Follow_A_Change_Of_Variant`.
 
 ## Decided on the user's behalf
 
@@ -240,8 +243,12 @@ Each has a test in `tests/Cornflower.Tests/Controls/ToggleSwitchTests.cs` that f
   the thumb through to the Button (`PhoneToggleSwitch.OnPressed`).
 - **From on, the drag's line is half the travel back**, 28.33 from the right. WinRT's code measures from the template's
   56.5, so its line from on is 0.17 nearer. No probe dragged from on. To reverse: start an on drag at 56.5.
-- **A press mid-slide takes the knob from where it is going**, as on the phone, whose slide runs in the compositor and
-  leaves the knob's translation at its end.
+- **A press mid-slide takes the knob from where it is going** (its base `Canvas.Left`), as on the phone, whose slide
+  runs in the compositor and leaves the knob's translation at its end; **the slide runs on until the first move**, so a
+  still tap mid-slide doesn't jump (the second review's finding). Unmeasured on the phone.
+- **The knob stays the finger's while it follows**: Avalonia's own ToggleSwitch, whose drag flag the press doesn't set,
+  puts the knob at its rest when the switch's bounds change and gives it back its transitions when they change;
+  `PhoneToggleSwitch` puts both back (the reviews' finding).
 - **Avalonia's `Content` is shown in the header's place, in the header's style, when `ControlHeader.Header` isn't
   set.** WinRT's ToggleSwitch has no content; Avalonia's themes show it above the switch, so an Avalonia app's
   `<ToggleSwitch Content="wi-fi" />` keeps its label rather than losing it. With a `Header`, `Content` isn't shown.

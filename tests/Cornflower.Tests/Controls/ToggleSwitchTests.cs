@@ -43,6 +43,7 @@ public class ToggleSwitchTests
         public Stage(ThemeVariant? variant = null, ToggleSwitch? toggle = null, double? height = null)
         {
             Toggle = toggle ?? Specimen();
+            Sliding.Add(Toggle);
             var slot = new Grid { Margin = Slot, Children = { Toggle } };
             var stage = new Grid { Children = { slot } };
             stage.Bind(Panel.BackgroundProperty, stage.GetResourceObservable("ApplicationPageBackgroundThemeBrush"));
@@ -62,7 +63,11 @@ public class ToggleSwitchTests
 
         public WriteableBitmap Capture() => _scene.Capture();
 
-        public void Dispose() => _scene.Dispose();
+        public void Dispose()
+        {
+            _scene.Dispose();
+            Sliding.Remove(Toggle);
+        }
     }
 
     /// <summary>The reference app's specimens: <c>new ToggleSwitch { Header = "toggle switch", IsOn = on }</c>, or with no header.</summary>
@@ -136,22 +141,26 @@ public class ToggleSwitchTests
     }
 
     /// <summary>
-    /// Runs Avalonia's frames until the knob's slide is over: its transitions move on the render ticks, by real time, so
-    /// this ticks for half a second, past the 370 ms.
+    /// Runs Avalonia's frames until every knob on the window has come to rest: its transitions move on the render ticks,
+    /// by real time, so this ticks until each knob is where its slide runs to, or two seconds pass.
     /// </summary>
     private static void Settle()
     {
         var watch = System.Diagnostics.Stopwatch.StartNew();
-        while (watch.ElapsedMilliseconds < 500)
+        do
         {
             AvaloniaHeadlessPlatform.ForceRenderTimerTick();
             Dispatcher.UIThread.RunJobs();
             Thread.Sleep(5);
         }
+        while (watch.ElapsedMilliseconds < 2000 && Sliding.Any(t => t.IsAttachedToVisualTree() && Math.Abs(KnobAt(t) - RestAt(t)) > 1e-9));
 
         AvaloniaHeadlessPlatform.ForceRenderTimerTick();
         Dispatcher.UIThread.RunJobs();
     }
+
+    /// <summary>The switches <see cref="Settle"/> waits on: every one a <see cref="Stage"/> or <see cref="Watch"/> has seen.</summary>
+    private static readonly List<ToggleSwitch> Sliding = [];
 
     // A press on the knob, moved across by each of dx, and released at the last, by the mouse; on the clock if given.
     private static void Drag(Stage stage, params double[] dx)
@@ -474,17 +483,22 @@ public class ToggleSwitchTests
         using var stage = new Stage();
         var t = stage.Toggle;
 
-        t.IsChecked = true;
-        Dispatcher.UIThread.RunJobs();
-        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
-        Dispatcher.UIThread.RunJobs();
-        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
-        Dispatcher.UIThread.RunJobs();
-        Assert.InRange(KnobAt(t), 1, KnobOnToOffOffset - 1);
-        Dispatcher.UIThread.RunJobs();
-        Assert.Equal(KnobAt(t), CurtainOf(t).Width, 0.0001);
+        var widths = new List<double>();
+        CurtainOf(t).PropertyChanged += (_, e) =>
+        {
+            if (e.Property == Layoutable.WidthProperty)
+                widths.Add((double)e.NewValue!);
+        };
+        var seen = Watch(t, () =>
+        {
+            t.IsChecked = true;
+            Dispatcher.UIThread.RunJobs();
+        });
 
-        Settle();
+        // Slid: values on the way, at animation priority, each the curtain's width too.
+        var slide = seen.Where(v => v.Priority == BindingPriority.Animation).Select(v => v.Value).ToList();
+        Assert.Contains(slide, v => v > 0 && v < KnobOnToOffOffset);
+        Assert.All(slide.Where(v => v > 0), v => Assert.Contains(v, widths));
         Assert.Equal(KnobOnToOffOffset, KnobAt(t), 0.0001);
         Assert.Equal(KnobOnToOffOffset, CurtainOf(t).Bounds.Width, 0.0001);
     }
@@ -909,6 +923,73 @@ public class ToggleSwitchTests
         Assert.Same(t.KnobTransitions, KnobsOf(t).Transitions);
         stage.Window.MouseUp(start + new Point(40, 0), MouseButton.Left);
         Dispatcher.UIThread.RunJobs();
+    }
+
+    // While the knob follows the finger, Avalonia's own ToggleSwitch, which doesn't know of the press, can't take it back:
+    // a change of the switch's size would put it at its rest, and a change of its transitions would make it lag.
+    [AvaloniaFact]
+    public void Avalonias_Own_Handlers_Leave_A_Followed_Knob_Alone()
+    {
+        using var stage = new Stage();
+        var t = stage.Toggle;
+        var start = stage.Knob();
+
+        stage.Window.MouseDown(start, MouseButton.Left);
+        stage.Window.MouseMove(start + new Point(40, 0));
+        t.Margin = new Thickness(0, 0, 20, 0);
+        t.KnobTransitions = [new DoubleTransition { Property = Canvas.LeftProperty, Duration = TimeSpan.FromSeconds(1) }];
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(40, KnobAt(t), 0.0001);
+        Assert.Null(KnobsOf(t).Transitions);
+        stage.Window.MouseMove(start + new Point(45, 0));
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(45, KnobAt(t), 0.0001);
+        stage.Window.MouseUp(start + new Point(45, 0), MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(t.IsChecked);
+        Assert.Same(t.KnobTransitions, KnobsOf(t).Transitions);
+    }
+
+    // A still press mid-slide leaves the slide running: the knob is the finger's from its first move.
+    [AvaloniaFact]
+    public void A_Still_Press_Mid_Slide_Leaves_The_Slide()
+    {
+        using var stage = new Stage();
+        var t = stage.Toggle;
+        var knob = stage.Knob();
+
+        Drag(stage);
+        Assert.True(t.IsChecked);
+        stage.Window.MouseDown(knob, MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Same(t.KnobTransitions, KnobsOf(t).Transitions);
+        stage.Window.MouseMove(knob + new Point(-3, 0));
+        Dispatcher.UIThread.RunJobs();
+        Assert.Null(KnobsOf(t).Transitions);
+        Assert.Equal(KnobOnToOffOffset - 3, KnobAt(t), 0.0001);
+        stage.Window.MouseUp(knob + new Point(-3, 0), MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+        Assert.False(t.IsChecked);
+    }
+
+    // A subclass whose automation peer has no toggle pattern is still toggled by a tap.
+    [AvaloniaFact]
+    public void A_Tap_Toggles_A_Switch_Without_A_Toggle_Pattern()
+    {
+        var toggle = new PlainPeerSwitch();
+        ControlHeader.SetHeader(toggle, Header);
+        using var stage = new Stage(toggle: toggle);
+
+        Drag(stage);
+        Assert.True(stage.Toggle.IsChecked);
+    }
+
+    private sealed class PlainPeerSwitch : ToggleSwitch
+    {
+        protected override Type StyleKeyOverride => typeof(ToggleSwitch);
+
+        protected override Avalonia.Automation.Peers.AutomationPeer OnCreateAutomationPeer() =>
+            new Avalonia.Automation.Peers.ControlAutomationPeer(this);
     }
 
     // A lost capture is no release: the knob goes back, and nothing toggles.
