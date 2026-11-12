@@ -80,7 +80,7 @@ the frames.
 | 11, 12 | The tilt on `Grid`; a tap on the overhang and the text toggles | **Match** for the shape | Above; the tilt's values under a finger aren't measured on a CheckBox |
 | 13 | Keyboard focus draws nothing | **Match** | No adorner |
 | 14 | Follows the variant | **Match** | The border and tick pixels after a change from dark to light |
-| 18 | A hole's CheckBox keeps the theme under Wp81 | not applicable on the phone | `ManagedFileChooser`'s: Simple's CheckBox theme and width, no tilt |
+| 18 | A hole's CheckBox keeps the theme under Wp81 | not applicable on the phone | `ManagedFileChooser`'s: Simple's CheckBox theme, not the phone's size, no tilt |
 
 ## Gaps and deliberate differences
 

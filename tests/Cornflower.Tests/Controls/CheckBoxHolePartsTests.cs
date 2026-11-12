@@ -26,16 +26,11 @@ public class CheckBoxHolePartsTests
         theme.TryGetResource(type, ThemeVariant.Dark, out var found) ? (ControlTheme)found! : throw new InvalidOperationException($"No {type.Name} theme.");
 
     // ManagedFileChooser shown with Simple then Wp81: its CheckBox takes Simple's CheckBox theme, not Simple's Button
-    // theme and not Wp81's: as wide as with Simple alone, and far from the phone's 168 × 57.5. (Its height is its text's
-    // line, which the text under Wp81 changes, as HoleTogglePartsTests says of the holes' rows.)
+    // theme and not Wp81's, so it is far from the phone's 168 × 57.5 and doesn't tilt. (Its size is its text's, which
+    // the text under Wp81 and each platform's fallback font change, so it isn't compared with Simple alone's.)
     [AvaloniaFact]
     public void The_File_Dialogs_CheckBox_Keeps_Simples_CheckBox_Theme()
     {
-        var alone = new ManagedFileChooser();
-        Avalonia.Size expected;
-        using (new Scene(alone, themes: [new SimpleTheme()]))
-            expected = Plain(alone).Single().Bounds.Size;
-
         var simple = new SimpleTheme();
         var chooser = new ManagedFileChooser();
         using var scene = new Scene(chooser, themes: [simple, new Wp81Theme()]);
@@ -43,7 +38,6 @@ public class CheckBoxHolePartsTests
 
         Assert.Same(ThemeOf(simple, typeof(CheckBox)), checkBox.Theme);
         Assert.NotSame(ThemeOf(simple, typeof(Button)), checkBox.Theme);
-        Assert.Equal(expected.Width, checkBox.Bounds.Width, 0.001);
         Assert.True(checkBox.Bounds.Height < 40, $"the CheckBox is {checkBox.Bounds.Height} tall: the phone's 57.5");
         Assert.NotEqual(168, checkBox.MinWidth);
         Assert.False(Cornflower.Controls.Tilt.GetIsEnabled(checkBox));
