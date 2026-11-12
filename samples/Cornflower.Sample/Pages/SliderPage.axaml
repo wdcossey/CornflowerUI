@@ -1,0 +1,49 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:cf="using:Cornflower.Controls"
+             xmlns:sample="using:Cornflower.Sample"
+             x:Class="Cornflower.Sample.Pages.SliderPage"
+             Background="{DynamicResource ApplicationPageBackgroundThemeBrush}"
+             Foreground="{DynamicResource PhoneForegroundBrush}"
+             FontFamily="{DynamicResource PhoneFontFamilyNormal}"
+             FontSize="{DynamicResource TextStyleLargeFontSize}">
+  <!--
+    The 8.1 Slider, as an 8.1 page writes one: no style, no size, the header by cf:ControlHeader.Header (WinRT's
+    Header). Tap anywhere below a header to move the thumb there, and drag to follow the finger. The section headings
+    are the type ramp's.
+  -->
+  <ScrollViewer>
+    <StackPanel Margin="19,12,19,24">
+      <sample:SamplePageHeader x:Name="Header" />
+
+      <TextBlock Text="default" Theme="{DynamicResource GroupHeaderTextBlockStyle}" />
+      <Slider x:Name="Volume" cf:ControlHeader.Header="volume" Value="30" ValueChanged="OnValueChanged" />
+      <TextBlock x:Name="State" Theme="{DynamicResource ControlContextualInfoTextBlockStyle}" />
+
+      <TextBlock Text="no header, ticks outside" Theme="{DynamicResource GroupHeaderTextBlockStyle}" Margin="0,12,0,0" />
+      <Slider x:Name="Ticks" Value="50" TickFrequency="10" TickPlacement="Outside" />
+
+      <TextBlock Text="reversed" Theme="{DynamicResource GroupHeaderTextBlockStyle}" Margin="0,12,0,0" />
+      <Slider x:Name="Reversed" Value="30" IsDirectionReversed="True" />
+
+      <TextBlock Text="disabled" Theme="{DynamicResource GroupHeaderTextBlockStyle}" Margin="0,12,0,0" />
+      <Slider x:Name="Disabled" cf:ControlHeader.Header="brightness" Value="70" IsEnabled="False" />
+
+      <TextBlock Text="vertical" Theme="{DynamicResource GroupHeaderTextBlockStyle}" Margin="0,12,0,0" />
+      <StackPanel Orientation="Horizontal" Height="200">
+        <Slider x:Name="Vertical" Orientation="Vertical" Value="40" />
+        <Slider x:Name="VerticalTicks" Orientation="Vertical" Value="60" TickFrequency="20" TickPlacement="Outside" Margin="24,0,0,0" />
+      </StackPanel>
+
+      <ThemeVariantScope RequestedThemeVariant="Light" Margin="-19,12,-19,0">
+        <Border Background="{DynamicResource ApplicationPageBackgroundThemeBrush}" Padding="19,6,19,12">
+          <StackPanel>
+            <TextBlock Text="light" Theme="{DynamicResource GroupHeaderTextBlockStyle}" />
+            <Slider x:Name="Light" cf:ControlHeader.Header="slider" Value="30" />
+            <Slider x:Name="LightDisabled" cf:ControlHeader.Header="disabled" Value="30" IsEnabled="False" />
+          </StackPanel>
+        </Border>
+      </ThemeVariantScope>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>
