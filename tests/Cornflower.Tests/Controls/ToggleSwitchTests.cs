@@ -383,20 +383,26 @@ public class ToggleSwitchTests
     public void The_Content_Is_The_Switchs_In_The_Phones_Line()
     {
         var toggle = Specimen();
-        toggle.OffContent = "no";
+        toggle.OffContent = 7;
+        toggle.OffContentTemplate = new FuncDataTemplate<int>((value, _) => new TextBlock { Text = $"#{value}" });
         toggle.OnContent = 42;
         toggle.OnContentTemplate = new FuncDataTemplate<int>((value, _) => new TextBlock { Text = $"#{value}" });
         toggle.HorizontalContentAlignment = HorizontalAlignment.Right;
         using var stage = new Stage(toggle: toggle);
         var t = stage.Toggle;
 
-        var off = OffOf(t).GetVisualDescendants().OfType<TextBlock>().Single();
-        Assert.Equal("no", off.Text);
-        Assert.Equal(33.915, off.LineHeight, 0.01);
+        Assert.Equal("#7", OffOf(t).GetVisualDescendants().OfType<TextBlock>().Single().Text);
+        Assert.Equal("#42", OnOf(t).GetVisualDescendants().OfType<TextBlock>().Single().Text);
         Assert.Equal(HorizontalAlignment.Right, OffOf(t).HorizontalAlignment);
         Assert.Equal(VerticalAlignment.Center, OffOf(t).VerticalAlignment);
-        Assert.Equal("#42", OnOf(t).GetVisualDescendants().OfType<TextBlock>().Single().Text);
         Assert.Equal(HorizontalAlignment.Right, OnOf(t).HorizontalAlignment);
+        // Right-aligned, the words end where the header does: the Padding's 25.5 short of the 13.5 column.
+        Assert.Equal(HeaderOf(t).Bounds.Width, In(OffOf(t), t).X + OffOf(t).Bounds.Width, 0.001);
+
+        t.OnContentTemplate = null;
+        t.OnContent = "yes";
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(33.915, OnOf(t).GetVisualDescendants().OfType<TextBlock>().Single().LineHeight, 0.01);
     }
 
     // WinRT's Header: the attached ControlHeader.Header, in the phone's line, with its template; no access keys.
@@ -436,6 +442,10 @@ public class ToggleSwitchTests
         Assert.Equal(HeaderFontSize, ContentOf(t).FontSize);
         Assert.Equal(21.28, text.LineHeight, 0.01);
         Assert.Equal(Height, t.Bounds.Height, 0.001);
+
+        t.IsEnabled = false;
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(DisabledInk(dark: true), ColourOf(ContentOf(t).Foreground));
 
         ControlHeader.SetHeader(t, Header);
         Dispatcher.UIThread.RunJobs();
@@ -718,6 +728,17 @@ public class ToggleSwitchTests
 
         // Past the control's right edge the phone's Thumb reaches 13.5 further, but Avalonia hit-tests nothing outside
         // the control's bounds: a deliberate difference (COMPARISON.md).
+        // The template's grid is transparent, as the phone's: an empty part of the switch is still the switch's.
+        using (stage.Capture())
+            Assert.Contains(t, stage.Window.GetVisualsAt(stage.At(200, 40)).SelectMany(v => v.GetSelfAndVisualAncestors()));
+
+        // The right button: no tap.
+        var knob = stage.Knob();
+        stage.Window.MouseDown(knob, MouseButton.Right);
+        stage.Window.MouseUp(knob, MouseButton.Right);
+        Dispatcher.UIThread.RunJobs();
+        Assert.False(t.IsChecked, "a right click toggled");
+
         foreach (var (x, y) in new[] { (10.0, 10.0), (10.0, 40.0), (100.0, 40.0), (left - ThumbOverhang.Left - 0.5, 40.0), (left + 10, top - ThumbOverhang.Top - 0.5), (right + 0.5, 40.0) })
         {
             Tap(x, y);
@@ -750,6 +771,56 @@ public class ToggleSwitchTests
         Dispatcher.UIThread.RunJobs();
         Assert.Equal(1, clicks);
         Assert.False(stage.Toggle.IsChecked);
+    }
+
+    // A second finger takes nothing over: the first press's pointer moves the knob, and its release decides.
+    [AvaloniaFact]
+    public void A_Second_Finger_Changes_Nothing()
+    {
+        using var stage = new Stage();
+        var t = stage.Toggle;
+        var start = stage.Knob();
+
+        var first = stage.Window.TouchBegin(start);
+        stage.Window.TouchMove(first, start + new Point(10, 0));
+        var second = stage.Window.TouchBegin(start + new Point(-5, 0));
+        stage.Window.TouchMove(second, start + new Point(40, 0));
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(10, KnobAt(t), 0.0001);
+        stage.Window.TouchEnd(second, start + new Point(40, 0));
+        Dispatcher.UIThread.RunJobs();
+        Assert.False(t.IsChecked);
+        Assert.Equal(10, KnobAt(t), 0.0001);
+        stage.Window.TouchEnd(first, start + new Point(10, 0));
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(t.IsChecked);                 // the first finger's tap
+    }
+
+    // Turned off, the switch is Avalonia's again: a click on the words toggles it. Turned back on, with the template
+    // already applied, it is the phone's.
+    [AvaloniaFact]
+    public void Turned_Off_It_Lets_Go_And_Turned_On_It_Takes_Hold()
+    {
+        using var stage = new Stage();
+        var t = stage.Toggle;
+        var words = stage.At(10, 40);
+
+        void Click(Point at)
+        {
+            stage.Window.MouseDown(at, MouseButton.Left);
+            stage.Window.MouseUp(at, MouseButton.Left);
+            Dispatcher.UIThread.RunJobs();
+        }
+
+        PhoneToggleSwitch.SetIsEnabled(t, false);
+        Click(words);
+        Assert.True(t.IsChecked);
+
+        PhoneToggleSwitch.SetIsEnabled(t, true);
+        Click(words);
+        Assert.True(t.IsChecked);
+        Click(stage.Knob());
+        Assert.False(t.IsChecked);
     }
 
     // A lost capture is no release: the knob goes back, and nothing toggles.

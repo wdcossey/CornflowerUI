@@ -160,8 +160,9 @@ internal static class PhoneToggleSwitch
             var left = _knob!.GetBaseValue(Canvas.LeftProperty).GetValueOrDefault(double.NaN);
             _press = new Press(e.Pointer, e.GetPosition(toggle), e.GetPosition(top), CornflowerClock.Now, on,
                 double.IsNaN(left) ? RestOf(on) : left);
+            // The press holds the pointer on the thumb, as Avalonia captures a press's source, so its moves and release
+            // come here wherever the finger goes.
             _knob!.Transitions = null;
-            e.Pointer.Capture(_thumb);
         }
 
         private void OnMoved(object? sender, PointerEventArgs e)
@@ -196,7 +197,7 @@ internal static class PhoneToggleSwitch
             _knob!.Transitions = toggle.KnobTransitions;
             var half = Travel / 2;
             var at = press.StartLeft + press.Moved;           // where the finger has the knob, past the ends too
-            var toggled = press.HasMoved && (press.WasOn ? at <= half : at >= half);
+            var toggled = press.WasOn ? at <= half : at >= half;
             if (toggled)
                 toggle.SetCurrentValue(ToggleButton.IsCheckedProperty, !press.WasOn);
             else
@@ -220,7 +221,6 @@ internal static class PhoneToggleSwitch
                 return;
 
             press.Moved = moved;
-            press.HasMoved = true;
             Canvas.SetLeft(_knob!, Math.Clamp(press.StartLeft + moved, 0, Travel));
         }
 
@@ -255,8 +255,6 @@ internal static class PhoneToggleSwitch
         public double StartLeft { get; } = startLeft;
 
         public double Moved { get; set; }
-
-        public bool HasMoved { get; set; }
 
         public double Farthest { get; set; }
 

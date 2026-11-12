@@ -195,9 +195,13 @@ Each has a test in `tests/Cornflower.Tests/Controls/ToggleSwitchTests.cs` that f
     the same distance back; no `Click`. `A_Drag_Goes_Over_Past_Half_Way`.
 18. **A press held 1,000 ms isn't a tap**: an event at 984 ms tapped, one at 1,000 didn't; the release counts (decided
     below). `A_Press_Held_A_Second_Is_Not_A_Tap`; a held drag still goes by the knob: `A_Held_Drag_Still_Goes_By_The_Knob`.
-19. **Only the switch takes the finger**: the template's `SwitchThumb`; WinUI's source has `Tapped` and the drag on
-    it. `Only_The_Switch_Takes_The_Finger`; a control in the content keeps its press:
-    `A_Control_In_The_Content_Takes_Its_Own_Press`.
+19. **Only the switch takes the finger**, and only a left press (a touch, a pen, the mouse's left button), as the
+    phone's `Tapped` and Avalonia's click: the template's `SwitchThumb`; WinUI's source has `Tapped` and the drag on
+    it. The rest of the template is transparent, as the phone's grid, so it is still the switch's.
+    `Only_The_Switch_Takes_The_Finger`; a control in the content keeps its press:
+    `A_Control_In_The_Content_Takes_Its_Own_Press`; a second finger changes nothing (chosen: WinRT's `Thumb` follows
+    one pointer): `A_Second_Finger_Changes_Nothing`; turned off and on again, as a theme swap does, it lets go and
+    takes hold: `Turned_Off_It_Lets_Go_And_Turned_On_It_Takes_Hold`.
 20. **A lost capture puts the knob back** (chosen: WinRT's `DragCompleted` with `Canceled`).
     `A_Lost_Capture_Puts_The_Knob_Back`.
 21. **A drag on the switch never scrolls its page**: `ManipulationMode` None. `A_Drag_On_The_Switch_Never_Scrolls_Its_Page`.
