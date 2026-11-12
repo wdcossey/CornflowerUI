@@ -93,9 +93,7 @@ namespace RefApp
         /// </summary>
         private async Task ToggleSwitchDrag(Grid host)
         {
-            var toggle = new ToggleSwitch { Header = "probe", IsOn = false, Margin = new Thickness(19, 120, 19, 0), VerticalAlignment = VerticalAlignment.Top };
-            await Page(host, toggle);
-            var press = await WatchToggle(toggle);
+            var press = await PlaceToggle(host, 1);
             if (press == null)
             {
                 return;
@@ -114,7 +112,7 @@ namespace RefApp
             // About halfway: half the knob's offset, and a view pixel and a half either side. A touch moves in whole
             // screen pixels (0.83 view px at the zoom that fits the VM's screen), so these land on that grid; the log
             // has where each was released. ToggleSwitchHalf reads the line finer.
-            var half = toggle.TemplateSettings.KnobOnToOffOffset / 2;
+            var half = press.Toggle.TemplateSettings.KnobOnToOffOffset / 2;
             foreach (var d in new[] { -1.5, -1.0, -0.5, 0, 0.5, 1.0, 1.5 })
             {
                 Timed(press.Target, press.X, press.Y, half + d, 500);
@@ -145,18 +143,13 @@ namespace RefApp
         /// </summary>
         private async Task ToggleSwitchHalf(Grid host)
         {
-            const double scale = 3;
-            const double width = 140;
-            var toggle = new ToggleSwitch { Header = "probe", IsOn = false, Width = width };
-            var box = new Viewbox { Width = width * scale, Stretch = Stretch.Uniform, Child = toggle, Margin = new Thickness(19, 120, 0, 0), HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top };
-            await Page(host, box);
-            var press = await WatchToggle(toggle);
+            var press = await PlaceToggle(host, 3);
             if (press == null)
             {
                 return;
             }
 
-            var half = toggle.TemplateSettings.KnobOnToOffOffset / 2;
+            var half = press.Toggle.TemplateSettings.KnobOnToOffOffset / 2;
             var drags = new List<double>();
             for (var k = -6; k <= 9; k++)
             {
@@ -186,9 +179,7 @@ namespace RefApp
         /// </summary>
         private async Task ToggleSwitchTap(Grid host)
         {
-            var toggle = new ToggleSwitch { Header = "probe", IsOn = false, Margin = new Thickness(19, 120, 19, 0), VerticalAlignment = VerticalAlignment.Top };
-            await Page(host, toggle);
-            var press = await WatchToggle(toggle);
+            var press = await PlaceToggle(host, 1);
             if (press == null)
             {
                 return;
@@ -197,7 +188,7 @@ namespace RefApp
             var times = new[] { 905, 915, 925, 935, 945, 955, 965, 975 };
             foreach (var t in times.Concat(times.Reverse()))
             {
-                Nudged(press.Target, press.X, press.Y, t, Math.Min(t + 20, 995));
+                Nudged(press.Target, press.X, press.Y, t, t + 20);
             }
 
             foreach (var ms in new[] { 1050, 1150, 1050, 1150 })
@@ -213,9 +204,36 @@ namespace RefApp
             await Ready();
         }
 
-        /// <summary>Where the toggle probes press: the knob's centre in the window, the element the press is for, and the switch's scale on screen.</summary>
+        /// <summary>
+        /// The toggle probes' ToggleSwitch, Off, with the header "probe", alone on its page 19 from the left and 120 down,
+        /// watched as <see cref="WatchToggle"/> says. At scale 1 it is the page's width less the margins; at another
+        /// scale it is 140 wide, drawn that many times its size in a Viewbox. Null, with the run finished, when its
+        /// template has no SwitchKnob.
+        /// </summary>
+        private async Task<KnobPress> PlaceToggle(Grid host, double scale)
+        {
+            const double width = 140;
+            var toggle = new ToggleSwitch { Header = "probe", IsOn = false };
+            FrameworkElement placed = toggle;
+            if (scale == 1)
+            {
+                toggle.Margin = new Thickness(19, 120, 19, 0);
+                toggle.VerticalAlignment = VerticalAlignment.Top;
+            }
+            else
+            {
+                toggle.Width = width;
+                placed = new Viewbox { Width = width * scale, Stretch = Stretch.Uniform, Child = toggle, Margin = new Thickness(19, 120, 0, 0), HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top };
+            }
+
+            await Page(host, placed);
+            return await WatchToggle(toggle);
+        }
+
+        /// <summary>Where the toggle probes press: the knob's centre in the window, the element the press is for, the switch, and its scale on screen.</summary>
         private sealed class KnobPress
         {
+            public ToggleSwitch Toggle;
             public UIElement Target;
             public double X;
             public double Y;
@@ -271,7 +289,7 @@ namespace RefApp
             _afterRelease = () => toggle.IsOn = false;
 
             // The press is on the knob, but the Thumb lies over it and takes the press: it is what the touches are for.
-            return new KnobPress { Target = thumb != null ? (UIElement)thumb : toggle, X = bounds.X + bounds.Width / 2, Y = bounds.Y + bounds.Height / 2, Scale = scale };
+            return new KnobPress { Toggle = toggle, Target = thumb != null ? (UIElement)thumb : toggle, X = bounds.X + bounds.Width / 2, Y = bounds.Y + bounds.Height / 2, Scale = scale };
         }
 
         /// <summary>

@@ -53,7 +53,13 @@ namespace RefApp
 
                 await Task.Delay(250);
                 await RenderStage(theme, s, stage, popups.Count);
-                if (popups.Count == 0 && !p.System)
+                var fault = p.Fault != null ? p.Fault(handle) : null;
+                if (fault != null)
+                {
+                    _errors.Add(baseName + ": " + fault);
+                }
+
+                if (popups.Count == 0 && p.Fault == null)
                 {
                     _errors.Add(baseName + ": no popup open");
                 }
@@ -88,6 +94,12 @@ namespace RefApp
                     // vm\grab-loop.ps1 grabs the emulator's window all along; run.ps1 picks the frame inside this span.
                     var from = DateTimeOffset.UtcNow;
                     await Task.Delay(_holdMs);
+                    var after = fault == null && p.Fault != null ? p.Fault(handle) : null;
+                    if (after != null)
+                    {
+                        _errors.Add(baseName + ": during the hold, " + after);
+                    }
+
                     var line = baseName + "\t" + from.ToString("o", CultureInfo.InvariantCulture) + "\t" + DateTimeOffset.UtcNow.ToString("o", CultureInfo.InvariantCulture) + "\n";
                     var timeline = await _out.CreateFileAsync("held.txt", CreationCollisionOption.OpenIfExists);
                     await FileIO.AppendTextAsync(timeline, line);

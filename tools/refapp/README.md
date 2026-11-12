@@ -82,10 +82,14 @@ the signed-in desktop. Run from an SSH session, `ISETool` starts a hidden second
   TimePickerFlyout, ComboBox open with every count of items from 3 to 10 (up to 5 open
   inline, 6 or more open the full-screen picker; below), the page's app bar, compact and
   minimal, closed and open (below), and the system's `MessageDialog` (B18), with a one-line title and a long one.
-  The shell shows a `MessageDialog`: it isn't among the app's open popups, it is drawn in the phone's theme, and
-  cancelling its `ShowAsync` doesn't close it (2026-11-11), so a second can't open (`E_ACCESSDENIED`). Each is
-  opened in the dark pass only, and a run can take one: `-Popups only -Only '^MessageDialog$' -Grab`, then
-  `'^MessageDialogLongTitle$'`, each from a fresh launch.
+  The shell shows a `MessageDialog`: it isn't among the app's open popups, it is drawn in the phone's theme, not
+  the stage's (the app sets no theme of its own, so the runs, all dark, can't tell the phone's from the app's), and
+  cancelling its `ShowAsync` doesn't close it (2026-11-11), so it stays over every later capture and a second can't
+  open (`E_ACCESSDENIED`). So a run leaves the two out unless `-Only` picks exactly one and nothing else, and then
+  opens it once, dark: `-Popups only -Only '^MessageDialog$' -Grab`, then `'^MessageDialogLongTitle$'`, each a
+  fresh launch. Picked with anything else, the run captures nothing and its error says why. Where the app can't see
+  the dialog, the suite reads `ShowAsync`'s status instead, after it settles and after the hold, and records an
+  error if it isn't showing.
   **`Suite.Popups.cs`** opens each from a button or the control on a stage, gives each open popup
   the requested theme, renders the stage, and dumps every open popup's tree, in window
   coordinates, to `<theme>__<name>__<variant>__popup<n>.json`. It then closes the popup and waits
@@ -398,8 +402,12 @@ last touch has settled. `touch.log` says where each step landed on the VM's scre
 - **Resolution:** at the zoom that fits the VM's 1440-high screen, one screen pixel is 0.83 view
   pixels on the reference profile, so a probe can't place a touch finer than that. The app logs
   the positions it got.
-- **Moves arrive in bursts about 100 ms apart.** The emulator delivers the mouse's moves to the
-  phone in batches, so a probe reads a position, not a speed. Press and release times are kept.
+- **A still touch reports every 100 ms; a moving one, every 15 to 30 ms.** While a touch is held the emulator
+  sends its position every 100 ms from the press, moved or not, and now and then drops one; the mouse's own moves
+  reach the phone 15 to 30 ms apart (the logs of #33). So a probe reads a position, not a smooth speed, and a press
+  is seen by whatever reads pointer events on that 100 ms beat: the ToggleSwitch's hold limit is one
+  ([the hold limit](#toggleswitch-the-hold-limit-the-distance-and-the-halfway-line-2026-11-11-and-12-33)).
+  Press and release times are kept.
 
 Probes: `toggleswitch` (#25), `toggletap` and `togglehalf` (#33), `tilt`, `tiltedge` and `tiltgrid` (#22), and for #24 `motion`, `pages`,
 `projections` and `ring` ([Motion](#motion-2026-11-10-device-11-24)), and `ringsize` for #28 (B6:

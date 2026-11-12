@@ -63,6 +63,28 @@ namespace RefApp
             var popups = options.Popups ? PopupCatalog.All().Where(p => options.Matches(p.Name)).ToList() : new List<PopupSpecimen>();
             var themes = new[] { ElementTheme.Dark, ElementTheme.Light };
 
+            // A system popup (a MessageDialog) can't be closed, and stays over every capture after it: one runs only when
+            // -Only picks exactly one, alone, and then once, dark. Picked with others, the run captures nothing and says
+            // why; matched with another system popup, or with no -Only, they are left out.
+            var system = popups.Where(p => p.System).ToList();
+            if (system.Count == 1 && !string.IsNullOrEmpty(options.Only))
+            {
+                if (popups.Count > 1 || specimens.Count > 0)
+                {
+                    _errors.Add("-Only picks the system popup " + system[0].Name + " with " + (popups.Count - 1 + specimens.Count) + " other(s); it can't be closed, so it runs alone: nothing captured");
+                    popups.Clear();
+                    specimens.Clear();
+                }
+                else
+                {
+                    themes = new[] { ElementTheme.Dark };
+                }
+            }
+            else
+            {
+                popups.RemoveAll(p => p.System);
+            }
+
             // Work out each specimen's states once: they come from the template and don't depend on the theme.
             var states = new Dictionary<Specimen, List<KeyValuePair<string, string>>>();
             foreach (var s in specimens)
@@ -71,7 +93,7 @@ namespace RefApp
             }
 
             // A popup gives its stage and one capture per open popup; two is the usual count.
-            _total = themes.Length * (specimens.Sum(s => 1 + states[s].Count) + 2 * popups.Count(p => !p.System)) + 2 * popups.Count(p => p.System);
+            _total = themes.Length * (specimens.Sum(s => 1 + states[s].Count) + popups.Sum(p => p.System ? 1 : 2));
 
             _captures.Arr();
             foreach (var theme in themes)
@@ -87,11 +109,6 @@ namespace RefApp
 
                 foreach (var p in popups)
                 {
-                    if (p.System && theme != themes[0])
-                    {
-                        continue;
-                    }
-
                     // A popup that never closes would stall the run; give each one 30 s.
                     var capture = CapturePopup(theme, p);
                     if (await Task.WhenAny(capture, Task.Delay(30000 + _holdMs)) != capture)

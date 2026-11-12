@@ -37,7 +37,7 @@ OWN_LINE = 1.33  # Segoe WP's line, in ems
 
 
 def png(path):
-    """(width, height, rows of luminance 0-255) of an 8-bit RGB or RGBA PNG, not interlaced."""
+    """(width, height, bytes per pixel, rows of bytes) of an 8-bit RGB or RGBA PNG, not interlaced, with the PNG filters undone."""
     with open(path, 'rb') as f:
         data = f.read()
     if data[:8] != b'\x89PNG\r\n\x1a\n':
@@ -74,46 +74,57 @@ def png(path):
                 p = a + b - c
                 pa, pb, pc = abs(p - a), abs(p - b), abs(p - c)
                 line[i] = (line[i] + (a if pa <= pb and pa <= pc else b if pb <= pc else c)) & 255
-        rows.append([(line[x * bpp] * 299 + line[x * bpp + 1] * 587 + line[x * bpp + 2] * 114) // 1000 for x in range(w)])
+        rows.append(line)
         prev = line
-    return w, h, rows
+    return w, h, bpp, rows
 
 
-def ink(rows, background):
-    """Each pixel's ink, 0 to 1, against the background's luminance."""
-    return [[abs(v - background) / 255.0 for v in r] for r in rows]
+class Ink:
+    """A PNG's ink, 0 to 1, against a background luminance, worked out a column at a time as it is asked for: only
+    the first glyph's columns are read."""
 
+    def __init__(self, path, background=0):
+        self.w, self.h, self.bpp, self.rows = png(path)
+        self.background = background
+        self.columns = {}
 
-def lines_of(cov, x0=0, x1=None, gap=0.02):
-    """The runs of rows with ink between columns x0 and x1, as (first, last) row: one per line, if the lines don't touch."""
-    runs, start = [], None
-    for y, r in enumerate(cov):
-        inked = max(r[x0:x1]) > gap
-        if inked and start is None:
-            start = y
-        elif not inked and start is not None:
-            runs.append((start, y - 1))
-            start = None
-    if start is not None:
-        runs.append((start, len(cov) - 1))
-    return runs
+    def column(self, x):
+        if x not in self.columns:
+            i = x * self.bpp
+            self.columns[x] = [abs((r[i] * 299 + r[i + 1] * 587 + r[i + 2] * 114) // 1000 - self.background) / 255.0
+                               for r in self.rows]
+        return self.columns[x]
 
+    def first_glyph(self, gap=0.02):
+        """The columns of the first glyph: from the first inked column to the next column with no ink in any row."""
+        x = 0
+        while x < self.w and max(self.column(x)) <= gap:
+            x += 1
+        x0 = x
+        while x < self.w and max(self.column(x)) > gap:
+            x += 1
+        return x0, x
 
-def first_glyph(cov, gap=0.02):
-    """The columns of the first glyph: from the first inked column to the next column with no ink in any row."""
-    w = len(cov[0])
-    inked = [max(r[x] for r in cov) > gap for x in range(w)]
-    x0 = inked.index(True)
-    x1 = x0
-    while x1 < w and inked[x1]:
-        x1 += 1
-    return x0, x1
+    def lines_of(self, x0, x1, gap=0.02):
+        """The runs of rows with ink between columns x0 and x1, as (first, last) row: one per line, if they don't touch."""
+        cols = [self.column(x) for x in range(x0, x1)]
+        runs, start = [], None
+        for y in range(self.h):
+            inked = max(c[y] for c in cols) > gap
+            if inked and start is None:
+                start = y
+            elif not inked and start is not None:
+                runs.append((start, y - 1))
+                start = None
+        if start is not None:
+            runs.append((start, self.h - 1))
+        return runs
 
-
-def centre(cov, x0, x1, y0, y1):
-    """The ink-weighted centre row of a glyph."""
-    weight = [sum(cov[y][x0:x1]) for y in range(y0, y1 + 1)]
-    return y0 + sum(i * v for i, v in enumerate(weight)) / sum(weight)
+    def centre(self, x0, x1, y0, y1):
+        """The ink-weighted centre row of a glyph."""
+        cols = [self.column(x) for x in range(x0, x1)]
+        weight = [sum(c[y] for c in cols) for y in range(y0, y1 + 1)]
+        return y0 + sum(i * v for i, v in enumerate(weight)) / sum(weight)
 
 
 def capture(run, variant):
@@ -142,24 +153,24 @@ def main():
         one = capture(run, style)
         wrapped = capture(run, style + '-wrapped')
         t = j2['tree']
-        fs, lh = t['fontSize'], t['lineHeight']
+        # The dump writes a LineHeight only when it is set (above 0).
+        fs, lh = t['fontSize'], t.get('lineHeight', 0.0)
         h2 = j2['elementInStage'][3]
         h1 = one[0]['elementInStage'][3] if one else float('nan')
-        w, _, rows = png(p2)
-        scale = w / j2['stage'][0]
-        cov = ink(rows, 0)
-        x0, x1 = first_glyph(cov)
-        runs = lines_of(cov, x0, x1)
-        pitch = (centre(cov, x0, x1, *runs[1]) - centre(cov, x0, x1, *runs[0])) / scale if len(runs) == 2 else float('nan')
+        image = Ink(p2)
+        scale = image.w / j2['stage'][0]
+        x0, x1 = image.first_glyph()
+        runs = image.lines_of(x0, x1)
+        pitch = (image.centre(x0, x1, *runs[1]) - image.centre(x0, x1, *runs[0])) / scale if len(runs) == 2 else float('nan')
         out = '%-36s %5.2f %5.2f | %7.3f %7.3f | %6.3f |' % (style, fs, lh, h1, h2, pitch)
-        if t['lineStackingStrategy'] == 'BaselineToBaseline':
+        if t.get('lineStackingStrategy') == 'BaselineToBaseline' and lh > 0:
             first = ASCENT * fs
             out += ' %6.3f %6.3f | %6.3f %6.3f |' % (h1 - first, h2 - first - lh, DESCENT_SHARE * lh, DESCENT * fs)
             if wrapped:
                 hw = wrapped[0]['elementInStage'][3]
                 out += ' %7.3f, %.3f' % (hw, 1 + (hw - first - DESCENT * fs) / lh)
         else:
-            line = max(lh, OWN_LINE * fs)
+            line = max(lh, OWN_LINE * fs)  # MaxHeight, or no LineHeight: the font's own line
             out += ' MaxHeight, line %.3f: H1 %.3f lines, H2 %.3f lines' % (line, h1 / line, h2 / line)
         print(out)
 

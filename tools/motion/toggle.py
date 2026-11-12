@@ -14,7 +14,8 @@ are also given by them. Then the limits: of the presses that didn't drag the kno
 farthest that still toggled (a tap) and the nearest, held under 900 ms (inside the hold limit), that didn't; of
 the presses that didn't move, the longest that still toggled and the shortest that didn't; of the presses that
 moved less than 17 px, the latest last event that still toggled and the earliest that didn't; and of the drags
-past the tap distance, the farthest knob position that went back Off and the nearest that went On.
+the knob's position decided (neither a tap nor still), the farthest knob position that went back Off and the nearest
+that went On.
 """
 import os
 import sys
@@ -45,18 +46,17 @@ for run in runs:
                 cur['knob'] = float(p[1])
         elif what == 'moved' and 'up' not in cur:
             cur['moves'].append((t - cur['down'], stamp(p)))
-        elif what == 'gesture' and 'settled' not in cur:
+        elif what == 'gesture':
             cur['gestures'].append('%s@%.0f' % ('/'.join(p[:2]) if p[0] == 'Holding' else p[0], t - cur['down']))
         elif what == 'released':
             cur['up'] = t
             cur['x1'] = float(p[0])
             cur['ts1'] = stamp(p)
-        elif what == 'toggled' and 'up' in cur and 'settled' not in cur:
+        elif what == 'toggled' and 'up' in cur:
             cur['on'] = p[1] == 'True'
-        elif what == 'state' and p[0] == 'ToggleStates' and 'up' in cur and 'settled' not in cur:
+        elif what == 'state' and p[0] == 'ToggleStates' and 'up' in cur:
             cur['states'].append('%s>%s@%.0f' % (p[1], p[3], t - cur['up']))
         elif what == 'settled':
-            cur['settled'] = t
             rows.append(cur)
             cur = None
     for r in rows:
@@ -72,7 +72,9 @@ for run in runs:
     short = [r for r in rows if not any(s.startswith('Dragging>On') for s in r['states'])]
     still = [r for r in rows if r['moved'] == 0]
     near = [r for r in rows if r['moved'] < 17]
-    drags = [r for r in rows if r['moved'] > 19 and r['knob'] > 0]
+    # Drags: presses the knob's position decided, so neither a tap (Tapped where logged; toggled, as a tap is) nor
+    # still. Not by distance: the tap's limit is physical, so view pixels differ by profile.
+    drags = [r for r in rows if not r['on'] and not any(g.startswith('Tapped') for g in r['gestures']) and r['knob'] > 0]
 
     def limit(f, vals, fmt):
         vals = list(vals)
