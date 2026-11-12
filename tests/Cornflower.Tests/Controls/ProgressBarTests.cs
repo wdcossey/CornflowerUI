@@ -310,7 +310,7 @@ public class ProgressBarTests
                 var why = $"dot {dot + 1} at {ms} ms";
                 Assert.True(Math.Abs(SlideAt(dot, s) - PhoneProgressBar.Slides[dot].ValueAt(time)!.Value) < 1e-9, $"{why}: B");
                 Assert.True(Math.Abs(MoveAt(dot, s, width) - PhoneProgressBar.MoveAt(dot, time, width)) < 1e-6, $"{why}: E");
-                Assert.Equal(OpacityAt(dot, s), PhoneProgressBar.Opacities[dot].ValueAt(time));
+                Assert.Equal(OpacityAt(dot, s), PhoneProgressBar.OpacityAt(dot, time));
             }
         }
 
@@ -332,18 +332,17 @@ public class ProgressBarTests
     {
         for (var dot = 0; dot < 5; dot++)
         {
-            var track = PhoneProgressBar.Opacities[dot];
             var begin = PhoneKeyframeTrack.Seconds(DotBeginSeconds[dot]);
             var hide = begin + PhoneKeyframeTrack.Seconds(3);
             if (begin > TimeSpan.Zero)
             {
-                Assert.Equal(0, track.ValueAt(begin - TimeSpan.FromTicks(1)));
+                Assert.Equal(0, PhoneProgressBar.OpacityAt(dot, begin - TimeSpan.FromTicks(1)));
             }
 
-            Assert.Equal(1, track.ValueAt(begin));
-            Assert.Equal(1, track.ValueAt(hide - TimeSpan.FromTicks(1)));
-            Assert.Equal(0, track.ValueAt(hide));
-            Assert.Equal(0, track.ValueAt(PhoneProgressBar.Duration - TimeSpan.FromTicks(1)));
+            Assert.Equal(1, PhoneProgressBar.OpacityAt(dot, begin));
+            Assert.Equal(1, PhoneProgressBar.OpacityAt(dot, hide - TimeSpan.FromTicks(1)));
+            Assert.Equal(0, PhoneProgressBar.OpacityAt(dot, hide));
+            Assert.Equal(0, PhoneProgressBar.OpacityAt(dot, PhoneProgressBar.Duration - TimeSpan.FromTicks(1)));
         }
     }
 
@@ -365,7 +364,7 @@ public class ProgressBarTests
                 var off = Math.Abs(PhoneProgressBar.ContainerAt(time, width) - gridX) * 20;
                 for (var dot = 0; dot < 5 && off < best.Off; dot++)
                 {
-                    var visible = PhoneProgressBar.Opacities[dot].ValueAt(time) == 1;
+                    var visible = PhoneProgressBar.OpacityAt(dot, time) == 1;
                     if (visible != dot < shown.Length)
                     {
                         off = double.MaxValue;
@@ -677,8 +676,8 @@ public class ProgressBarTests
         Assert.Equal(80, indicator.Bounds.Height, 0.5);
     }
 
-    // The phone's dots run only across: a vertical indeterminate bar shows no dots and runs no storyboard; turned
-    // across, it runs.
+    // The phone's dots run only across: a vertical indeterminate bar shows no dots and runs no storyboard, but keeps
+    // its track, without the indicator; turned across, it runs.
     [AvaloniaFact]
     public void Vertical_No_Dots_Run()
     {
@@ -687,14 +686,32 @@ public class ProgressBarTests
         using var stage = new Stage(bar: bar);
         clock.At(10 * FrameMs);
 
-        Assert.Equal(0, Part<Grid>(bar, "PART_EllipseGrid").Opacity);
+        Assert.False(Part<Grid>(bar, "PART_EllipseGrid").IsVisible);
+        Assert.Equal(1, Part<Border>(bar, "PART_DeterminateRoot").Opacity);
+        Assert.Equal(0, Part<Border>(bar, "PART_Indicator").Opacity);
         Assert.Equal(0, clock.Pending);
         Assert.Equal(0, GridMove(bar).X);
 
         bar.Orientation = Orientation.Horizontal;
+        Assert.True(Part<Grid>(bar, "PART_EllipseGrid").IsVisible);
         Assert.Equal(1, Part<Grid>(bar, "PART_EllipseGrid").Opacity);
         Assert.Equal(-63, GridMove(bar).X, 1e-9);
         Assert.Equal(1, clock.Pending);
+    }
+
+    // With no size of its own, a vertical bar is the phone's bar turned: 3.5 wide (rounded up to 9 raw pixels, as the
+    // horizontal one is high), centred across its slot and stretched down it.
+    [AvaloniaFact]
+    public void Vertical_With_No_Size_It_Stands_In_Its_Slot()
+    {
+        var bar = new ProgressBar { Value = Value, Orientation = Orientation.Vertical };
+        var slot = new Grid { Width = 100, Height = 200, Children = { bar } };
+        using var scene = new Scene(new Grid { Children = { slot } });
+
+        Assert.Equal(Math.Ceiling(MinHeight * Scene.ReferenceScaling) / Scene.ReferenceScaling, bar.Bounds.Width, 0.001);
+        Assert.Equal(200, bar.Bounds.Height, 0.001);
+        Assert.Equal((100 - bar.Bounds.Width) / 2, bar.Bounds.X, 0.5);
+        Assert.Equal(80, Part<Border>(bar, "PART_Indicator").Bounds.Height, 0.5);
     }
 
     // The indicator stays inside an app's border: at 100% it fills the border's inside, not the whole bar.

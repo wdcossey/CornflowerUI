@@ -104,35 +104,24 @@ internal static class PhoneProgressBar
         .ToArray();
 
     /// <summary>
-    /// E1 to E5, as stops: 0 until the dot's begin, 1 (<c>EllipseAnimationWellPosition</c>) a second later, held for a
+    /// E1 to E5, as stops, from each dot's begin: 0, 1 (<c>EllipseAnimationWellPosition</c>) a second later, held for a
     /// second, 2 (<c>EllipseAnimationEndPosition</c>) a second after that; <see cref="MoveAt"/> turns a stop into a
-    /// position. The template eases into the well and the end through <see cref="Ease"/>; its
-    /// other keys carry an <c>ExponentialEase</c>, but each joins two equal values, so it moves nothing.
+    /// position. Before its begin the template's track holds 0, as <see cref="MoveAt"/> does. The template eases into
+    /// the well and the end through <see cref="Ease"/>; its other keys carry an <c>ExponentialEase</c>, but each joins
+    /// two equal values, so it moves nothing.
     /// </summary>
     internal static readonly PhoneKeyframeTrack[] Dots = DotBegins
-        .Select(begin =>
-        {
-            var keys = new List<Key> { new(TimeSpan.Zero, 0) };
-            if (begin > TimeSpan.Zero)
-            {
-                keys.Add(new Key(begin, 0));
-            }
-
-            keys.Add(new Key(begin + Seconds(1), 1, Ease));
-            keys.Add(new Key(begin + Seconds(2), 1));
-            keys.Add(new Key(begin + Seconds(3), 2, Ease));
-            return new PhoneKeyframeTrack(Kind.Spline, TimeSpan.Zero, keys.ToArray());
-        })
+        .Select(begin => new PhoneKeyframeTrack(Kind.Spline, begin,
+            new Key(TimeSpan.Zero, 0), new Key(Seconds(1), 1, Ease), new Key(Seconds(2), 1), new Key(Seconds(3), 2, Ease)))
         .ToArray();
 
     /// <summary>
-    /// E1 to E5's opacity: 0 until the dot's begin, 1 from it, 0 from 3 s after. The template writes each step as two
-    /// keys at one time, which is a step at that time; here each is a discrete key.
+    /// E1 to E5's opacity, from each dot's begin: 1, then 0 from 3 s after. Before its begin the template's track holds
+    /// 0, as <see cref="OpacityAt"/> does. The template writes each step as two keys at one time, which is a step at that
+    /// time; here each is a discrete key.
     /// </summary>
     internal static readonly PhoneKeyframeTrack[] Opacities = DotBegins
-        .Select(begin => begin == TimeSpan.Zero
-            ? new PhoneKeyframeTrack(Kind.Discrete, TimeSpan.Zero, new Key(TimeSpan.Zero, 1), new Key(Seconds(3), 0))
-            : new PhoneKeyframeTrack(Kind.Discrete, TimeSpan.Zero, new Key(TimeSpan.Zero, 0), new Key(begin, 1), new Key(begin + Seconds(3), 0)))
+        .Select(begin => new PhoneKeyframeTrack(Kind.Discrete, begin, new Key(TimeSpan.Zero, 1), new Key(Seconds(3), 0)))
         .ToArray();
 
     /// <summary>The storyboard's length, its longest track's end: the grid's 3.917 s. It repeats from there.</summary>
@@ -167,20 +156,17 @@ internal static class PhoneProgressBar
                 runner.Attach();
             }
         });
-        ProgressBar.IsIndeterminateProperty.Changed.AddClassHandler<ProgressBar>((bar, _) =>
+        // Whether the storyboard runs: indeterminate and horizontal.
+        ProgressBar.IsIndeterminateProperty.Changed.AddClassHandler<ProgressBar>(Refresh);
+        ProgressBar.OrientationProperty.Changed.AddClassHandler<ProgressBar>(Refresh);
+    }
+
+    private static void Refresh(ProgressBar bar, AvaloniaPropertyChangedEventArgs _)
+    {
+        if (Runners.TryGetValue(bar, out var runner))
         {
-            if (Runners.TryGetValue(bar, out var runner))
-            {
-                runner.Update();
-            }
-        });
-        ProgressBar.OrientationProperty.Changed.AddClassHandler<ProgressBar>((bar, _) =>
-        {
-            if (Runners.TryGetValue(bar, out var runner))
-            {
-                runner.Update();
-            }
-        });
+            runner.Update();
+        }
     }
 
     /// <summary>Gets <see cref="IsAnimatedProperty"/>.</summary>
@@ -199,11 +185,14 @@ internal static class PhoneProgressBar
         return settings.ContainerStart + (settings.ContainerEnd - settings.ContainerStart) * Container.ValueAt(time)!.Value;
     }
 
+    /// <summary>A dot's opacity at a storyboard time: 0 before its begin, as the template's track holds.</summary>
+    internal static double OpacityAt(int dot, TimeSpan time) => Opacities[dot].ValueAt(time) ?? 0;
+
     /// <summary>A dot's <c>X</c> at a storyboard time, for a bar this wide: its track's stop between 0, the well and the end.</summary>
     internal static double MoveAt(int dot, TimeSpan time, double width)
     {
         var settings = TemplateSettings(width);
-        var stop = Dots[dot].ValueAt(time)!.Value;
+        var stop = Dots[dot].ValueAt(time) ?? 0;
         return stop <= 1
             ? settings.EllipseWell * stop
             : settings.EllipseWell + (settings.EllipseEnd - settings.EllipseWell) * (stop - 1);
@@ -343,7 +332,7 @@ internal static class PhoneProgressBar
                     move.X = MoveAt(i, time, width);
                 }
 
-                Show(i, Opacities[i].ValueAt(time));
+                Show(i, OpacityAt(i, time));
             }
 
             _pending = CornflowerClock.RequestFrame(bar, Step);

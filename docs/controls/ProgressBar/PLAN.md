@@ -126,7 +126,7 @@ bar's laid-out width with the formulas above, every frame, and the gaps' width i
 | Each part's own `X` is given back, not 0 | WinRT: a stopped storyboard leaves the part its own value | `A_Parts_Own_Value_Is_Given_Back`, `Turned_Off_And_On_In_One_Pass_It_Keeps_The_Parts_Own_Values` |
 | Another theme taking over stops it and gives the values back | the old theme's unset pass | `Another_Theme_Taking_Over_Stops_It` |
 | The indicator stays inside an app's border | Avalonia's sizing; the template | `The_Indicator_Stays_Inside_The_Border` |
-| Vertical (Avalonia's, not the phone's): the indicator from the bottom, and no dots | Avalonia's `Orientation` | `Vertical_The_Indicator_Fills_From_The_Bottom`, `Vertical_No_Dots_Run` |
+| Vertical (Avalonia's, not the phone's): the phone's bar turned, the indicator from the bottom, and no dots | Avalonia's `Orientation` | `Vertical_The_Indicator_Fills_From_The_Bottom`, `Vertical_With_No_Size_It_Stands_In_Its_Slot`, `Vertical_No_Dots_Run` |
 | No text, whatever `ShowProgressText` says | the phone's template has none | `It_Shows_No_Text` |
 
 ## How it runs
@@ -135,9 +135,8 @@ As ProgressRing's ([its plan](../ProgressRing/PLAN.md#how-it-runs)): the storybo
 `CornflowerClock`, because Avalonia's `Animation` runs on real time and can't be tested to the millisecond (ADR 0003).
 
 - `PhoneProgressBar` (internal to Wp81, its own file), turned on by the theme's setter, holds the storyboard as
-  `PhoneKeyframeTrack`s: the grid's way from its start to its end (0 to 1), each E's stops (0, the well, the end as
-  0, 1, 2), the B slides in view pixels, the
-  opacities as discrete keys. One runner per bar runs them while the bar is indeterminate, in a window and templated, from
+  `PhoneKeyframeTrack`s: the grid's way from its start to its end (0 to 1), each E's stops from its begin (0, the
+  well, the end as 0, 1, 2), the B slides in view pixels, the opacities as discrete keys from each dot's begin. One runner per bar runs them while the bar is indeterminate, in a window and templated, from
   the storyboard's start, and horizontal. Each frame it reads the bar's width, works out the phone's `TemplateSettings`
   from it, sets each `TranslateTransform.X`, and sets each dot's
   opacity at animation priority when it changes. When it stops it gives everything back: each `X` to the transform's own,
@@ -196,9 +195,11 @@ None.
 - **The gaps between the dots are the literal 9**, the phone's `EllipseOffset` on all seven profiles, and the storyboard's
   values are the formulas above at any width. The phone might step them at a width narrower than any read (346); none is
   read. To reverse: a `-Native` run with narrow bars, then a width rule in `PhoneProgressBar`.
-- **Vertical bars fill from the bottom**, as Simple's do. The phone's bar is only horizontal, and its dots run only
-  across, so a vertical indeterminate bar shows no dots and runs no storyboard (it would only flick a square across a
-  narrow bar). To reverse: drop the two `:vertical` styles and the orientation check in `PhoneProgressBar`.
+- **A vertical bar is the phone's bar turned**: at least 3.5 wide, centred across its slot and stretched down it, the
+  indicator filling from the bottom, as Simple's does. The phone's bar is only horizontal, and its dots run only
+  across, so a vertical indeterminate bar shows its track with no dots and no indicator, and runs no storyboard (the
+  dots would only flick a square across a narrow bar). To reverse: drop the `:vertical` styles and the orientation
+  check in `PhoneProgressBar`.
 - **The indicator sits in a `Panel` inside the track's border**, one element more than the phone's: Avalonia sizes
   `PART_Indicator` from its parent's bounds, so in the border itself it would spill over an app's border. The phone's
   border is 0, so nothing is drawn differently.

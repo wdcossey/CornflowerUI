@@ -35,8 +35,9 @@ It stretches across its slot, 3.5 high (`MinHeight`), centred down it. It takes 
 - **Disabled** looks the same: the phone's template has no disabled state.
 - **High contrast**: two 0.8 bars, at the bottom and the right, show while determinate, in
   `ProgressBarHighContrastAccentBarThemeBrush`. It is transparent in the dark and light themes.
-- **Vertical** (`Orientation`, Avalonia's, not the phone's): the indicator fills from the bottom. Indeterminate, a
-  vertical bar shows nothing: the phone's dots run only across.
+- **Vertical** (`Orientation`, Avalonia's, not the phone's): the phone's bar turned, at least 3.5 wide, centred across
+  its slot and stretched down it, the indicator filling from the bottom. Indeterminate, a vertical bar shows its
+  track alone: the phone's dots run only across.
 
 The storyboard runs in the theme, frame by frame on `CornflowerClock`, so its tests are exact to the millisecond. It
 works out the phone's `TemplateSettings` from the bar's width, as the phone does: Avalonia's own `TemplateSettings`

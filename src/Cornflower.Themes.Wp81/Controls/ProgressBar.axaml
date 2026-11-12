@@ -138,10 +138,24 @@
     </Style>
 
     <!--
-      Not the phone's, whose bar is only horizontal: Avalonia's Orientation, the indicator filling from the bottom. The
-      dots run only across, so a vertical bar doesn't show them (PhoneProgressBar doesn't run them either).
+      Not the phone's, whose bar is only horizontal: Avalonia's Orientation, the phone's bar turned. It stands centred
+      across its slot and stretched down it, at least 3.5 wide, the indicator filling from the bottom. The dots run
+      only across, so a vertical bar doesn't show them (PhoneProgressBar doesn't run them either): indeterminate, it
+      keeps its track, and the indicator, which Avalonia doesn't size while indeterminate, is hidden.
     -->
+    <Style Selector="^:vertical">
+      <Setter Property="MinWidth" Value="{DynamicResource ProgressBarThemeMinHeight}" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="VerticalAlignment" Value="Stretch" />
+    </Style>
+    <!-- Out of the layout too: the dots' row would make a vertical bar 53.5 wide. -->
     <Style Selector="^:vertical /template/ Grid#PART_EllipseGrid">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="^:vertical:indeterminate /template/ Border#PART_DeterminateRoot">
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+    <Style Selector="^:vertical:indeterminate /template/ Border#PART_Indicator">
       <Setter Property="Opacity" Value="0" />
     </Style>
     <Style Selector="^:vertical /template/ Border#PART_Indicator">
