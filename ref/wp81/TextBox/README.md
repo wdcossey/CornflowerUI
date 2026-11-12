@@ -13,8 +13,8 @@ opens no keyboard. Copied unchanged from two runs:
 
 Run `20261112-1319-dev11` was made for #36 from a copy of `tools/refapp` with three specimens added to `Catalog.cs`:
 `no-header` and `wrap` above, and `no-header-empty` (`PlaceholderText = "placeholder"`, no header), whose captures
-aren't copied (they show what `no-header` and `empty` show). The repository's `Catalog.cs` doesn't have them yet
-(the TextBox PR proposes them). The same run's `empty` and `text` captures are the 2026-11-08 ones, byte for byte, as
+aren't copied (they show what `no-header` and `empty` show). The repository's `Catalog.cs` has had them since
+the batch-3 roll-up, so a full run makes them. The same run's `empty` and `text` captures are the 2026-11-08 ones, byte for byte, as
 are run `20261108-1732-dev11`'s.
 
 | | |

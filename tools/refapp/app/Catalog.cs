@@ -106,7 +106,14 @@ namespace RefApp
             add("ProgressRing", "active", 120, () => new ProgressRing { IsActive = true });
             add("TextBox", "empty", 140, () => new TextBox { Header = "text box", PlaceholderText = "placeholder" });
             add("TextBox", "text", 140, () => new TextBox { Header = "text box", Text = "Agjy 0123" });
+            add("TextBox", "no-header", 110, () => new TextBox { Text = "Agjy 0123" });
+            add("TextBox", "no-header-empty", 110, () => new TextBox { PlaceholderText = "placeholder" });
+            add("TextBox", "wrap", 220, () => new TextBox { Header = "text box", Text = "Agjy 0123 Agjy 0123 Agjy 0123 Agjy 0123 Agjy 0123 Agjy 0123", TextWrapping = TextWrapping.Wrap, AcceptsReturn = true });
             add("PasswordBox", "password", 140, () => new PasswordBox { Header = "password box", Password = "secret", IsPasswordRevealButtonEnabled = true });
+            add("PasswordBox", "no-header", 110, () => new PasswordBox { Password = "secret" });
+            add("PasswordBox", "empty", 140, () => new PasswordBox { Header = "password box", PlaceholderText = "placeholder" });
+            add("PasswordBox", "reveal-empty", 140, () => new PasswordBox { Header = "password box", IsPasswordRevealButtonEnabled = true });
+            add("PasswordBox", "reveal-no-header", 110, () => new PasswordBox { Password = "secret", IsPasswordRevealButtonEnabled = true });
             add("ComboBox", "closed", 140, () =>
             {
                 var c = new ComboBox { Header = "combo box" };
