@@ -93,7 +93,7 @@ internal static class Checklist
             Code(s.Group),
             Code(s.Name),
             s.Changes.Count == 0 ? "nothing" : string.Join("<br>", s.Changes.Select(c => Code(c.Description))),
-            StateCell(avalonia, s.Name),
+            StateCell(avalonia, s.Group, s.Name),
             "",
         }));
 
@@ -122,9 +122,9 @@ internal static class Checklist
         return md.ToString();
     }
 
-    private static string StateCell(AvaloniaSide avalonia, string state)
+    private static string StateCell(AvaloniaSide avalonia, string group, string state)
     {
-        switch (avalonia.State(state))
+        switch (avalonia.State(state, group))
         {
             case null:
                 return "no rule";
