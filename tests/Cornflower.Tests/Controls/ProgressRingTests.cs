@@ -476,8 +476,13 @@ public class ProgressRingTests
         PhoneProgressRing.SetIsAnimated(ring, false);
         ring.ClearValue(PhoneProgressRing.IsAnimatedProperty);
         ring.IsActive = false;
-        Dispatcher.UIThread.RunJobs();
+        // The angles go back at once, to the template's own; the opacities after the dispatcher's pass.
+        for (var dot = 0; dot < 6; dot++)
+        {
+            Assert.Equal(0, Rotation(ring, dot).Angle);
+        }
 
+        Dispatcher.UIThread.RunJobs();
         for (var dot = 0; dot < 6; dot++)
         {
             Assert.Equal(0, Rotation(ring, dot).Angle);
