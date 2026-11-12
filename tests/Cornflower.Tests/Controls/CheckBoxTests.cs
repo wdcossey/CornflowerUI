@@ -310,17 +310,19 @@ public class CheckBoxTests
         Assert.True(SameFrame(plain, frame), "the indeterminate CheckBox isn't drawn as the unchecked one");
     }
 
-    // An app's CheckBoxBackgroundThemeBrush fills the rectangle, as on the phone: it is the only way it shows.
+    // An app's CheckBoxBackgroundThemeBrush fills the rectangle, as on the phone. The key is the box's background
+    // too, so the box is given its own here: the rectangle is drawn in the middle, and the box round it is clear.
     [AvaloniaFact]
     public void An_Apps_Background_Key_Fills_The_Rectangle()
     {
-        var checkBox = new CheckBox { Content = "check box", IsThreeState = true, IsChecked = null };
+        var checkBox = new CheckBox { Content = "check box", IsThreeState = true, IsChecked = null, Background = Brushes.Transparent };
         checkBox.Resources["CheckBoxBackgroundThemeBrush"] = new SolidColorBrush(Accent);
         using var stage = new Stage(checkBox: checkBox);
 
         Assert.Equal(Accent, ColourOf(RectangleOf(checkBox).Fill));
         using var frame = stage.Capture();
-        Assert.Equal(Hex(Accent), Hex(Frames.PixelAt(frame, 76, 97)));   // the box's middle
+        Assert.Equal(Hex(Accent), Hex(Frames.PixelAt(frame, 76, 97)));                              // the box's middle
+        Assert.Equal(Hex(Page(dark: true)), Hex(Frames.PixelAt(frame, ClearOfTheTick.X, ClearOfTheTick.Y)));   // the box, outside the rectangle
     }
 
     // CommonStates.Pressed: the box fills with the accent, the tick and the rectangle over it as the phone's are; the
@@ -336,7 +338,7 @@ public class CheckBoxTests
     {
         var dark = variant == "Dark";
         using var clock = new TestClock();
-        using var stage = new Stage(VariantOf(variant), new CheckBox { Content = "check box", IsThreeState = true, IsChecked = isChecked });
+        using var stage = new Stage(VariantOf(variant), new CheckBox { Content = "check box", IsThreeState = isChecked is null, IsChecked = isChecked });
         var checkBox = stage.CheckBox;
 
         stage.Window.MouseDown(stage.Box, MouseButton.Left);
@@ -354,7 +356,7 @@ public class CheckBoxTests
         Assert.Equal(Transparent, ColourOf(BoxOf(checkBox).Background));
         Assert.Equal(Foreground(dark), ColourOf(TickOf(checkBox).Fill));
         Assert.Equal(Transparent, ColourOf(RectangleOf(checkBox).Fill));
-        Assert.NotEqual(isChecked, checkBox.IsChecked);
+        Assert.Equal(isChecked == false, checkBox.IsChecked);      // two-state: checked to unchecked and back; indeterminate to unchecked
     }
 
     // The pressed box drawn, untilted: the accent inside the border, round the white tick.
