@@ -405,6 +405,32 @@ public class SliderTests
         Assert.True(double.IsNaN(text.LineHeight));
     }
 
+    // A HeaderTemplate that doesn't match the header's data leaves Avalonia's own TextBlock, which keeps no phone's line
+    // while the template is set. Cleared after the header was set, the presenter keeps the same TextBlock (its default
+    // template recycles it, so its child doesn't change): it takes the phone's line then, and gives it back when a
+    // template is set again.
+    [AvaloniaFact]
+    public void Clearing_The_HeaderTemplate_Gives_The_Text_The_Phones_Line()
+    {
+        var slider = Specimen();
+        ControlHeader.SetHeaderTemplate(slider, new FuncDataTemplate<Uri>((uri, _) => new TextBlock { Text = uri.Host }));
+        using var stage = new Stage(slider: slider);
+        var text = HeaderOf(slider).GetVisualDescendants().OfType<TextBlock>().Single();
+        Assert.Equal(Header, text.Text);
+        Assert.True(double.IsNaN(text.LineHeight));
+
+        var template = ControlHeader.GetHeaderTemplate(slider);
+        ControlHeader.SetHeaderTemplate(slider, null);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Same(text, HeaderOf(slider).GetVisualDescendants().OfType<TextBlock>().Single());
+        Assert.Equal(21.28, text.LineHeight, 0.01);
+
+        ControlHeader.SetHeaderTemplate(slider, template);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Same(text, HeaderOf(slider).GetVisualDescendants().OfType<TextBlock>().Single());
+        Assert.True(double.IsNaN(text.LineHeight));
+    }
+
     // A tap on the track moves the thumb's middle to the finger (WinUI's Slider::MoveThumbToPoint), on either side of
     // the thumb.
     [AvaloniaFact]

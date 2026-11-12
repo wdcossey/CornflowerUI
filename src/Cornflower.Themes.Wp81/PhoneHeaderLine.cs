@@ -8,24 +8,27 @@ using Avalonia.Controls.Templates;
 namespace Cornflower.Themes.Wp81;
 
 /// <summary>
-/// The phone's line for the text a header's <c>ContentPresenter</c> makes of its content, as
-/// <see cref="PhoneContentLine"/> gives it to a presenter that recognises access keys. A WinRT header doesn't
-/// recognise them (<c>"fan_speed"</c> draws its underscore), so the presenter doesn't, and Avalonia's makes a plain
-/// <see cref="TextBlock"/> of data: this gives that <see cref="PhoneTextLine"/>'s MaxHeight line, 1.33 × its own
-/// <c>FontSize</c>, Segoe WP's (ADR 0003).
+/// The phone's line for the text a <c>ContentPresenter</c> that doesn't recognise access keys makes of its content, as
+/// <see cref="PhoneContentLine"/> gives it to one that does. The phone's header doesn't recognise them
+/// (<c>"fan_speed"</c> draws its underscore), and nor does a TextBox's placeholder or a ToggleSwitch's OffContent and
+/// OnContent, so their presenters don't, and Avalonia's makes a plain <see cref="TextBlock"/> of data: this gives that
+/// <see cref="PhoneTextLine"/>'s MaxHeight line, 1.33 × its own <c>FontSize</c>, Segoe WP's (ADR 0003).
 /// </summary>
 /// <remarks>
-/// Only the text Avalonia's own template makes: the presenter's child is a <c>TextBlock</c> (not an
+/// <para>Only the text Avalonia's own template makes: the presenter's child is a <c>TextBlock</c> (not an
 /// <see cref="AccessText"/>), its content isn't an element, it has no <c>ContentTemplate</c>, and no data template in
 /// the tree matches its content (a plain <c>TextBlock</c> is the commonest root of an app's own). What an app's data
-/// template makes keeps its own line. Setting <see cref="IsEnabledProperty"/> to false takes the line back off.
+/// template makes keeps its own line. Setting <see cref="IsEnabledProperty"/> to false takes the line back off.</para>
+/// <para>It looks again when the presenter's child changes and when its <c>ContentTemplate</c> does: a presenter keeps
+/// the <c>TextBlock</c> its default template made when a <c>ContentTemplate</c> that doesn't match the content is set or
+/// cleared (the default template recycles it), so its child doesn't change.</para>
 /// </remarks>
 internal static class PhoneHeaderLine
 {
     /// <summary>As <see cref="PhoneContentLine"/>'s: the smallest MaxHeight line, so the line is the phone's own.</summary>
     private const double PhoneLine = double.Epsilon;
 
-    /// <summary>Set by a theme on its template's header presenter, which doesn't recognise access keys.</summary>
+    /// <summary>Set by a theme on a template's presenter that doesn't recognise access keys.</summary>
     public static readonly AttachedProperty<bool> IsEnabledProperty =
         AvaloniaProperty.RegisterAttached<ContentPresenter, bool>("IsEnabled", typeof(PhoneHeaderLine));
 
@@ -36,6 +39,7 @@ internal static class PhoneHeaderLine
     {
         IsEnabledProperty.Changed.AddClassHandler<ContentPresenter>((presenter, _) => Update(presenter));
         ContentPresenter.ChildProperty.Changed.AddClassHandler<ContentPresenter>((presenter, _) => Update(presenter));
+        ContentPresenter.ContentTemplateProperty.Changed.AddClassHandler<ContentPresenter>((presenter, _) => Update(presenter));
     }
 
     public static bool GetIsEnabled(ContentPresenter presenter) => presenter.GetValue(IsEnabledProperty);
@@ -47,7 +51,7 @@ internal static class PhoneHeaderLine
         var enabled = presenter.GetValue(IsEnabledProperty);
         var given = Given.TryGetValue(presenter, out var previous);
         if (!enabled && !given)
-            return;                       // every ContentPresenter's child change comes here: most are none of ours
+            return;                       // every ContentPresenter's child and template change comes here: most are none of ours
 
         var made = enabled && presenter.Child is TextBlock and not AccessText &&
                    presenter.ContentTemplate is null && presenter.Content is not (null or Control) &&

@@ -1,0 +1,28 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:wp81="using:Cornflower.Themes.Wp81">
+  <!--
+    The phone's HeaderContentPresenterStyle, the style every 8.1 template with a Header sets on its header's
+    ContentPresenter (the Slider's, the TextBox's, the PasswordBox's, the ToggleSwitch's), as a keyed ControlTheme for
+    ContentPresenter. A template sets it on its header part:
+
+      <ContentPresenter x:Name="HeaderContentPresenter" Theme="{DynamicResource Wp81HeaderContentPresenterTheme}" />
+
+    By DynamicResource: a StaticResource can't reach into another file (a control's theme is a file of its own).
+
+    Its four values, and the phone's 1.33 em line for the text Avalonia's presenter makes of data (PhoneHeaderLine): a
+    WinRT header doesn't recognise access keys, and nor does this one. What shows (Content, ContentTemplate) and where
+    (Margin, IsVisible) are each template's own.
+
+    The part's own theme ranks below its templated parent's theme, at style priority, so a template's /template/ style
+    for the part wins over a value here: the ToggleSwitch's own brush, and each state's (the TextBox's :disabled
+    header), as the phone's template's own Foreground and its states win over the style's.
+  -->
+  <ControlTheme x:Key="Wp81HeaderContentPresenterTheme" TargetType="ContentPresenter">
+    <Setter Property="FontFamily" Value="{DynamicResource PhoneFontFamilyNormal}" />
+    <Setter Property="FontSize" Value="{DynamicResource TextStyleMediumFontSize}" />
+    <Setter Property="FontWeight" Value="Normal" />
+    <Setter Property="Foreground" Value="{DynamicResource PhoneMidBrush}" />
+    <Setter Property="wp81:PhoneHeaderLine.IsEnabled" Value="True" />
+  </ControlTheme>
+</ResourceDictionary>

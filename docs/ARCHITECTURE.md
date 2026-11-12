@@ -445,7 +445,7 @@ control that needs it, and **moves into `CLAUDE.md` only once proven**.
 | `BasedOn="{StaticResource …}"` | `BasedOn` on the `ControlTheme` | |
 | A WinRT control Avalonia has as another type with a property set (PasswordBox: a `TextBox` with `PasswordChar`) | A `ControlTheme` for that type keyed by the WinRT name, used as `Theme="{DynamicResource PasswordBox}"` | As PasswordBox does ([#103](https://github.com/wdcossey/CornflowerUI/pull/103)). The checklist generator treats such a control as one Avalonia lacks; its plan maps it by hand |
 | `{ThemeResource Key}` | `{DynamicResource Key}` | 1,657 uses in 8.1; 3,696 in 19041 |
-| `{StaticResource Key}` | `{StaticResource Key}` in the same file; `{DynamicResource}` across files | Avalonia's docs say a `StaticResource` into another included file fails at load (reported) |
+| `{StaticResource Key}` | `{StaticResource Key}` in the same file; `{DynamicResource}` across files | Avalonia's docs say a `StaticResource` into another included file fails at load. Measured for a template part's `Theme` (`Wp81HeaderContentPresenterTheme`, in `Controls/HeaderContentPresenter.axaml`, from `TextBox.axaml`): it compiles without a warning and throws `InvalidCastException` when the template is built |
 | `{TemplateBinding P}` | `{TemplateBinding P}` | 502 uses in 8.1; 1,455 in 19041 |
 | Theme dictionaries `Default`, `Light`, `HighContrastBlack`, `HighContrastWhite` (8.1) | `ResourceDictionary.ThemeDictionaries` keyed `Dark`, `Light` | `Default` is the dark one. High contrast is later |
 | A resource key | The same key name | Faithful, and anyone who knows the platform's keys can restyle |
