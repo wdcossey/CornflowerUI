@@ -73,16 +73,16 @@ step, and a control that climbs a rung says so in its PR.
 
 | Issue | Windows Phone 8.1 | Avalonia 12.1.4 | Work | Rung |
 |---|---|---|---|---|
-| [#27](https://github.com/wdcossey/CornflowerUI/issues/27) | Button | Button | Theme, tilt. The dry run of the whole loop | 1, 2 |
-| [#28](https://github.com/wdcossey/CornflowerUI/issues/28) | ProgressRing | none | New control | 5 |
-| [#26](https://github.com/wdcossey/CornflowerUI/issues/26) | TextBlock and the text styles | TextBlock | The type ramp, as keyed `ControlTheme`s under the WinRT style keys, and resources; done 2026-11-10 (#69), device run passed 2026-11-11 | 1 |
-| [#29](https://github.com/wdcossey/CornflowerUI/issues/29) | HyperlinkButton | HyperlinkButton | Theme, tilt | 1, 2 |
-| [#30](https://github.com/wdcossey/CornflowerUI/issues/30) | RepeatButton, ToggleButton | the same | Theme, tilt | 1, 2 |
-| [#31](https://github.com/wdcossey/CornflowerUI/issues/31) | CheckBox | CheckBox | Theme, glyph, tilt | 1, 2 |
-| [#32](https://github.com/wdcossey/CornflowerUI/issues/32) | RadioButton | RadioButton | Theme, tilt | 1, 2 |
+| [#27](https://github.com/wdcossey/CornflowerUI/issues/27) | Button | Button | Theme, tilt. The dry run of the whole loop; done 2026-11-11 (#75), device run passed 2026-11-11 | 1, 2 |
+| [#28](https://github.com/wdcossey/CornflowerUI/issues/28) | ProgressRing | none | New control; done 2026-11-11 (#88), device run owed | 2, 5 |
+| [#26](https://github.com/wdcossey/CornflowerUI/issues/26) | TextBlock and the text styles | TextBlock | The type ramp, as keyed `ControlTheme`s under the WinRT style keys, and resources; done 2026-11-10 (#69), device run passed 2026-11-11 | 1, 2 |
+| [#29](https://github.com/wdcossey/CornflowerUI/issues/29) | HyperlinkButton | HyperlinkButton | Theme, tilt (on its content); done 2026-11-12 (#91), device run owed | 1, 2 |
+| [#30](https://github.com/wdcossey/CornflowerUI/issues/30) | RepeatButton, ToggleButton | the same | Theme (no tilt: neither phone template has one); the slide off and the repeat off the button (`PhonePress`); done 2026-11-12 (#93), device run owed | 1, 2 |
+| [#31](https://github.com/wdcossey/CornflowerUI/issues/31) | CheckBox | CheckBox | Theme, glyph, tilt; done 2026-11-12 (#92), device run owed | 1, 2 |
+| [#32](https://github.com/wdcossey/CornflowerUI/issues/32) | RadioButton | RadioButton | Theme, tilt; done 2026-11-12 (#94), device run owed | 1, 2 |
 | [#33](https://github.com/wdcossey/CornflowerUI/issues/33) | ToggleSwitch | ToggleSwitch | Theme. Avalonia's has no `Header`: an attached property. A subclass only if the drag measurement fails | 1, 2 |
-| [#34](https://github.com/wdcossey/CornflowerUI/issues/34) | Slider | Slider | Theme | 1 |
-| [#35](https://github.com/wdcossey/CornflowerUI/issues/35) | ProgressBar | ProgressBar | Theme. The indeterminate dots are the hard part | 1 |
+| [#34](https://github.com/wdcossey/CornflowerUI/issues/34) | Slider | Slider | Theme; `Header` by an attached property, `ControlHeader`; done 2026-11-12 (#96), device run owed | 1, 2 |
+| [#35](https://github.com/wdcossey/CornflowerUI/issues/35) | ProgressBar | ProgressBar | Theme. The indeterminate dots are the hard part; done 2026-11-12 (#95), device run owed | 1, 2 |
 | [#36](https://github.com/wdcossey/CornflowerUI/issues/36) | TextBox | TextBox | Theme, clear button glyph, `Header` | 1, 2 |
 | [#37](https://github.com/wdcossey/CornflowerUI/issues/37) | PasswordBox | TextBox with `PasswordChar` | Theme. No separate control in Avalonia | 1, 2 |
 
