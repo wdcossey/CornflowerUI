@@ -1,7 +1,6 @@
 using System.Runtime.CompilerServices;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Shapes;
 using Avalonia.Data;
 using Avalonia.Layout;
@@ -145,8 +144,7 @@ internal static class PhoneProgressBar
             {
                 // Stopped now, so that a runner made in the same pass reads the parts' own values, not the old one's.
                 Runners.Remove(bar);
-                old.Unsubscribe();
-                old.Stop();
+                old.Detach();
             }
 
             if (e.GetNewValue<bool>())
@@ -212,42 +210,34 @@ internal static class PhoneProgressBar
         private TranslateTransform? _container;
         private double _ownContainer;
         private IDisposable? _pending;
+        private TemplateParts? _parts;
         private TimeSpan _start;
         private bool _running;
         private bool _attached;
 
+        /// <summary>
+        /// Starts following the bar: its window, and its template's parts, the one already applied (a theme that turns
+        /// this on after it gets no <c>TemplateApplied</c> for it) and each new one, stopping before a new one's.
+        /// </summary>
         public void Attach()
         {
-            bar.TemplateApplied += OnTemplateApplied;
             bar.AttachedToVisualTree += OnAttached;
             bar.DetachedFromVisualTree += OnDetached;
             _attached = bar.IsAttachedToVisualTree();
-            // The template may already be applied: a theme that turns this on after it (one replacing another) gets
-            // no TemplateApplied for it.
-            var named = new Dictionary<string, Control>();
-            foreach (var control in bar.GetVisualDescendants().OfType<Control>())
-            {
-                if (control.Name is { } name)
-                {
-                    named.TryAdd(name, control);
-                }
-            }
-
-            FindParts(name => named.GetValueOrDefault(name));
-            Update();
+            _parts = TemplateParts.Watch(bar, TakeParts, Stop);
         }
 
-        public void Unsubscribe()
+        /// <summary>Stops following the bar, and stops the storyboard.</summary>
+        public void Detach()
         {
-            bar.TemplateApplied -= OnTemplateApplied;
             bar.AttachedToVisualTree -= OnAttached;
             bar.DetachedFromVisualTree -= OnDetached;
+            _parts?.Dispose();
         }
 
-        private void OnTemplateApplied(object? sender, TemplateAppliedEventArgs e)
+        private void TakeParts(Func<string, Control?> find)
         {
-            Stop();
-            FindParts(name => e.NameScope.Find<Control>(name));
+            FindParts(find);
             Update();
         }
 
