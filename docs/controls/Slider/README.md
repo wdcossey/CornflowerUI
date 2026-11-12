@@ -32,6 +32,8 @@ down, and all of it takes the finger. Stretched taller, as in the reference app,
   source.
 - **Disabled**: the value's part `#FF666666` and the thumb `#FF999999` (dark), `#FFBDBDBD` and `#FF808080` (light);
   the track and the header stay.
+- **In a scrolling page**, a drag on the Slider moves the thumb and never scrolls the page, as the phone's
+  `ManipulationMode="None"` makes it (`PhoneNoManipulation`, internal to the theme).
 - **No pressed, pointer-over or focus look**, as on the phone.
 - **Vertical** (`Orientation="Vertical"`): the phone's vertical template, 36 wide, the track 13.5 in, the value's part
   from the bottom, a 9 × 9 thumb.
@@ -68,7 +70,8 @@ vertical names likewise. A style that reaches into the template uses these names
 
 Rung 1 (theme) for the setters, the states, both templates, the hit area across the container and the cleared focus
 adorner; rung 2 for `Header` and `HeaderTemplate` (`ControlHeader`, attached) and the header's line
-(`PhoneHeaderLine`, internal to the theme); rung 6 (recorded) for a drag from the thumb, `StepFrequency` and the
+(`PhoneHeaderLine`, internal to the theme) and the phone's `ManipulationMode` (`PhoneNoManipulation`, internal to
+the theme); rung 6 (recorded) for a drag from the thumb, `StepFrequency` and the
 ticks' look. No type is substituted.
 
 ## Extensions
@@ -93,4 +96,4 @@ theme shows them.
 
 ## The checklist
 
-In [PLAN.md](PLAN.md#checklist): 57 rows done or kept as Avalonia's, 14 left out with their reasons.
+In [PLAN.md](PLAN.md#checklist): 58 rows done or kept as Avalonia's, 13 left out with their reasons.

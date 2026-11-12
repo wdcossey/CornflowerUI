@@ -24,7 +24,9 @@
       whole width; TopTickBar and BottomTickBar are the outside ticks.
     - HorizontalDecreaseRect, which WinRT sizes in code, is drawn by PART_DecreaseButton: Avalonia's Track makes that
       button as wide as the value's part of the track, so the rect is its width, 17.5 down, the track's height, in
-      the Slider's Foreground. PART_IncreaseButton draws nothing.
+      the Slider's own Foreground (bound to the Slider, so an app's RepeatButton style can't change it).
+      PART_IncreaseButton draws nothing.
+    - PhoneNoManipulation is the phone's ManipulationMode None: a drag on the Slider never scrolls its page.
     - HorizontalThumb, 9.5 wide, is the Track's Thumb. It is the whole height, so a press above or below the visible
       thumb drags it too, and draws the phone's 9.5 × 19 Border 13 down.
     - HorizontalBorder, last, in the Slider's BorderBrush, transparent by default. The phone's binds StrokeThickness
@@ -57,11 +59,14 @@
           <Rectangle x:Name="HorizontalDecreaseRect"
                      Margin="0,17.5,0,0"
                      Height="{DynamicResource SliderTrackThemeHeight}"
-                     VerticalAlignment="Top"
-                     Fill="{TemplateBinding Foreground}" />
+                     VerticalAlignment="Top" />
         </Panel>
       </ControlTemplate>
     </Setter>
+    <!-- The Slider's own Foreground, at style priority so the Disabled state's key wins over it. -->
+    <Style Selector="^ /template/ Rectangle#HorizontalDecreaseRect">
+      <Setter Property="Fill" Value="{Binding $parent[Slider].Foreground}" />
+    </Style>
     <Style Selector="^:disabled /template/ Rectangle#HorizontalDecreaseRect">
       <Setter Property="Fill" Value="{DynamicResource SliderTrackDecreaseDisabledBackgroundThemeBrush}" />
     </Style>
@@ -76,11 +81,14 @@
           <Rectangle x:Name="VerticalDecreaseRect"
                      Margin="13.5,0,0,0"
                      Width="{DynamicResource SliderTrackThemeHeight}"
-                     HorizontalAlignment="Left"
-                     Fill="{TemplateBinding Foreground}" />
+                     HorizontalAlignment="Left" />
         </Panel>
       </ControlTemplate>
     </Setter>
+    <!-- The Slider's own Foreground, at style priority so the Disabled state's key wins over it. -->
+    <Style Selector="^ /template/ Rectangle#VerticalDecreaseRect">
+      <Setter Property="Fill" Value="{Binding $parent[Slider].Foreground}" />
+    </Style>
     <Style Selector="^:disabled /template/ Rectangle#VerticalDecreaseRect">
       <Setter Property="Fill" Value="{DynamicResource SliderTrackDecreaseDisabledBackgroundThemeBrush}" />
     </Style>
@@ -149,6 +157,8 @@
     <Setter Property="FontFamily" Value="{DynamicResource ContentControlThemeFontFamily}" />
     <Setter Property="FontSize" Value="{DynamicResource ControlContentThemeFontSize}" />
     <Setter Property="FocusAdorner" Value="{x:Null}" />
+    <!-- The phone's ManipulationMode None: a drag on the Slider never scrolls its page. -->
+    <Setter Property="wp81:PhoneNoManipulation.IsEnabled" Value="True" />
 
     <Style Selector="^:horizontal">
       <Setter Property="Template">

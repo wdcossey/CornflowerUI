@@ -59,6 +59,7 @@ frames. The pixels are read on row 134 (through the track), column 200 (the decr
 | A tap moves the thumb's middle to the finger | WinUI's `Slider::MoveThumbToPoint` (not measured on the phone) | Avalonia's `MoveToPoint`: the same formula | **match**, by source; a probe is owed |
 | A press anywhere below the header takes the finger | the transparent `SliderContainer`; WinUI handles the press on it | the `Track` and its parts fill the container | **match**, by template and source |
 | A drag follows the finger, off the Slider and past the ends | WinUI's `OnPointerMoved` with the pointer captured | the same | **match**, by source |
+| A drag on it in a scrolling page never scrolls the page | the style's `ManipulationMode="None"` | `PhoneNoManipulation` stops the `ScrollViewer`'s gesture recogniser taking it | **match**, by the style and WinRT's rule; not probed |
 | A drag from the thumb | WinUI's `OnThumbDragDelta`: by the finger's travel | the thumb's middle to the finger on the first move | **gap**, recorded: at most 4.79 across (4.5 vertical), on the first move only |
 | A value from input goes to the nearest whole number | WinRT's `StepFrequency`, 1 by default | wherever the finger is | **gap**, recorded: `StepFrequency` missing (PLAN, "Decided") |
 | Reversed, the value fills from the other end | WinRT's `IsDirectionReversed` | Avalonia's `Track` | **match**, by the template; not captured |

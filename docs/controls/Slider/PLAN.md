@@ -173,7 +173,7 @@ Measured with the theme against the captures:
 | The ticks | WinRT's `TickBar`: one raw pixel wide, the bar's height, every one | Avalonia's `TickBar`: 1 wide, the ends the bar's height and the rest three quarters | 6, recorded, not measured (no capture) |
 | Focus | no `FocusStates` | a focus adorner | 1, the theme clears `FocusAdorner` |
 | The thumb's tooltip | off (`IsThumbToolTipEnabled` False) | none | none |
-| `ManipulationMode` None | WinRT's: no pan or zoom manipulation from the Slider | Avalonia has no manipulation mode; its gestures are recognisers on a `ScrollViewer` | not applicable |
+| `ManipulationMode` None | WinRT's: a touch that starts on the Slider is its own, so a drag on it never pans the page's `ScrollViewer` (WinRT pans only for elements in the `System` mode) | the `ScrollViewer`'s gesture recogniser takes a touch drag past its threshold: measured headless, a drag up a Slider in a scrolling page scrolled it 293 and left the thumb (the second review's finding) | 2, `PhoneNoManipulation` (new, internal to the theme): Avalonia's `PreventGestureRecognition` on every pointer event that tunnels through the Slider |
 | Rounding | the nearest raw pixel | up | ADR 0003's recorded deviation; the sizes below |
 
 No type is substituted. Rungs 1, 2 and 6.
@@ -232,8 +232,11 @@ Each has a test in `tests/Cornflower.Tests/Controls/SliderTests.cs` unless named
    header**, under the track and below its rows; not on the header.
    `A_Tap_On_The_Track_Moves_The_Thumbs_Middle_To_The_Finger`, `A_Tap_Anywhere_Below_The_Header_Moves_The_Thumb`.
 8. **A drag follows the finger**, off the Slider and past the ends, and stops at release; by touch too; from the thumb
-   as well. `A_Drag_From_The_Track_Follows_The_Finger`, `A_Drag_From_The_Thumb_Follows_The_Finger`.
-9. **The Slider's brushes reach the track**: `Foreground` the decrease rect, `Background` the track; the border is 1
+   as well; **in a scrolling page a drag on it never scrolls the page**, up or down, horizontal or vertical, and a drag
+   beside it still does. `A_Drag_From_The_Track_Follows_The_Finger`, `A_Drag_From_The_Thumb_Follows_The_Finger`,
+   `A_Drag_On_It_Never_Scrolls_Its_Page`.
+9. **The Slider's brushes reach the track**: `Foreground` the decrease rect (the Slider's own, not an app's
+   `RepeatButton` style's), `Background` the track; the border is 1
    wide whatever `BorderThickness`; `Padding` insets the template. `The_Sliders_Brushes_Reach_The_Track`,
    `The_Border_Is_One_Wide_Whatever_BorderThickness_Says`, `Padding_Insets_The_Template`.
 10. **Reversed**, the value fills from the right and a tap counts from it. `Reversed_The_Value_Fills_From_The_Right`.
@@ -371,7 +374,7 @@ _none_
 | [x] | `Foreground` | `{ThemeResource SliderTrackDecreaseBackgroundThemeBrush}` | `TemplatedControl.Foreground` | Setter, `DynamicResource`; the decrease rect's fill, through the decrease button, which inherits it |
 | [x] | `FontFamily` | `{ThemeResource ContentControlThemeFontFamily}` | `TemplatedControl.FontFamily` | Setter, `DynamicResource`; the header sets its own, as the phone's |
 | [x] | `FontSize` | `{ThemeResource ControlContentThemeFontSize}` | `TemplatedControl.FontSize` | Setter, `DynamicResource`; as `FontFamily` |
-| [-] | `ManipulationMode` | `None` | none | Not applicable: Avalonia has no manipulation mode |
+| [x] | `ManipulationMode` | `None` | none | `PhoneNoManipulation`, set by the theme: a drag on the Slider never scrolls its page (Behaviour 8) |
 | [-] | `IsThumbToolTipEnabled` | `False` | none | Not applicable: no thumb tooltip in Avalonia, so none, as on the phone |
 
 ### Template parts (18)

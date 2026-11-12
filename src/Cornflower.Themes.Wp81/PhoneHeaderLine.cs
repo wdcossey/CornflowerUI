@@ -3,6 +3,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Templates;
 
 namespace Cornflower.Themes.Wp81;
 
@@ -15,7 +16,8 @@ namespace Cornflower.Themes.Wp81;
 /// </summary>
 /// <remarks>
 /// Only the text Avalonia's own template makes: the presenter's child is a <c>TextBlock</c> (not an
-/// <see cref="AccessText"/>), its content isn't an element, and it has no <c>ContentTemplate</c>. What an app's data
+/// <see cref="AccessText"/>), its content isn't an element, it has no <c>ContentTemplate</c>, and no data template in
+/// the tree matches its content (a plain <c>TextBlock</c> is the commonest root of an app's own). What an app's data
 /// template makes keeps its own line. Setting <see cref="IsEnabledProperty"/> to false takes the line back off.
 /// </remarks>
 internal static class PhoneHeaderLine
@@ -42,12 +44,18 @@ internal static class PhoneHeaderLine
 
     private static void Update(ContentPresenter presenter)
     {
-        var made = presenter.GetValue(IsEnabledProperty) && presenter.Child is TextBlock and not AccessText &&
-                   presenter.ContentTemplate is null && presenter.Content is not (null or Control)
+        var enabled = presenter.GetValue(IsEnabledProperty);
+        var given = Given.TryGetValue(presenter, out var previous);
+        if (!enabled && !given)
+            return;                       // every ContentPresenter's child change comes here: most are none of ours
+
+        var made = enabled && presenter.Child is TextBlock and not AccessText &&
+                   presenter.ContentTemplate is null && presenter.Content is not (null or Control) &&
+                   presenter.FindDataTemplate(presenter.Content) is null
             ? (TextBlock)presenter.Child
             : null;
 
-        if (Given.TryGetValue(presenter, out var previous) && !ReferenceEquals(previous, made))
+        if (given && previous is not null && !ReferenceEquals(previous, made))
         {
             previous.ClearValue(PhoneTextLine.MaxHeightLineHeightProperty);
             Given.Remove(presenter);

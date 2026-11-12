@@ -362,15 +362,45 @@ public class SliderTests
         Assert.Equal("SLIDER", ((TextBlock)made.Child!).Text);
         Assert.True(double.IsNaN(((TextBlock)made.Child!).LineHeight));     // the app's text keeps its own line
 
-        // A string header after a template: the phone's line again; and the template back, the line taken off the
-        // string's text.
+        // A string header after a template: the phone's line again; the template back, the line taken off the string's
+        // text and not put on the template's; and the line taken back when the presenter's mark goes.
+        var template = ControlHeader.GetHeaderTemplate(slider);
         ControlHeader.SetHeaderTemplate(slider, null);
         Dispatcher.UIThread.RunJobs();
         var text = HeaderOf(slider).GetVisualDescendants().OfType<TextBlock>().Single();
         Assert.Equal(21.28, text.LineHeight, 0.01);
+        ControlHeader.SetHeaderTemplate(slider, template);
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(double.IsNaN(text.LineHeight));
+        Assert.True(double.IsNaN(HeaderOf(slider).GetVisualDescendants().OfType<TextBlock>().Single().LineHeight));
+        ControlHeader.SetHeaderTemplate(slider, null);
+        Dispatcher.UIThread.RunJobs();
+        text = HeaderOf(slider).GetVisualDescendants().OfType<TextBlock>().Single();
+        Assert.Equal(21.28, text.LineHeight, 0.01);
         HeaderOf(slider).SetValue(PhoneHeaderLine.IsEnabledProperty, false);
         Dispatcher.UIThread.RunJobs();
         Assert.True(double.IsNaN(text.LineHeight));
+    }
+
+    // An app's data template for its header's data, found in the tree or set as the HeaderTemplate, keeps its own
+    // line, even when its root is a plain TextBlock.
+    [AvaloniaFact]
+    public void An_Apps_Data_Template_For_The_Header_Keeps_Its_Line()
+    {
+        var slider = Specimen();
+        using var stage = new Stage(slider: slider);
+        stage.Window.DataTemplates.Add(new FuncDataTemplate<string>((text, _) => new TextBlock { Text = text, LineHeight = 30 }));
+        ControlHeader.SetHeader(slider, "volume");
+        Dispatcher.UIThread.RunJobs();
+
+        var text = HeaderOf(slider).GetVisualDescendants().OfType<TextBlock>().Single();
+        Assert.Equal("volume", text.Text);
+        Assert.Equal(30, text.LineHeight);
+
+        // And a HeaderTemplate whose root is a plain TextBlock.
+        ControlHeader.SetHeaderTemplate(slider, new FuncDataTemplate<string>((data, _) => new TextBlock { Text = data, LineHeight = 40 }));
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(40, HeaderOf(slider).GetVisualDescendants().OfType<TextBlock>().Single().LineHeight);
     }
 
     // A tap on the track moves the thumb's middle to the finger (WinUI's Slider::MoveThumbToPoint), on either side of
@@ -451,6 +481,56 @@ public class SliderTests
         stage.Window.TouchEnd(touch, stage.OnTrack(260));
         Dispatcher.UIThread.RunJobs();
         Assert.Equal(ValueAt(slider, 260), slider.Value, 0.001);
+    }
+
+    // The phone's style sets ManipulationMode None: a touch that starts on the Slider is the Slider's, so a drag on it
+    // in a scrolling page moves the thumb and never scrolls the page, however far it goes up or down (WinRT's
+    // ScrollViewer pans only for elements in the System mode). Avalonia's ScrollViewer would take the drag past its
+    // threshold; PhoneNoManipulation stops it. A drag on the page beside the Slider still scrolls it.
+    [AvaloniaFact]
+    public void A_Drag_On_It_Never_Scrolls_Its_Page()
+    {
+        var slider = new Slider { Value = Value };
+        var vertical = new Slider { Orientation = Orientation.Vertical, Value = Value, Height = 300, HorizontalAlignment = HorizontalAlignment.Left };
+        var page = new Border { Height = 2000, Background = Brushes.Transparent };
+        var scroller = new ScrollViewer { Content = new StackPanel { Children = { slider, vertical, page } } };
+        using var scene = new Scene(scroller);
+
+        var start = slider.TranslatePoint(new Point(100, TrackTop - ContainerTop + 4), scene.Window)!.Value;
+        var touch = scene.Window.TouchBegin(start);
+        for (var step = 1; step <= 10; step++)
+        {
+            scene.Window.TouchMove(touch, start + new Point(10 * step, -15 * step));
+            Dispatcher.UIThread.RunJobs();
+        }
+        scene.Window.TouchEnd(touch, start + new Point(100, -150));
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(0, scroller.Offset.Y);
+        Assert.Equal(ValueAt(slider, 200), slider.Value, 0.001);
+
+        var thumbHeight = Part<Thumb>(vertical, "VerticalThumb").Bounds.Height;
+        var low = vertical.TranslatePoint(new Point(18, 250), scene.Window)!.Value;
+        touch = scene.Window.TouchBegin(low);
+        for (var step = 1; step <= 10; step++)
+        {
+            scene.Window.TouchMove(touch, low + new Point(0, -15 * step));
+            Dispatcher.UIThread.RunJobs();
+        }
+        scene.Window.TouchEnd(touch, low + new Point(0, -150));
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(0, scroller.Offset.Y);
+        Assert.Equal(100 * (300 - 100 - thumbHeight / 2) / (300 - thumbHeight), vertical.Value, 0.001);
+
+        var beside = page.TranslatePoint(new Point(200, 100), scene.Window)!.Value;
+        touch = scene.Window.TouchBegin(beside);
+        for (var step = 1; step <= 10; step++)
+        {
+            scene.Window.TouchMove(touch, beside + new Point(0, -15 * step));
+            Dispatcher.UIThread.RunJobs();
+        }
+        scene.Window.TouchEnd(touch, beside + new Point(0, -150));
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(scroller.Offset.Y > 0, "a drag on the page beside the Slider didn't scroll it");
     }
 
     // A drag that starts on the thumb follows the finger too; as Avalonia's Slider does it, the thumb's middle goes to
@@ -682,7 +762,10 @@ public class SliderTests
             [typeof(RepeatButton)] = new ControlTheme(typeof(RepeatButton)) { Setters = { new Setter(TemplatedControl.BackgroundProperty, Brushes.Red), new Setter(Layoutable.MinHeightProperty, 200.0) } },
             [typeof(Thumb)] = new ControlTheme(typeof(Thumb)) { Setters = { new Setter(TemplatedControl.BackgroundProperty, Brushes.Red) } },
         };
+        // And an app's global RepeatButton style, which reaches the parts despite their themes: its Foreground isn't
+        // the decrease rect's, which is the Slider's.
         var app = new Styles { Resources = implicitThemes };
+        app.Add(new Style(x => x.OfType<RepeatButton>()) { Setters = { new Setter(TemplatedControl.ForegroundProperty, Brushes.Red) } });
         foreach (var themes in new IStyle[][] { [new SimpleTheme(), new Wp81Theme()], [new SimpleTheme(), new Wp81Theme(), app] })
         {
             using var stage = new Stage(themes: themes);
