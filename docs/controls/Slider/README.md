@@ -1,6 +1,6 @@
 # Slider
 
-Status: done · [#34](https://github.com/wdcossey/CornflowerUI/issues/34) · device run passed 2026-11-12 (Pixel 8, Release, over wireless adb, `run.ps1 -Page slider` on `main` at `764c435`: cold 830 ms, the page opened in 397 ms, every specimen drawn, scrolled into view by hand) · owed: captures of a vertical Slider and of ticks, and a probe of a tap and a drag
+Status: done · [#34](https://github.com/wdcossey/CornflowerUI/issues/34) · device run passed 2026-11-12 (Pixel 8, Release, over wireless adb, `run.ps1 -Page slider` on `main` at `764c435`: cold 830 ms, the page opened in 397 ms, every specimen drawn, scrolled into view by hand) · real-window run passed 2026-11-12 (`tools/real-window/drive.ps1` under `pwsh` 7.7 on `main` at `49e2311`: 56 of 56, the slider page opened in 23 ms with 188 elements) · owed: captures of a vertical Slider and of ticks, and a probe of a tap and a drag
 
 The Windows Phone 8.1 Slider: Avalonia's `Slider`, themed by `Wp81Theme` with the phone's default style and its
 horizontal and vertical templates, in `src/Cornflower.Themes.Wp81/Controls/Slider.axaml`. WinRT's `Header` is
