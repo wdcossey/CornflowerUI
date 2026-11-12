@@ -98,11 +98,8 @@
                   Background="{TemplateBinding Background}"
                   BorderBrush="{TemplateBinding BorderBrush}"
                   BorderThickness="{TemplateBinding BorderThickness}" />
-          <!-- LineHeight NaN on each presenter: the box's own LineHeight, the phone's line of its FontSize, inherits, and
-               would reach the text an app's template or content makes. -->
           <ContentPresenter x:Name="HeaderContentPresenter"
                             Grid.Row="0"
-                            LineHeight="NaN"
                             Margin="{DynamicResource TextControlHeaderMarginThemeThickness}"
                             IsVisible="{TemplateBinding (cf:ControlHeader.Header), Converter={x:Static ObjectConverters.IsNotNull}}"
                             Content="{TemplateBinding (cf:ControlHeader.Header)}"
@@ -118,7 +115,7 @@
                 Margin="{TemplateBinding BorderThickness}"
                 MinHeight="{DynamicResource TextControlThemeMinHeight}"
                 ColumnDefinitions="Auto,*,Auto">
-            <ContentPresenter x:Name="InnerLeftContentPresenter" LineHeight="NaN" Content="{TemplateBinding InnerLeftContent}" />
+            <ContentPresenter x:Name="InnerLeftContentPresenter" Content="{TemplateBinding InnerLeftContent}" />
             <ScrollViewer x:Name="PART_ScrollViewer"
                           Grid.Column="1"
                           Theme="{StaticResource Wp81TextBoxScrollViewerTheme}"
@@ -145,17 +142,26 @@
             <ContentPresenter x:Name="PlaceholderTextContentPresenter"
                               Grid.Column="1"
                               IsHitTestVisible="False"
-                              LineHeight="NaN"
                               Padding="{TemplateBinding Padding}"
                               Content="{TemplateBinding PlaceholderText}"
                               Foreground="{TemplateBinding PlaceholderForeground}"
                               FontSize="{DynamicResource ContentControlFontSize}"
                               wp81:PhoneHeaderLine.IsEnabled="True" />
-            <ContentPresenter x:Name="InnerRightContentPresenter" Grid.Column="2" LineHeight="NaN" Content="{TemplateBinding InnerRightContent}" />
+            <ContentPresenter x:Name="InnerRightContentPresenter" Grid.Column="2" Content="{TemplateBinding InnerRightContent}" />
           </Grid>
         </Grid>
       </ControlTemplate>
     </Setter>
+
+    <!-- The box's own text values inherit: its LineHeight (the phone's line of its FontSize), TextAlignment, TextWrapping
+         and LetterSpacing are its text's, so each of the template's presenters (the header, the placeholder, the inner
+         content) takes Avalonia's defaults back, and what it shows keeps its own, as the phone's do. -->
+    <Style Selector="^ /template/ ContentPresenter">
+      <Setter Property="LineHeight" Value="NaN" />
+      <Setter Property="TextAlignment" Value="Start" />
+      <Setter Property="TextWrapping" Value="NoWrap" />
+      <Setter Property="LetterSpacing" Value="0" />
+    </Style>
 
     <!-- The placeholder only while the box is empty. -->
     <Style Selector="^:not(:empty) /template/ ContentPresenter#PlaceholderTextContentPresenter">

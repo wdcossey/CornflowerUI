@@ -646,6 +646,38 @@ public class TextBoxTests
         Assert.Equal(Padding, Part<ScrollContentPresenter>(viewer, "PART_ContentPresenter").Margin);
     }
 
+    // The box's text values (its line, alignment, wrapping and spacing) are its text's: they inherit, but the header, the
+    // placeholder and the inner content keep their own, as the phone's separate presenters do.
+    [AvaloniaFact]
+    public void The_Boxs_Text_Values_Stay_In_The_Text()
+    {
+        var box = Specimen(placeholder: Placeholder);
+        box.InnerLeftContent = new TextBlock { Name = "LeftText", Text = "x" };
+        box.InnerRightContent = new TextBlock { Name = "RightText", Text = "x" };
+        box.TextAlignment = TextAlignment.Center;
+        box.TextWrapping = TextWrapping.Wrap;
+        box.LetterSpacing = 3;
+        using var stage = new Stage(box: box);
+
+        var texts = new[]
+        {
+            HeaderOf(box).GetVisualDescendants().OfType<TextBlock>().Single(),
+            PlaceholderOf(box).GetVisualDescendants().OfType<TextBlock>().Single(),
+            Part<TextBlock>(box, "LeftText"),
+            Part<TextBlock>(box, "RightText"),
+        };
+        foreach (var text in texts)
+        {
+            Assert.Equal(TextAlignment.Start, text.TextAlignment);
+            Assert.Equal(TextWrapping.NoWrap, text.TextWrapping);
+            Assert.Equal(0, text.LetterSpacing);
+        }
+
+        Assert.Equal(TextAlignment.Center, TextOf(box).TextAlignment);
+        Assert.Equal(TextWrapping.Wrap, TextOf(box).TextWrapping);
+        Assert.Equal(3, TextOf(box).LetterSpacing);
+    }
+
     // Avalonia's InnerLeftContent and InnerRightContent sit inside the border either side of the text.
     [AvaloniaFact]
     public void Inner_Content_Sits_Either_Side_Of_The_Text()

@@ -205,7 +205,8 @@ Each has a test in `tests/Cornflower.Tests/Controls/TextBoxTests.cs` unless name
 15. **The part's own ScrollViewer theme**, with an app's implicit one present; no bars. `The_ScrollViewer_Is_The_Themes_Own`.
 16. **What the box passes its parts** (Avalonia's scroll settings, caret, selection, password and alignment values).
     `The_Boxs_Values_Reach_Its_Parts`; `InnerLeftContent` and `InnerRightContent` either side, their text not in the
-    box's line. `Inner_Content_Sits_Either_Side_Of_The_Text`.
+    box's line. `Inner_Content_Sits_Either_Side_Of_The_Text`. The box's line, alignment, wrapping and spacing stay in
+    its text: not the header's, the placeholder's or the inner content's. `The_Boxs_Text_Values_Stay_In_The_Text`.
 17. **The colours follow the variant.** `The_Colours_Follow_The_Variant`.
 18. **Holes**: every hole's plain TextBoxes keep Simple's (five templates); NumericUpDown's keeps Simple's look; an
     app's template and an app's theme for a hole keep the phone's (`TextBoxHolePartsTests.cs`). `TextBox` is deleted
@@ -222,8 +223,9 @@ Each has a test in `tests/Cornflower.Tests/Controls/TextBoxTests.cs` unless name
 - **The text's line is the box's `LineHeight`, bound to its `FontSize` in the style** (`PhoneTextBoxLine`, an
   internal converter), not a value on the presenter alone: Avalonia's `MinLines` and `MaxLines` read the box's, so
   they count the phone's lines, and an app's `LineHeight` still wins. It changes what `TextBox.LineHeight` reads
-  (26.9474, not NaN). `LineHeight` inherits, so the template's other presenters (the header, the placeholder, the
-  inner content) set it back to NaN: what an app's template or content makes keeps its own line. To reverse: drop the
+  (26.9474, not NaN). `LineHeight` inherits, as do `TextAlignment`, `TextWrapping` and `LetterSpacing`, so the
+  template's other presenters (the header, the placeholder, the inner content) take Avalonia's defaults back: they
+  are the text's, and what an app's template or content makes keeps its own (the first review's finding). To reverse: drop the
   setter; the presenter then draws Selawik's line, 24.31.
 - **The `ScrollViewer` part has its own theme**, `Wp81TextBoxScrollViewerTheme`, rather than the `ScrollViewer` theme
   by type: no bars, as the phone's `Hidden` draws none, and the text doesn't depend on a hole (Wp81 has no
