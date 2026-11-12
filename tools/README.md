@@ -26,9 +26,9 @@ The scripts are PowerShell 7 (`pwsh`), run as `pwsh -NoProfile -File tools/<tool
 or later. Install it from
 [Microsoft's instructions](https://learn.microsoft.com/powershell/scripting/install/installing-powershell)
 (on Windows `winget install Microsoft.PowerShell`, on macOS `brew install --cask powershell`, on Linux
-the distribution's package from Microsoft's repository). Windows PowerShell 5.1 isn't supported, but for
-`real-window/drive.ps1`, which runs under both (end to end under `pwsh` 7.7 since 2026-11-12). The scripts in `refapp/vm/`, `collect-vm.ps1`
-and `setres.ps1` run on the reference VM, in its own Windows PowerShell.
+the distribution's package from Microsoft's repository). Windows PowerShell 5.1 isn't supported, except
+by `real-window/drive.ps1`, which runs under both. The scripts in `refapp/vm/`, `collect-vm.ps1` and
+`setres.ps1` run on the reference VM, in its own Windows PowerShell.
 
 `python` in the tools' READMEs is Python 3: where the command is `python3`, as on most Linux and
 macOS systems, use that. CI parses every script with `pwsh`, compiles the Python tools, checks the

@@ -1,6 +1,6 @@
 # ProgressRing
 
-Status: done · [#28](https://github.com/wdcossey/CornflowerUI/issues/28) · device run passed 2026-11-12 (Pixel 8, Release, over wireless adb, `run.ps1 -Page progressring` on `main` at `764c435`: cold 900 ms, the page opened in 444 ms, every ring turning, five dots at the default size and six at 120 square and stretched) · real-window run passed 2026-11-12 (`tools/real-window/drive.ps1` under `pwsh` 7.7 on `main` at `49e2311`: 56 of 56, the progressring page opened in 23 ms with 91 elements)
+Status: done · [#28](https://github.com/wdcossey/CornflowerUI/issues/28) · device run passed 2026-11-12 (Pixel 8, Release, over wireless adb, `run.ps1 -Page progressring` on `main` at `764c435`: cold 900 ms, the page opened in 444 ms, every ring turning, five dots at the default size and six at 120 square and stretched) · real-window run passed 2026-11-12 (`tools/real-window/drive.ps1` under `pwsh` 7.7, Debug, on `main` at `49e2311`: 56 of 56, the progressring page opened in 23 ms with 91 elements)
 
 The Windows Phone 8.1 ProgressRing: Cornflower's own control, `Cornflower.Controls.ProgressRing`, as Avalonia has none,
 and the phone's default style and template as `Wp81Theme`'s `ControlTheme`, in

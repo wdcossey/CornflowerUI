@@ -2,8 +2,8 @@
 # saves a frame of every page, and exits 1 if a check fails. See README.md here.
 #
 # It takes over the cursor and focus for a few seconds a page, so ask before running it on someone's PC.
-# Windows only, by nature: Win32 input, UI Automation and the screen. PowerShell 7, or Windows PowerShell 5.1, which
-# every run so far has used (it hasn't yet been run end to end under pwsh; see README.md):
+# Windows only, by nature: Win32 input, UI Automation and the screen. PowerShell 7 or Windows PowerShell 5.1; both
+# have run it end to end (see README.md):
 #   pwsh -NoProfile -File tools/real-window/drive.ps1
 #   powershell -ExecutionPolicy Bypass -File tools\real-window\drive.ps1
 #

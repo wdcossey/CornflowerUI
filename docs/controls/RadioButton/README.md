@@ -1,6 +1,6 @@
 # RadioButton
 
-Status: done · [#32](https://github.com/wdcossey/CornflowerUI/issues/32) · device run passed 2026-11-12 (Pixel 8, Release, over wireless adb, `run.ps1 -Page radiobutton` on `main` at `764c435`: cold 836 ms, the page opened in 416 ms, every specimen drawn, scrolled into view by hand) · real-window run passed 2026-11-12 (`tools/real-window/drive.ps1` under `pwsh` 7.7 on `main` at `49e2311`: 56 of 56, the radiobutton page opened in 34 ms with 151 elements) · owed: a probe of the tilt and its release
+Status: done · [#32](https://github.com/wdcossey/CornflowerUI/issues/32) · device run passed 2026-11-12 (Pixel 8, Release, over wireless adb, `run.ps1 -Page radiobutton` on `main` at `764c435`: cold 836 ms, the page opened in 416 ms, every specimen drawn, scrolled into view by hand) · real-window run passed 2026-11-12 (`tools/real-window/drive.ps1` under `pwsh` 7.7, Debug, on `main` at `49e2311`: 56 of 56, the radiobutton page opened in 34 ms with 151 elements) · owed: a probe of the tilt and its release
 
 The Windows Phone 8.1 RadioButton: Avalonia's `RadioButton`, themed by `Wp81Theme` with the phone's default style
 and template, in `src/Cornflower.Themes.Wp81/Controls/RadioButton.axaml`. The plan, with every value and its source,
