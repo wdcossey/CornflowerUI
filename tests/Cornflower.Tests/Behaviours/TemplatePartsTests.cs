@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
@@ -171,5 +172,32 @@ public class TemplatePartsTests
 
         Assert.Equal(["take own none none", "release"], log.Seen);
         window.Close();
+    }
+
+    // Disposed, the control lets go of it: a behaviour turned off and on again many times leaves no handler behind on
+    // the control, each holding the old runner or follower alive and called at every new template.
+    [AvaloniaFact]
+    public void Disposed_The_Control_Holds_It_No_More()
+    {
+        var owner = new Owner();
+        var window = Show(owner.Control);
+
+        var released = WatchAndDispose(owner.Control);
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+
+        Assert.False(released.IsAlive);
+        GC.KeepAlive(owner);
+        window.Close();
+    }
+
+    /// <summary>Watches and disposes, out of line so that nothing of it stays on the test's stack.</summary>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static WeakReference WatchAndDispose(TemplatedControl owner)
+    {
+        var log = new Log();
+        log.Watch(owner).Dispose();
+        return new WeakReference(log);
     }
 }
