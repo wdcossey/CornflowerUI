@@ -71,7 +71,7 @@ namespace RefApp
             }
 
             // A popup gives its stage and one capture per open popup; two is the usual count.
-            _total = themes.Length * (specimens.Sum(s => 1 + states[s].Count) + 2 * popups.Count);
+            _total = themes.Length * (specimens.Sum(s => 1 + states[s].Count) + 2 * popups.Count(p => !p.System)) + 2 * popups.Count(p => p.System);
 
             _captures.Arr();
             foreach (var theme in themes)
@@ -87,6 +87,11 @@ namespace RefApp
 
                 foreach (var p in popups)
                 {
+                    if (p.System && theme != themes[0])
+                    {
+                        continue;
+                    }
+
                     // A popup that never closes would stall the run; give each one 30 s.
                     var capture = CapturePopup(theme, p);
                     if (await Task.WhenAny(capture, Task.Delay(30000 + _holdMs)) != capture)

@@ -53,7 +53,7 @@ namespace RefApp
 
                 await Task.Delay(250);
                 await RenderStage(theme, s, stage, popups.Count);
-                if (popups.Count == 0)
+                if (popups.Count == 0 && !p.System)
                 {
                     _errors.Add(baseName + ": no popup open");
                 }

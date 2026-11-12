@@ -17,7 +17,7 @@ doesn't draw the same way.
 | `ContentPresenter` and `ContentControl` styles: `FlyoutPickerListViewItemContentPresenterStyle`, `ControlHeaderContentPresenterStyle`, `PlaceholderContentPresenterStyle`, `HeaderContentPresenterStyle`, `PivotTitleContentControlStyle` | Later, with the controls whose templates use them (pickers, the `Header` of the form controls, ComboBox, Pivot) |
 | A plain `TextBlock`, with no style | Avalonia's, unchanged. The phone's `TextBlock` has no default style either, and a library added to an app shouldn't change its default text (Avonic's ADR 0002) |
 
-The 14 styles the reference app catalogues are captured; the two MessageDialog styles aren't (see
+All 16 styles are captured, the two MessageDialog styles since run `20261111-2351-dev11` (see
 [Dependencies](#dependencies-and-captures)).
 
 ## Style classes or `ControlTheme`s
@@ -47,8 +47,9 @@ have. ADR 0003 left these styles to be measured here.
 - one line is that plus Segoe WP's share of descent in a line, 514/2724 = 0.18869, times `LineHeight`.
   `BaseTextBlockStyle`: 19.575 + 4.057 = 23.632, read 23.631. All 12 captured BaselineToBaseline styles fit
   to within 0.006 DIP;
-- each later baseline is `LineHeight` below the one before (WinRT's definition of BaselineToBaseline; no
-  capture has two lines);
+- each later baseline is `LineHeight` below the one before (WinRT's definition of BaselineToBaseline; the
+  two-line and wrapped captures of `20261111-2351-dev11` hold it, but end two lines or more 0.25098 em below the
+  last baseline, not 0.18869 × `LineHeight`: see the README's [Known gaps](README.md#known-gaps));
 - the two `MaxHeight` styles (`ListViewItemSubheader`, `ListViewItemContent`, `LineHeight` 20 at 16) get the
   font's own line, 1.33 em, 21.28, as their `LineHeight` is shorter;
 - descenders draw below the `TextBlock` where `LineHeight` leaves them no room: Header's "gjy" reach 75.417,
@@ -83,8 +84,8 @@ phone's, a recorded deviation.
 | `ListViewItemSubheaderTextBlockStyle` | 16 | 20, MaxHeight | 21.280 | 21.281 | 21.667 | 0, 0 | 17.083 | 17.083 |
 | `ListViewItemContentTextBlockStyle` | 16 | 20, MaxHeight | 21.280 | 21.281 | 21.667 | 0, 0 | 17.083 | 17.083 |
 | `ComboBoxPlaceholderTextBlockStyle` | 20.26 | 30 | 27.523 | 27.523 | 27.917 | −1.032, −1.445 | 21.667 | 22.083 |
-| `MessageDialogTitleStyle` | 25.5 | 31.5 | not captured | 33.461 | 33.333 | 1.831, 0.130 | | |
-| `MessageDialogContentStyle` | 18.14 | 21.5 | not captured | 23.632 | 23.750 | 1.621, 0.511 | | |
+| `MessageDialogTitleStyle` | 25.5 | 31.5 | 33.461 | 33.461 | 33.333 | 1.831, 0.130 | | |
+| `MessageDialogContentStyle` | 18.14 | 21.5 | 23.631 | 23.632 | 23.750 | 1.621, 0.511 | | |
 
 "Laid out" is `Bounds.Height`: Avalonia rounds each `Padding` edge to the nearest raw pixel and the text's
 height up, where the phone rounds the whole to the nearest (ADR 0003). The "A" bottoms are within one raw pixel everywhere; where they
@@ -203,9 +204,9 @@ them.
 - Tokens ([#19](https://github.com/wdcossey/CornflowerUI/issues/19)) and fonts ([#18](https://github.com/wdcossey/CornflowerUI/issues/18)): merged.
 - Captures: the 14 catalogued styles, dark and light, from refapp run `20261108-1443-dev11` on the reference
   profile, committed under [`ref/wp81/TextBlock/`](../../../ref/wp81/TextBlock/README.md).
-- **Owed:** `MessageDialogTitleStyle` and `MessageDialogContentStyle` aren't in the reference app's catalogue.
-  Their values here are `generic.xaml`'s and their heights the line model's. Two lines in `Catalog.cs` and a
-  run would capture them; and a two-line specimen would confirm Behaviour 4 on the phone.
+- `MessageDialogTitleStyle` and `MessageDialogContentStyle`, and every style with two lines and wrapped, dark and
+  light, from refapp run `20261111-2351-dev11` (B18). Their heights are in the table above and the README's
+  [Known gaps](README.md#known-gaps); the "A" bottoms of the MessageDialog styles aren't read here.
 
 ## Checklist
 

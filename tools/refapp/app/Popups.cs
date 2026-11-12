@@ -17,6 +17,13 @@ namespace RefApp
         public string Variant;
         public double Height = 100;
         public int SettleMs = 900;
+
+        /// <summary>
+        /// Shown by the system, as a MessageDialog is: drawn in the app's theme, not the stage's, outside the popups
+        /// the app can list, and not closed by cancelling its ShowAsync. A second one can't open while it shows (E_ACCESSDENIED), so it is
+        /// opened in the first theme's pass only, and a run captures one: pick it alone with -Only.
+        /// </summary>
+        public bool System;
         public Func<FrameworkElement> MakeHost;
         public Func<FrameworkElement, object> Open;
         public Action<FrameworkElement, object> Close;
@@ -53,6 +60,12 @@ namespace RefApp
 
             list.Add(Dialog("default", false));
             list.Add(Dialog("full-size", true));
+
+            // Windows.UI.Popups.MessageDialog (B18): its title and message are drawn in MessageDialogTitleStyle and
+            // MessageDialogContentStyle. A one-line title, and one long enough to wrap; the message wraps in both. One
+            // per run (PopupSpecimen.System), so each has a name of its own for -Only.
+            list.Add(Message("MessageDialog", "default", "message dialog"));
+            list.Add(Message("MessageDialogLongTitle", "long-title", "Agjy 0123 a message dialog title long enough to wrap"));
 
             list.Add(ListPicker("single", ListPickerFlyoutSelectionMode.Single));
             list.Add(ListPicker("multiple", ListPickerFlyoutSelectionMode.Multiple));
@@ -157,6 +170,30 @@ namespace RefApp
                     return d;
                 },
                 Close = (host, h) => ((ContentDialog)h).Hide(),
+            };
+        }
+
+        /// <summary>
+        /// A MessageDialog with two commands, shown with ShowAsync. Close cancels that operation, which the API documents
+        /// as taking one down from code, but on the phone (2026-11-11, device 11) the dialog stayed open: see
+        /// <see cref="PopupSpecimen.System"/>.
+        /// </summary>
+        private static PopupSpecimen Message(string name, string variant, string title)
+        {
+            return new PopupSpecimen
+            {
+                Name = name,
+                Variant = variant,
+                System = true,
+                MakeHost = () => new Button { Content = "open" },
+                Open = host =>
+                {
+                    var d = new Windows.UI.Popups.MessageDialog("Agjy 0123 the dialog's message, long enough to wrap onto a second line.", title);
+                    d.Commands.Add(new Windows.UI.Popups.UICommand("ok"));
+                    d.Commands.Add(new Windows.UI.Popups.UICommand("cancel"));
+                    return d.ShowAsync();
+                },
+                Close = (host, h) => ((Windows.Foundation.IAsyncOperation<Windows.UI.Popups.IUICommand>)h).Cancel(),
             };
         }
 
