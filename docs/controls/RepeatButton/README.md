@@ -1,6 +1,6 @@
 # RepeatButton
 
-Status: done · [#30](https://github.com/wdcossey/CornflowerUI/issues/30) · owed: the device run on the Pixel 8
+Status: done · [#30](https://github.com/wdcossey/CornflowerUI/issues/30) · device run passed 2026-11-12 (Pixel 8, Release, over wireless adb, `run.ps1 -Page repeatbutton` on `main` at `764c435`: cold 817 ms, the page opened in 398 ms, every specimen drawn)
 
 The Windows Phone 8.1 RepeatButton: Avalonia's `RepeatButton`, themed by `Wp81Theme` with the phone's default style,
 template and timing, in `src/Cornflower.Themes.Wp81/Controls/RepeatButton.axaml`. The plan, with every value and its
@@ -68,7 +68,6 @@ None.
 - **A repeat's `Click` is held back by marking it handled**: a handler an app adds with `handledEventsToo` still sees
   it while the finger is off, and a `Flyout` on the button still opens and closes with each held-back repeat
   (Avalonia's Button does that before it raises Click).
-- **Owed**: the device run on the Pixel 8.
 
 ## The checklist
 

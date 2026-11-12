@@ -1,6 +1,6 @@
 # ProgressBar
 
-Status: done · [#35](https://github.com/wdcossey/CornflowerUI/issues/35) · owed: the device run on the Pixel 8
+Status: done · [#35](https://github.com/wdcossey/CornflowerUI/issues/35) · device run passed 2026-11-12 (Pixel 8, Release, over wireless adb, `run.ps1 -Page progressbar` on `main` at `764c435`: cold 807 ms, the page opened in 378 ms, every specimen drawn, the dots running)
 
 The Windows Phone 8.1 ProgressBar: Avalonia's `ProgressBar`, themed by `Wp81Theme` with the phone's default style and
 template, in `src/Cornflower.Themes.Wp81/Controls/ProgressBar.axaml`, and its indeterminate dots run frame by frame by

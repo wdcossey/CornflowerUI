@@ -52,7 +52,7 @@ start, naming the titles it has, and the script stops with the app's crash repor
    `page` the page's own size, laid out in the same frame as `open`, and the title is last, as it
    can have spaces. On a phone, Avalonia gives the safe area to the shell, the view's content, as
    its padding, so `page` is the view less the safe area, each side rounded to the raw pixel grid:
-   on the Pixel 8, about 840 tall (914.29 less 50.29 and 24), to be confirmed by a device run.
+   on the Pixel 8, 840 tall (914.29 less 50.29 and 24), as every device run of 2026-11-12 read (`page=411.43x840`).
    Before the shell, the page was the view's content and padded itself, so it read 915. The first
    run after the shell read `page=412x720`: the line was read before the layout of a safe area or
    view that had changed since the page's first frame.
