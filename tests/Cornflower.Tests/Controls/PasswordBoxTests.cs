@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
+using Avalonia.Controls.Templates;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
@@ -392,17 +393,30 @@ public class PasswordBoxTests
     }
 
     // The PasswordBox theme going takes every value it set, the behaviour's with them (spike 6: nothing taken away
-    // inside the unsetting): the box is the TextBox theme's, unmasked, its keyboard Avalonia's.
-    [AvaloniaFact]
-    public void The_Theme_Going_Takes_Everything_It_Set()
+    // inside the unsetting): to the TextBox theme, which turns the behaviour on too, and to an app's theme, which
+    // doesn't, so the behaviour's own switch goes with the rest; the box unmasked, its keyboard Avalonia's.
+    [AvaloniaTheory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void The_Theme_Going_Takes_Everything_It_Set(bool toAnAppsTheme)
     {
         var box = Specimen(reveal: true);
         using var scene = new Scene(new StackPanel { Children = { box } });
         Dispatcher.UIThread.RunJobs();
         Assert.Equal(TextInputContentType.Password, TextInputOptions.GetContentType(box));
+        Assert.True(Cornflower.Themes.Wp81.PhonePasswordKeyboard.GetIsEnabled(box));
 
-        box.Theme = null;
+        box.Theme = toAnAppsTheme
+            ? new ControlTheme(typeof(TextBox))
+            {
+                Setters = { new Setter(Avalonia.Controls.Primitives.TemplatedControl.TemplateProperty, new FuncControlTemplate<TextBox>((_, scope) => new TextPresenter { Name = "PART_TextPresenter" }.RegisterInNameScope(scope))) },
+            }
+            : null;
         Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(!toAnAppsTheme, Cornflower.Themes.Wp81.PhonePasswordKeyboard.GetIsEnabled(box));
+        if (toAnAppsTheme)
+            Assert.Equal(0, box.MinWidth); // the PasswordBox theme's TextControlThemeMinWidth gone, to Avalonia's default
 
         Assert.Equal(default, box.PasswordChar);
         Assert.DoesNotContain(box.GetVisualDescendants(), v => v is CheckBox);

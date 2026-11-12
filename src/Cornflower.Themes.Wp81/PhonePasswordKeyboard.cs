@@ -26,8 +26,8 @@ namespace Cornflower.Themes.Wp81;
 /// <para>As <see cref="PhoneTextLine"/>: before setting one, its own value is taken away, as only then can it see
 /// whether anything else sets the property; when a value goes rather than comes (<c>Unset</c> or <c>Inherited</c>
 /// priority: a theme going, a value cleared), the pass runs from the dispatcher, not inside Avalonia's unsetting of a
-/// theme's values (spike 6); and a pass runs again from the dispatcher after the box's theme turns it on, when every
-/// setter of the theme, a derived theme's included, is in.</para>
+/// theme's values (spike 6). A derived theme's setters are in by the time its base's turns this on, so a PIN box's
+/// <c>ContentType</c> is seen at once.</para>
 /// <para>The keyboard reads the options when the box takes focus: a <c>PasswordChar</c> set or cleared on a focused box
 /// reaches it at the next focus (a known gap).</para>
 /// </remarks>
@@ -71,10 +71,9 @@ internal static class PhonePasswordKeyboard
             return;
         }
 
-        var goes = change.Priority is BindingPriority.Unset or BindingPriority.Inherited;
-        if (goes || change.Property == IsEnabledProperty)
+        if (change.Priority is BindingPriority.Unset or BindingPriority.Inherited)
             applied.Post(box);
-        if (!goes)
+        else
             Update(box, applied, look: change.Property != TextBox.PasswordCharProperty);
     }
 
