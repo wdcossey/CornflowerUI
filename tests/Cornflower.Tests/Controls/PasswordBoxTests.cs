@@ -312,27 +312,50 @@ public class PasswordBoxTests
         Assert.True(box.RevealPassword);
     }
 
-    // The platform keyboard is told the box holds a password (#104): no suggestions, nothing learned, shown or not. A
-    // plain TextBox, even with a PasswordChar, keeps Avalonia's defaults.
+    // A masked box tells the platform keyboard it holds a password (#104): no suggestions, nothing learned. The keyed
+    // PasswordBox and a plain TextBox with a PasswordChar alike, masked or shown; a box with no PasswordChar is left
+    // unset, so it keeps Avalonia's defaults or what an ancestor sets; an app's own value on the box wins. Not the
+    // phone's keyboard, which is unmeasured: the platform's, as the device run of #104 found it.
     [AvaloniaFact]
-    public void The_Keyboard_Is_Told_It_Is_A_Password()
+    public void A_Masked_Box_Tells_The_Keyboard_It_Is_A_Password()
     {
-        var box = Specimen(reveal: true);
+        var keyed = Specimen(reveal: true);
         var plain = new TextBox { PasswordChar = '●' };
-        using var stage = new TextBoxTests.Stage(box: box);
+        var unmasked = new TextBox();
+        var appsOwn = new TextBox { PasswordChar = '●' };
+        TextInputOptions.SetShowSuggestions(appsOwn, true);
+        var inheriting = new TextBox();
+        var parent = new StackPanel { Children = { inheriting } };
+        TextInputOptions.SetContentType(parent, TextInputContentType.Email);
+        var panel = new StackPanel { Children = { keyed, plain, unmasked, appsOwn, parent } };
+        using var scene = new Scene(panel);
         Dispatcher.UIThread.RunJobs();
 
-        foreach (var shown in new[] { false, true })
+        static void AssertMasked(TextBox box)
         {
-            box.RevealPassword = shown;
-            Dispatcher.UIThread.RunJobs();
             Assert.Equal(TextInputContentType.Password, TextInputOptions.GetContentType(box));
             Assert.True(TextInputOptions.GetIsSensitive(box));
             Assert.False(TextInputOptions.GetShowSuggestions(box));
         }
+        AssertMasked(keyed);
+        AssertMasked(plain);
+        keyed.RevealPassword = true;
+        Dispatcher.UIThread.RunJobs();
+        AssertMasked(keyed);
+
+        Assert.Equal(TextInputContentType.Normal, TextInputOptions.GetContentType(unmasked));
+        Assert.False(TextInputOptions.GetIsSensitive(unmasked));
+        Assert.Null(TextInputOptions.GetShowSuggestions(unmasked));
+        Assert.True(TextInputOptions.GetShowSuggestions(appsOwn));
+        Assert.Equal(TextInputContentType.Email, TextInputOptions.GetContentType(inheriting));
+
+        // A PasswordChar cleared leaves the box unset again; one set later masks it.
+        plain.PasswordChar = default;
+        unmasked.PasswordChar = '*';
+        Dispatcher.UIThread.RunJobs();
         Assert.Equal(TextInputContentType.Normal, TextInputOptions.GetContentType(plain));
-        Assert.False(TextInputOptions.GetIsSensitive(plain));
         Assert.Null(TextInputOptions.GetShowSuggestions(plain));
+        AssertMasked(unmasked);
     }
 
     // Typing is masked with the phone's circle.
