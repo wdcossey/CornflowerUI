@@ -126,11 +126,11 @@
                           IsScrollChainingEnabled="{TemplateBinding (ScrollViewer.IsScrollChainingEnabled)}"
                           BringIntoViewOnFocusChange="{TemplateBinding (ScrollViewer.BringIntoViewOnFocusChange)}"
                           AllowAutoHide="{TemplateBinding (ScrollViewer.AllowAutoHide)}">
+              <!-- Not bound, as they reach the presenter without: CaretIndex, which Avalonia's TextBox sets on it itself,
+                   and LetterSpacing, which inherits. -->
               <TextPresenter x:Name="PART_TextPresenter"
                              CaretBlinkInterval="{TemplateBinding CaretBlinkInterval}"
                              CaretBrush="{TemplateBinding CaretBrush}"
-                             CaretIndex="{TemplateBinding CaretIndex}"
-                             LetterSpacing="{TemplateBinding LetterSpacing}"
                              PasswordChar="{TemplateBinding PasswordChar}"
                              RevealPassword="{TemplateBinding RevealPassword}"
                              SelectionBrush="{TemplateBinding SelectionBrush}"
