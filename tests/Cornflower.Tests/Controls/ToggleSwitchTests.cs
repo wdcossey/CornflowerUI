@@ -1059,11 +1059,11 @@ public class ToggleSwitchTests
 
         stage.Window.MouseMove(stage.Knob());
         using (var over = stage.Capture())
-            Assert.True(SameFrame(rest, over), "the pointer over it changed a pixel");
+            Assert.True(Frames.SameAs(rest, over), "the pointer over it changed a pixel");
 
         stage.Window.MouseDown(stage.Knob(), MouseButton.Left);
         using (var pressed = stage.Capture())
-            Assert.True(SameFrame(rest, pressed), "a press changed a pixel");
+            Assert.True(Frames.SameAs(rest, pressed), "a press changed a pixel");
         stage.Window.MouseMove(stage.At(10, 10));
         stage.Window.MouseUp(stage.At(10, 10), MouseButton.Left);    // far off: not a tap
         Dispatcher.UIThread.RunJobs();
@@ -1071,7 +1071,7 @@ public class ToggleSwitchTests
         Assert.False(stage.Toggle.IsChecked);
         stage.Window.MouseMove(new Point(1, 1));
         using (var after = stage.Capture())
-            Assert.True(SameFrame(rest, after), "the press left a pixel changed");
+            Assert.True(Frames.SameAs(rest, after), "the press left a pixel changed");
     }
 
     // Keyboard focus draws nothing: the phone's template has no focus state, and the theme clears the FocusAdorner,
@@ -1086,7 +1086,7 @@ public class ToggleSwitchTests
         Dispatcher.UIThread.RunJobs();
         Assert.True(stage.Toggle.IsFocused);
         using var focused = stage.Capture();
-        Assert.True(SameFrame(rest, focused), "keyboard focus changed a pixel");
+        Assert.True(Frames.SameAs(rest, focused), "keyboard focus changed a pixel");
     }
 
     // The colours follow a change of variant at run time, through the keys.
@@ -1102,23 +1102,6 @@ public class ToggleSwitchTests
         Assert.Equal(Foreground(false), ColourOf(KnobOf(t).Fill));
         Assert.Equal(Background(false), ColourOf(KnobOf(t).Stroke));
         Assert.Equal(HeaderInk(false), ColourOf(HeaderOf(t).Foreground));
-    }
-
-    private static bool SameFrame(WriteableBitmap a, WriteableBitmap b)
-    {
-        using var x = a.Lock();
-        using var y = b.Lock();
-        if (x.Size != y.Size || x.Format != y.Format) return false;
-        var row = new byte[x.Size.Width * 4];
-        var other = new byte[row.Length];
-        for (var r = 0; r < x.Size.Height; r++)
-        {
-            System.Runtime.InteropServices.Marshal.Copy(x.Address + r * x.RowBytes, row, 0, row.Length);
-            System.Runtime.InteropServices.Marshal.Copy(y.Address + r * y.RowBytes, other, 0, other.Length);
-            if (!row.AsSpan().SequenceEqual(other)) return false;
-        }
-
-        return true;
     }
 
     private sealed class CountingCommand : ICommand

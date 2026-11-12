@@ -48,6 +48,48 @@ public class FramesTests
         Assert.Throws<ArgumentOutOfRangeException>(() => Frames.PixelAt(frame, x, y));
     }
 
+    // The control tests compare a state's frame with the resting one: a change anywhere must count.
+    [AvaloniaFact]
+    public void SameAs_Holds_Two_Captures_Of_One_Scene()
+    {
+        using var scene = new Scene(new Border { Background = Brushes.Teal });
+        using var first = scene.Capture();
+        using var second = scene.Capture();
+
+        Assert.True(Frames.SameAs(first, second));
+    }
+
+    [AvaloniaFact]
+    public void SameAs_Finds_One_Pixel_Changed_In_The_Last_Row()
+    {
+        using var a = Bitmap(PixelFormat.Rgba8888, [0x11, 0x22, 0x33, 0xFF]);
+        using var b = Bitmap(PixelFormat.Rgba8888, [0x11, 0x22, 0x33, 0xFF]);
+        using (var buffer = b.Lock())
+            System.Runtime.InteropServices.Marshal.WriteByte(buffer.Address, buffer.RowBytes + 4 + 2, 0x01);
+
+        Assert.True(Frames.SameAs(a, a));
+        Assert.False(Frames.SameAs(a, b));
+    }
+
+    [AvaloniaFact]
+    public void SameAs_Tells_Sizes_And_Orders_Apart()
+    {
+        using var rgba = Bitmap(PixelFormat.Rgba8888, [0x11, 0x22, 0x33, 0xFF]);
+        using var bgra = Bitmap(PixelFormat.Bgra8888, [0x11, 0x22, 0x33, 0xFF]);
+        using var larger = new WriteableBitmap(new PixelSize(3, 2), new Vector(96, 96), PixelFormat.Rgba8888, AlphaFormat.Premul);
+
+        Assert.False(Frames.SameAs(rgba, bgra));
+        Assert.False(Frames.SameAs(rgba, larger));
+    }
+
+    [AvaloniaFact]
+    public void SameAs_Refuses_A_Format_It_Does_Not_Read()
+    {
+        using var frame = Bitmap(PixelFormat.Rgb565, [0x00, 0xF8, 0x00, 0xF8]);
+
+        Assert.Throws<NotSupportedException>(() => Frames.SameAs(frame, frame));
+    }
+
     private static WriteableBitmap Bitmap(PixelFormat format, byte[] firstPixel)
     {
         var bitmap = new WriteableBitmap(new PixelSize(2, 2), new Vector(96, 96), format, AlphaFormat.Premul);

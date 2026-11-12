@@ -623,7 +623,7 @@ public class TextBoxTests
         Assert.True(stage.Box.IsPointerOver);
         using var over = stage.Capture();
 
-        Assert.True(SameFrame(rest, over), "the pointer over it changed a pixel");
+        Assert.True(Frames.SameAs(rest, over), "the pointer over it changed a pixel");
     }
 
     // ContentElement wears the theme's own ScrollViewer theme: no scroll bar, and an app's implicit ScrollViewer theme
@@ -721,20 +721,4 @@ public class TextBoxTests
             $"{Hex(actual)} is not {Hex(expected)}, within one step a channel");
     }
 
-    private static bool SameFrame(WriteableBitmap a, WriteableBitmap b)
-    {
-        using var x = a.Lock();
-        using var y = b.Lock();
-        if (x.Size != y.Size || x.Format != y.Format) return false;
-        var row = new byte[x.Size.Width * 4];
-        var other = new byte[row.Length];
-        for (var r = 0; r < x.Size.Height; r++)
-        {
-            System.Runtime.InteropServices.Marshal.Copy(x.Address + r * x.RowBytes, row, 0, row.Length);
-            System.Runtime.InteropServices.Marshal.Copy(y.Address + r * y.RowBytes, other, 0, other.Length);
-            if (!row.AsSpan().SequenceEqual(other)) return false;
-        }
-
-        return true;
-    }
 }
