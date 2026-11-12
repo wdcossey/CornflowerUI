@@ -80,11 +80,11 @@ step, and a control that climbs a rung says so in its PR.
 | [#30](https://github.com/wdcossey/CornflowerUI/issues/30) | RepeatButton, ToggleButton | the same | Theme (no tilt: neither phone template has one); the slide off and the repeat off the button (`PhonePress`); done 2026-11-12 (#93), device run passed 2026-11-12 | 1, 2 |
 | [#31](https://github.com/wdcossey/CornflowerUI/issues/31) | CheckBox | CheckBox | Theme, glyph, tilt; done 2026-11-12 (#92), device run passed 2026-11-12 | 1, 2 |
 | [#32](https://github.com/wdcossey/CornflowerUI/issues/32) | RadioButton | RadioButton | Theme, tilt; done 2026-11-12 (#94), device run passed 2026-11-12 | 1, 2 |
-| [#33](https://github.com/wdcossey/CornflowerUI/issues/33) | ToggleSwitch | ToggleSwitch | Theme. Avalonia's has no `Header`: an attached property. A subclass only if the drag measurement fails | 1, 2 |
+| [#33](https://github.com/wdcossey/CornflowerUI/issues/33) | ToggleSwitch | ToggleSwitch | Theme, `Header` by `ControlHeader`; the phone's tap and drag by a behaviour (`PhoneToggleSwitch`), not a subclass; done 2026-11-12 (#102), device run passed 2026-11-12 | 1, 2 |
 | [#34](https://github.com/wdcossey/CornflowerUI/issues/34) | Slider | Slider | Theme; `Header` by an attached property, `ControlHeader`; done 2026-11-12 (#96), device run passed 2026-11-12 | 1, 2 |
 | [#35](https://github.com/wdcossey/CornflowerUI/issues/35) | ProgressBar | ProgressBar | Theme. The indeterminate dots are the hard part; done 2026-11-12 (#95), device run passed 2026-11-12 | 1, 2 |
-| [#36](https://github.com/wdcossey/CornflowerUI/issues/36) | TextBox | TextBox | Theme, clear button glyph, `Header` | 1, 2 |
-| [#37](https://github.com/wdcossey/CornflowerUI/issues/37) | PasswordBox | TextBox with `PasswordChar` | Theme. No separate control in Avalonia | 1, 2 |
+| [#36](https://github.com/wdcossey/CornflowerUI/issues/36) | TextBox | TextBox | Theme, `Header` (no clear button: the phone's template has none); done 2026-11-12 (#101), device run passed 2026-11-12 | 1, 2 |
+| [#37](https://github.com/wdcossey/CornflowerUI/issues/37) | PasswordBox | TextBox with `PasswordChar` | Theme, keyed `PasswordBox`, on a `TextBox`. No separate control in Avalonia; done 2026-11-12 (#103), device run passed 2026-11-12; the keyboard's suggestions are #104 | 1, 2 |
 
 ### Tier 2
 

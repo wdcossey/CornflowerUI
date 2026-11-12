@@ -15,7 +15,8 @@ powershell -ExecutionPolicy Bypass -File tools\real-window\drive.ps1
 **Windows only**, by nature: it moves the real cursor through Win32 and finds the window through UI
 Automation. It is written for PowerShell 7 (`pwsh`, [`tools/README.md`](../README.md#powershell))
 and Windows PowerShell 5.1 alike. Both have run it end to end: 5.1 since #68, and `pwsh` 7.7 on
-2026-11-12, on `main` at `49e2311`, 56 of 56 checks over the ten pages.
+2026-11-12, first on `main` at `49e2311` (56 of 56 checks over the ten pages), last at `3bcf02e` (71 of 71 over
+thirteen).
 
 It builds the sample first, from the repo so that `global.json` picks the SDK, as
 `tools/android/run.ps1` does: a stale build runs the old code, and fails checks the new code passes.

@@ -1,6 +1,6 @@
 # ToggleSwitch
 
-Status: done · [#33](https://github.com/wdcossey/CornflowerUI/issues/33) · owed: the device run on the Pixel 8, and probes of a tap on the header and the words and of a drag from on
+Status: done · [#33](https://github.com/wdcossey/CornflowerUI/issues/33) · device run passed 2026-11-12 (Pixel 8, Release, over wireless adb, `run.ps1 -Page toggleswitch` on `main` at `bae2123`: cold 819 ms, the page opened in 426 ms, every specimen drawn; a tap toggles, a 1.5 s hold doesn't, a short drag goes back and a long one goes over) · real-window run passed 2026-11-12 (`tools/real-window/drive.ps1` under `pwsh` 7.7, Debug, on `main` at `3bcf02e`: 71 of 71, the toggleswitch page opened in 21 ms with 206 elements) · owed: probes of a tap on the header and the words and of a drag from on
 
 The Windows Phone 8.1 ToggleSwitch: Avalonia's `ToggleSwitch`, themed by `Wp81Theme` with the phone's default style
 and template, in `src/Cornflower.Themes.Wp81/Controls/ToggleSwitch.axaml`, and the phone's tap and drag, as the
@@ -90,7 +90,7 @@ None. `Cornflower.Controls.ControlHeader` (#96) gives WinRT's `Header` and `Head
 - **The keyboard** is Avalonia's: Enter toggles too. Unmeasured on the phone.
 - **`ClickMode`** does nothing: a tap toggles on its release, as the phone's does.
 - **The text is Selawik**, its baseline 0.025 em above the phone's (ADR 0003).
-- **Owed**: a probe of a tap on the header and the words, and of a drag from on; the device run on the Pixel 8.
+- **Owed**: a probe of a tap on the header and the words, and of a drag from on.
 
 ## The checklist
 
