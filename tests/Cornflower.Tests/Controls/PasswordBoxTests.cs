@@ -392,6 +392,51 @@ public class PasswordBoxTests
         Assert.Equal(TextInputContentType.Password, TextInputOptions.GetContentType(styled));
     }
 
+    // A PIN box: a theme based on PasswordBox, there before the box joins the tree, its ContentType over the behaviour's
+    // from the start; an app's style switched on later wins too, and an app's local value changes nothing else.
+    [AvaloniaFact]
+    public void A_Derived_Theme_From_The_Start_And_An_Apps_Style_Later_Win()
+    {
+        var host = new StackPanel();
+        using var scene = new Scene(host);
+        var pin = new ControlTheme(typeof(TextBox))
+        {
+            BasedOn = (ControlTheme)scene.Window.FindResource("PasswordBox")!,
+            Setters = { new Setter(TextInputOptions.ContentTypeProperty, TextInputContentType.Pin) },
+        };
+        var derived = new TextBox { Theme = pin };
+        var later = new TextBox { PasswordChar = '●' };
+        host.Styles.Add(new Style(x => x.OfType<TextBox>().Class("digits"))
+        {
+            Setters = { new Setter(TextInputOptions.ContentTypeProperty, TextInputContentType.Digits) },
+        });
+        host.Children.Add(derived);
+        host.Children.Add(later);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(TextInputContentType.Pin, TextInputOptions.GetContentType(derived));
+        Assert.True(TextInputOptions.GetIsSensitive(derived));
+        Assert.Equal(TextInputContentType.Password, TextInputOptions.GetContentType(later));
+
+        later.Classes.Add("digits");
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(TextInputContentType.Digits, TextInputOptions.GetContentType(later));
+
+        // One option set by the app moves only that one: the other two raise no change.
+        var others = new List<AvaloniaProperty>();
+        later.PropertyChanged += (_, e) =>
+        {
+            if (e.Property == TextInputOptions.IsSensitiveProperty || e.Property == TextInputOptions.ShowSuggestionsProperty)
+                others.Add(e.Property);
+        };
+        TextInputOptions.SetContentType(later, TextInputContentType.Number);
+        later.ClearValue(TextInputOptions.ContentTypeProperty);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Empty(others);
+        Assert.True(TextInputOptions.GetIsSensitive(later));
+        Assert.False(TextInputOptions.GetShowSuggestions(later));
+    }
+
     // The PasswordBox theme going takes every value it set, the behaviour's with them (spike 6: nothing taken away
     // inside the unsetting): to the TextBox theme, which turns the behaviour on too, and to an app's theme, which
     // doesn't, so the behaviour's own switch goes with the rest; the box unmasked, its keyboard Avalonia's.

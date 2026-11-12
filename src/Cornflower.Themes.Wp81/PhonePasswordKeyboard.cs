@@ -57,69 +57,89 @@ internal static class PhonePasswordKeyboard
     {
         if (!Bookkeeping.TryGetValue(box, out var applied))
         {
-            if (change.Property != IsEnabledProperty || !change.GetNewValue<bool>())
+            // Nothing to take away, and nothing to set until the box is masked: no bookkeeping for a plain box.
+            if (!IsMasked(box))
                 return;
-            applied = new Applied();
+            applied = new Applied(box);
             Bookkeeping.Add(box, applied);
         }
 
         if (change.Property == applied.Setting)
             return;
+
+        var look = LookAt(change.Property);
         if (applied.Updating)
         {
             // Another's change, made in the middle of a pass: worked out again after it.
-            applied.Dirty = true;
+            applied.Dirty |= look | Slots.Pass;
             return;
         }
 
+        if (!IsMasked(box) && !applied.HoldsAny)
+            return;
+
         if (change.Priority is BindingPriority.Unset or BindingPriority.Inherited)
-            applied.Post(box);
+            applied.Defer(look);
         else
-            Update(box, applied, look: change.Property != TextBox.PasswordCharProperty);
+            Update(box, applied, look);
     }
 
+    private static bool IsMasked(TextBox box) => GetIsEnabled(box) && box.PasswordChar != default;
+
     /// <summary>
-    /// Sets or takes the three. <paramref name="look"/>: take its own value away first, even when it holds, to see
-    /// whether anything else now sets the property.
+    /// Which of its values a change asks this to look at again, taking its own away to see whether anything else sets
+    /// the property: the option that changed, or all three when the switch did; none for a <c>PasswordChar</c>, which
+    /// only masks or unmasks.
     /// </summary>
-    private static void Update(TextBox box, Applied applied, bool look)
+    private static Slots LookAt(AvaloniaProperty property) =>
+        property == TextInputOptions.ContentTypeProperty ? Slots.ContentType
+        : property == TextInputOptions.IsSensitiveProperty ? Slots.IsSensitive
+        : property == TextInputOptions.ShowSuggestionsProperty ? Slots.ShowSuggestions
+        : property == IsEnabledProperty ? Slots.All
+        : Slots.None;
+
+    /// <summary>Sets or takes the three, looking again at those in <paramref name="look"/>.</summary>
+    private static void Update(TextBox box, Applied applied, Slots look)
     {
         applied.Updating = true;
         try
         {
             for (var pass = 0; pass < 4; pass++)
             {
-                applied.Dirty = false;
-                var masked = GetIsEnabled(box) && box.PasswordChar != default;
-                Put(box, applied, 0, TextInputOptions.ContentTypeProperty, TextInputContentType.Password, masked, look);
-                Put(box, applied, 1, TextInputOptions.IsSensitiveProperty, true, masked, look);
-                Put(box, applied, 2, TextInputOptions.ShowSuggestionsProperty, (bool?)false, masked, look);
-                if (!applied.Dirty)
+                applied.Dirty = Slots.None;
+                var masked = IsMasked(box);
+                Put(box, applied, Slots.ContentType, TextInputOptions.ContentTypeProperty, TextInputContentType.Password, masked, look);
+                Put(box, applied, Slots.IsSensitive, TextInputOptions.IsSensitiveProperty, true, masked, look);
+                Put(box, applied, Slots.ShowSuggestions, TextInputOptions.ShowSuggestionsProperty, (bool?)false, masked, look);
+                if (applied.Dirty == Slots.None)
                     break;
-                look = true;
+                look = applied.Dirty;
             }
         }
         finally
         {
             applied.Updating = false;
-            applied.Dirty = false;
+            applied.Dirty = Slots.None;
         }
     }
 
-    private static void Put<T>(TextBox box, Applied applied, int slot, StyledProperty<T> property, T value, bool masked,
-        bool look)
+    private static void Put<T>(TextBox box, Applied applied, Slots slot, StyledProperty<T> property, T value, bool masked,
+        Slots look)
     {
-        var own = applied.Set[slot];
-        if (masked && own is not null && !look && Equals(box.GetValue(property), value))
+        var index = slot switch { Slots.ContentType => 0, Slots.IsSensitive => 1, _ => 2 };
+        var own = applied.Set[index];
+        if (masked && own is not null && (look & slot) == 0 && Equals(box.GetValue(property), value))
+            return;
+        if (!masked && own is null)
             return;
 
         applied.Setting = property;
         try
         {
-            applied.Set[slot] = null;
+            applied.Set[index] = null;
             own?.Dispose();
             if (masked && !box.IsSet(property))
-                applied.Set[slot] = box.SetValue(property, value, BindingPriority.Style);
+                applied.Set[index] = box.SetValue(property, value, BindingPriority.Style);
         }
         finally
         {
@@ -127,25 +147,51 @@ internal static class PhonePasswordKeyboard
         }
     }
 
+    [Flags]
+    private enum Slots
+    {
+        None = 0,
+        ContentType = 1,
+        IsSensitive = 2,
+        ShowSuggestions = 4,
+        All = ContentType | IsSensitive | ShowSuggestions,
+
+        /// <summary>A change in the middle of a pass that asks for another pass but no value looked at again.</summary>
+        Pass = 8,
+    }
+
     private sealed class Applied
     {
         public readonly IDisposable?[] Set = new IDisposable?[3];
-        /// <summary>The property this is setting or taking back: its own change, not another's.</summary>
-        public AvaloniaProperty? Setting;
-        public bool Updating;
-        public bool Dirty;
-        private bool _posted;
 
-        public void Post(TextBox box)
+        /// <summary>The property this is setting or taking back, whose change is its own.</summary>
+        public AvaloniaProperty? Setting;
+
+        /// <summary>While this works the values out, the changes it raises itself aren't handled again.</summary>
+        public bool Updating;
+
+        /// <summary>What a change made by other code during a pass asks to look at again.</summary>
+        public Slots Dirty;
+
+        private readonly Action _run;
+        private DispatcherOperation? _posted;
+        private Slots _deferred;
+
+        public Applied(TextBox box) => _run = () =>
         {
-            if (_posted)
-                return;
-            _posted = true;
-            Dispatcher.UIThread.Post(() =>
-            {
-                _posted = false;
-                Update(box, this, look: true);
-            }, DispatcherPriority.Normal);
+            var look = _deferred;
+            _deferred = Slots.None;
+            Update(box, this, look);
+        };
+
+        public bool HoldsAny => Set[0] is not null || Set[1] is not null || Set[2] is not null;
+
+        /// <summary>A pass from the dispatcher, after Avalonia's unsetting (spike 6); one at a time, as PhoneTextLine's.</summary>
+        public void Defer(Slots look)
+        {
+            _deferred |= look;
+            if (_posted is not { Status: DispatcherOperationStatus.Pending })
+                _posted = Dispatcher.UIThread.InvokeAsync(_run, DispatcherPriority.Normal);
         }
     }
 }

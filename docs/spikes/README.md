@@ -201,9 +201,12 @@ once rather than at the next recompute, which `TextBlockTests` lines 441 (both c
 what it would have had, an ancestor's `TextInputOptions` included. Can a theme's setter do that, with a binding on
 `PasswordChar` that gives no value for an unmasked box?
 
-**Answer.** No. The three `TextInputOptions` a password needs (`ContentType`, `IsSensitive`, `ShowSuggestions`)
-inherit, and a style setter whose binding gives `UnsetValue` still hides an ancestor's value: the box gets the
-default. A value set from code at style priority, once taken away, gives the ancestor's back.
+**Answer.** Not by a setter bound to `PasswordChar`. The three `TextInputOptions` a password needs (`ContentType`,
+`IsSensitive`, `ShowSuggestions`) inherit, and a style setter whose binding gives `UnsetValue` still hides an
+ancestor's value: the box gets the default. A value set from code at style priority, once taken away, gives the
+ancestor's back. Not examined: a nested style whose selector matches masked boxes alone. XAML can't write "any
+`PasswordChar`" (` ` can't be written in XML, and a property selector matches one value), and #103's plan already
+turned down a selector on a `char` property; a selector built in code is left untried.
 
 **Evidence.** `KeyboardOptionsTests`: the three report `Inherits` and a `Border` takes a parent's `Email`; under a
 setter whose binding gives `UnsetValue` it is `Normal`; set at style priority and taken away, `Email` again.
