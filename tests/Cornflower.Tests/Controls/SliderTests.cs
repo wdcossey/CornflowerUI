@@ -278,12 +278,12 @@ public class SliderTests
         stage.Window.MouseMove(onThumb);
         Dispatcher.UIThread.RunJobs();
         using (var over = stage.Capture())
-            Assert.True(SameFrame(rest, over), "the pointer over it changed a pixel");
+            Assert.True(Frames.SameAs(rest, over), "the pointer over it changed a pixel");
 
         stage.Window.MouseDown(onThumb, MouseButton.Left);
         Dispatcher.UIThread.RunJobs();
         using (var pressed = stage.Capture())
-            Assert.True(SameFrame(rest, pressed), "a press on the thumb changed a pixel");
+            Assert.True(Frames.SameAs(rest, pressed), "a press on the thumb changed a pixel");
         Assert.Equal(Value, stage.Slider.Value);
         stage.Window.MouseUp(onThumb, MouseButton.Left);
     }
@@ -803,7 +803,7 @@ public class SliderTests
         Dispatcher.UIThread.RunJobs();
         Assert.True(stage.Slider.IsFocused);
         using var focused = stage.Capture();
-        Assert.True(SameFrame(rest, focused), "keyboard focus changed a pixel");
+        Assert.True(Frames.SameAs(rest, focused), "keyboard focus changed a pixel");
     }
 
     // The colours follow a change of variant at run time, through the keys.
@@ -822,22 +822,4 @@ public class SliderTests
     /// <summary>Whether two colours are within one step a channel.</summary>
     private static bool Near(Color a, Color b) =>
         Math.Abs(a.A - b.A) <= 1 && Math.Abs(a.R - b.R) <= 1 && Math.Abs(a.G - b.G) <= 1 && Math.Abs(a.B - b.B) <= 1;
-
-    /// <summary>Whether two frames of the stage are the same, pixel for pixel.</summary>
-    private static bool SameFrame(WriteableBitmap a, WriteableBitmap b)
-    {
-        using var x = a.Lock();
-        using var y = b.Lock();
-        if (x.Size != y.Size || x.Format != y.Format) return false;
-        var row = new byte[x.Size.Width * 4];
-        var other = new byte[row.Length];
-        for (var r = 0; r < x.Size.Height; r++)
-        {
-            System.Runtime.InteropServices.Marshal.Copy(x.Address + r * x.RowBytes, row, 0, row.Length);
-            System.Runtime.InteropServices.Marshal.Copy(y.Address + r * y.RowBytes, other, 0, other.Length);
-            if (!row.AsSpan().SequenceEqual(other)) return false;
-        }
-
-        return true;
-    }
 }

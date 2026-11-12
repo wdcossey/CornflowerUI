@@ -82,24 +82,6 @@ public class CheckBoxTests
 
     private static ThemeVariant VariantOf(string name) => name == "Dark" ? ThemeVariant.Dark : ThemeVariant.Light;
 
-    /// <summary>Whether two frames of the stage are the same, pixel for pixel.</summary>
-    private static bool SameFrame(WriteableBitmap a, WriteableBitmap b)
-    {
-        using var x = a.Lock();
-        using var y = b.Lock();
-        if (x.Size != y.Size || x.Format != y.Format) return false;
-        var row = new byte[x.Size.Width * 4];
-        var other = new byte[row.Length];
-        for (var r = 0; r < x.Size.Height; r++)
-        {
-            System.Runtime.InteropServices.Marshal.Copy(x.Address + r * x.RowBytes, row, 0, row.Length);
-            System.Runtime.InteropServices.Marshal.Copy(y.Address + r * y.RowBytes, other, 0, other.Length);
-            if (!row.AsSpan().SequenceEqual(other)) return false;
-        }
-
-        return true;
-    }
-
     private static Point In(Visual part, Visual of) => part.TranslatePoint(default, of)!.Value;
 
     // The style's setters, as the dump read them (checkbox.json's keys, themeresources.json's values), and the parts'.
@@ -307,7 +289,7 @@ public class CheckBoxTests
         var centre = In(rectangle, BoxOf(stage.CheckBox)) + new Point(rectangle.Bounds.Width / 2, rectangle.Bounds.Height / 2);
         Assert.Equal(Column / 2, centre.X, 0.25);
         using var frame = stage.Capture();
-        Assert.True(SameFrame(plain, frame), "the indeterminate CheckBox isn't drawn as the unchecked one");
+        Assert.True(Frames.SameAs(plain, frame), "the indeterminate CheckBox isn't drawn as the unchecked one");
     }
 
     // An app's CheckBoxBackgroundThemeBrush fills the rectangle, as on the phone. The key is the box's background
@@ -413,7 +395,7 @@ public class CheckBoxTests
 
         Assert.True(stage.CheckBox.IsPointerOver);
         using var after = stage.Capture();
-        Assert.True(SameFrame(before, after), "the pointer over the CheckBox changed what is drawn");
+        Assert.True(Frames.SameAs(before, after), "the pointer over the CheckBox changed what is drawn");
     }
 
     // A tap toggles, and the marks follow: unchecked, checked, and with IsThreeState, indeterminate, then unchecked:
