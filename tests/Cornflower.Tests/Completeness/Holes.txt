@@ -32,7 +32,6 @@ FlyoutPresenter
 GridSplitter
 GroupBox
 HeaderedContentControl
-HyperlinkButton
 ItemsControl
 Label
 ListBox
@@ -50,10 +49,8 @@ PathIcon
 PipsPager
 PopupRoot
 ProgressBar
-RadioButton
 RefreshContainer
 RefreshVisualizer
-RepeatButton
 ScrollBar
 ScrollViewer
 Separator
@@ -73,7 +70,6 @@ TextBox
 TextSelectionHandle
 TimePicker
 TimePickerPresenter
-ToggleButton
 ToggleSwitch
 ToolTip
 TransitioningContentControl

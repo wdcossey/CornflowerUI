@@ -1,0 +1,54 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sample="using:Cornflower.Sample"
+             x:Class="Cornflower.Sample.Pages.ToggleButtonPage"
+             Background="{DynamicResource ApplicationPageBackgroundThemeBrush}"
+             Foreground="{DynamicResource PhoneForegroundBrush}"
+             FontFamily="{DynamicResource PhoneFontFamilyNormal}"
+             FontSize="{DynamicResource TextStyleLargeFontSize}">
+  <!--
+    The 8.1 ToggleButton, as an 8.1 page writes one: no style, no size. Tap one to check it (the accent) and again
+    to clear it; while pressed it shows the unchecked look, as the phone's does. The disabled ones are dimmed, the
+    checked one at 0.4; the light section is the same in the light theme.
+  -->
+  <ScrollViewer>
+    <StackPanel Margin="19,12,19,24">
+      <sample:SamplePageHeader x:Name="Header" />
+
+      <TextBlock Text="default" Theme="{DynamicResource GroupHeaderTextBlockStyle}" />
+      <ToggleButton x:Name="Default" Content="toggle button" IsCheckedChanged="OnChanged" />
+      <TextBlock x:Name="State" Text="unchecked" Theme="{DynamicResource ControlContextualInfoTextBlockStyle}" />
+
+      <TextBlock Text="checked" Theme="{DynamicResource GroupHeaderTextBlockStyle}" Margin="0,12,0,0" />
+      <ToggleButton x:Name="Checked" Content="toggle button" IsChecked="True" />
+
+      <TextBlock Text="three states" Theme="{DynamicResource GroupHeaderTextBlockStyle}" Margin="0,12,0,0" />
+      <ToggleButton x:Name="ThreeState" Content="three states" IsThreeState="True" IsChecked="{x:Null}" />
+
+      <TextBlock Text="disabled" Theme="{DynamicResource GroupHeaderTextBlockStyle}" Margin="0,12,0,0" />
+      <StackPanel Orientation="Horizontal" Spacing="19">
+        <ToggleButton x:Name="Disabled" Content="off" IsEnabled="False" />
+        <ToggleButton x:Name="CheckedDisabled" Content="on" IsChecked="True" IsEnabled="False" />
+      </StackPanel>
+
+      <TextBlock Text="stretched" Theme="{DynamicResource GroupHeaderTextBlockStyle}" Margin="0,12,0,0" />
+      <ToggleButton x:Name="Stretched" Content="stretched" HorizontalAlignment="Stretch" />
+
+      <ThemeVariantScope RequestedThemeVariant="Light" Margin="-19,12,-19,0">
+        <Border Background="{DynamicResource ApplicationPageBackgroundThemeBrush}" Padding="19,6,19,12">
+          <StackPanel>
+            <TextBlock Text="light" Theme="{DynamicResource GroupHeaderTextBlockStyle}" />
+            <StackPanel Orientation="Horizontal" Spacing="19">
+              <ToggleButton x:Name="Light" Content="off" />
+              <ToggleButton x:Name="LightChecked" Content="on" IsChecked="True" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="19">
+              <ToggleButton x:Name="LightDisabled" Content="off" IsEnabled="False" />
+              <ToggleButton x:Name="LightCheckedDisabled" Content="on" IsChecked="True" IsEnabled="False" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+      </ThemeVariantScope>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

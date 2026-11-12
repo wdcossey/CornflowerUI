@@ -1,0 +1,41 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sample="using:Cornflower.Sample"
+             x:Class="Cornflower.Sample.Pages.RepeatButtonPage"
+             Background="{DynamicResource ApplicationPageBackgroundThemeBrush}"
+             Foreground="{DynamicResource PhoneForegroundBrush}"
+             FontFamily="{DynamicResource PhoneFontFamilyNormal}"
+             FontSize="{DynamicResource TextStyleLargeFontSize}">
+  <!--
+    The 8.1 RepeatButton, as an 8.1 page writes one: no style, no size. Press and hold one: it counts once at the
+    press, then after half a second every 33 ms, and stops while the finger is off it. No tilt, as on the phone.
+  -->
+  <ScrollViewer>
+    <StackPanel Margin="19,12,19,24">
+      <sample:SamplePageHeader x:Name="Header" />
+
+      <TextBlock Text="default" Theme="{DynamicResource GroupHeaderTextBlockStyle}" />
+      <StackPanel Orientation="Horizontal" Spacing="19">
+        <RepeatButton x:Name="Less" Content="less" Click="OnLess" />
+        <RepeatButton x:Name="More" Content="more" Click="OnMore" />
+      </StackPanel>
+      <TextBlock x:Name="Count" Text="0" Theme="{DynamicResource ControlContextualInfoTextBlockStyle}" />
+
+      <TextBlock Text="disabled" Theme="{DynamicResource GroupHeaderTextBlockStyle}" Margin="0,12,0,0" />
+      <RepeatButton x:Name="Disabled" Content="repeat button" IsEnabled="False" />
+
+      <TextBlock Text="stretched" Theme="{DynamicResource GroupHeaderTextBlockStyle}" Margin="0,12,0,0" />
+      <RepeatButton x:Name="Stretched" Content="stretched" HorizontalAlignment="Stretch" />
+
+      <ThemeVariantScope RequestedThemeVariant="Light" Margin="-19,12,-19,0">
+        <Border Background="{DynamicResource ApplicationPageBackgroundThemeBrush}" Padding="19,6,19,12">
+          <StackPanel>
+            <TextBlock Text="light" Theme="{DynamicResource GroupHeaderTextBlockStyle}" />
+            <RepeatButton x:Name="Light" Content="repeat button" />
+            <RepeatButton x:Name="LightDisabled" Content="repeat button" IsEnabled="False" />
+          </StackPanel>
+        </Border>
+      </ThemeVariantScope>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>
