@@ -410,16 +410,33 @@ def expo_out(k):
 
 
 def key_spline(x1, y1, x2, y2):
-    """A KeySpline: the cubic Bezier from (0, 0) to (1, 1) with control points (x1, y1), (x2, y2), as y(x)."""
+    """A KeySpline: the cubic Bezier from (0, 0) to (1, 1) with control points (x1, y1), (x2, y2), as y(x). Its
+    parameter is solved from x exactly, to 1e-12 in x, by Newton's method kept inside a bisection bracket. (The C#
+    `Cornflower.Controls.KeySplineCurve` reaches the same answer another way: Newton's method, then bisection if it
+    strays or stalls.) The control points' x are in [0, 1], so x rises with the parameter."""
+    def bez(s, a, b):
+        r = 1 - s
+        return 3 * a * s * r * r + 3 * b * s * s * r + s * s * s
+
     def f(x):
-        sv = x
-        for _ in range(10):
-            xs = 3 * x1 * sv * (1 - sv) ** 2 + 3 * x2 * sv * sv * (1 - sv) + sv ** 3
-            dx = 3 * x1 * (1 - sv) ** 2 + 6 * (x2 - x1) * sv * (1 - sv) + 3 * (1 - x2) * sv * sv
-            if abs(dx) < 1e-9:
+        if x <= 0:
+            return 0.0
+        if x >= 1:
+            return 1.0
+        lo, hi, sv = 0.0, 1.0, x
+        for _ in range(200):
+            err = bez(sv, x1, x2) - x
+            if abs(err) <= 1e-12:
                 break
-            sv = min(1.0, max(0.0, sv - (xs - x) / dx))
-        return 3 * y1 * sv * (1 - sv) ** 2 + 3 * y2 * sv * sv * (1 - sv) + sv ** 3
+            if err > 0:
+                hi = sv
+            else:
+                lo = sv
+            r = 1 - sv
+            slope = 3 * x1 * r * r + 6 * (x2 - x1) * sv * r + 3 * (1 - x2) * sv * sv
+            nxt = sv - err / slope if slope > 0 else -1.0
+            sv = nxt if lo < nxt < hi else (lo + hi) / 2
+        return bez(sv, y1, y2)
     return f
 
 
@@ -494,21 +511,33 @@ def fit_scaled(vals, ticks, f, durations=range(200, 801, 5), phases=[i / 5 for i
     return math.sqrt(se / len(vals)), d, ph, A
 
 
-def fit_fraction(fracs, f, durations=range(200, 701, 5), phases=[i / 5 for i in range(30)], ticks=None):
-    """The remaining fraction 1 - f((phase + k) TICK / duration) at ticks k (consecutive unless given), for the
-    duration and phase on their grids. Returns (rms, duration ms, phase ticks)."""
+def rms(vals):
+    """The root mean square."""
+    return math.sqrt(sum(v * v for v in vals) / len(vals))
+
+
+def fraction_residuals(fracs, f, duration, phase, ticks=None):
+    """The remaining fraction 1 - f((phase + k) TICK / duration) at ticks k (consecutive unless given; they need not
+    be whole), less each fraction read: 1 before the curve starts (a negative phase is a hold), 0 after it ends."""
     ticks = list(range(len(fracs))) if ticks is None else ticks
-    best = None
-    for d in durations:
-        for ph in phases:
-            se = 0.0
-            for k, v in zip(ticks, fracs):
-                u = (ph + k) * TICK / d
-                se += ((0.0 if u >= 1 else 1 - f(u)) - v) ** 2
-            if best is None or se < best[0]:
-                best = (se, d, ph)
-    se, d, ph = best
-    return math.sqrt(se / len(fracs)), d, ph
+    out = []
+    for k, v in zip(ticks, fracs):
+        u = (phase + k) * TICK / duration
+        out.append((1.0 if u <= 0 else 0.0 if u >= 1 else 1 - f(u)) - v)
+    return out
+
+
+def fit_fraction(fracs, f, durations=range(200, 701, 5), phases=[i / 5 for i in range(30)], ticks=None, refine=False):
+    """The duration and phase on their grids that fit the remaining fractions best (fraction_residuals); with refine,
+    then moved off the grid by Nelder-Mead (minimize). Returns (rms, duration ms, phase ticks)."""
+    best = min(((rms(fraction_residuals(fracs, f, d, ph, ticks)), d, ph) for d in durations for ph in phases),
+               key=lambda b: b[0])
+    if refine:
+        v, (d, ph) = minimize(lambda x: rms(fraction_residuals(fracs, f, x[0], x[1], ticks)) if x[0] > 0 else 1e9,
+                              [best[1], best[2]], [1.0, 0.05])
+        if v < best[0]:
+            best = (v, d, ph)
+    return best
 
 
 def ticks_on_curve(fracs, f, duration, phase):
@@ -543,3 +572,36 @@ def print_fits(vals, ticks, curves=(), unit=''):
 
 def median(vals):
     return statistics.median(vals)
+
+
+def minimize(f, x0, scale, iterations=4000, ftol=1e-12, xtol=1e-9):
+    """Nelder-Mead: a local minimum of f from x0, the first simplex x0 and x0 moved by each scale in turn. For fits
+    with too many parameters for a grid. Stops when the simplex's values are within ftol of each other and its points
+    within xtol of the best in every coordinate, or after the iterations. Returns (f(x), x)."""
+    n = len(x0)
+    pts = [list(x0)] + [[x0[i] + (scale[i] if i == j else 0) for i in range(n)] for j in range(n)]
+    vals = [f(p) for p in pts]
+    for _ in range(iterations):
+        order = sorted(range(n + 1), key=lambda i: vals[i])
+        pts, vals = [pts[i] for i in order], [vals[i] for i in order]
+        if vals[-1] - vals[0] <= ftol and all(abs(p[i] - pts[0][i]) <= xtol for p in pts[1:] for i in range(n)):
+            break
+        c = [sum(p[i] for p in pts[:-1]) / n for i in range(n)]
+        xr = [2 * c[i] - pts[-1][i] for i in range(n)]
+        fr = f(xr)
+        if fr < vals[0]:
+            xe = [3 * c[i] - 2 * pts[-1][i] for i in range(n)]
+            fe = f(xe)
+            pts[-1], vals[-1] = (xe, fe) if fe < fr else (xr, fr)
+        elif fr < vals[-2]:
+            pts[-1], vals[-1] = xr, fr
+        else:
+            xc = [(c[i] + pts[-1][i]) / 2 for i in range(n)]
+            fc = f(xc)
+            if fc < vals[-1]:
+                pts[-1], vals[-1] = xc, fc
+            else:
+                pts = [pts[0]] + [[(pts[0][i] + p[i]) / 2 for i in range(n)] for p in pts[1:]]
+                vals = [vals[0]] + [f(p) for p in pts[1:]]
+    best = min(range(n + 1), key=lambda i: vals[i])
+    return vals[best], pts[best]

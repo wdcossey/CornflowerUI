@@ -290,6 +290,106 @@ def scripts_on_partial_logs():
         assert code == 0 and 'OuterBorder ScaleX: 1 rises' in out and '24.3 steps' in out, out
 
 
+@check
+def minimize_finds_a_minimum():
+    # Rosenbrock's valley, from well off it; and a bowl, where it stops once converged, long before its iterations.
+    v, x = ml.minimize(lambda p: (1 - p[0]) ** 2 + 100 * (p[1] - p[0] ** 2) ** 2, [-1.2, 1.0], [0.5, 0.5], 4000)
+    near(x[0], 1, 1e-4, 'x')
+    near(x[1], 1, 1e-4, 'y')
+    calls = []
+
+    def bowl(p):
+        calls.append(p)
+        return (p[0] - 3) ** 2 + (p[1] + 1) ** 2
+
+    v, x = ml.minimize(bowl, [0.0, 0.0], [1.0, 1.0], 100000)
+    near(x[0], 3, 1e-6, 'bowl x')
+    near(x[1], -1, 1e-6, 'bowl y')
+    assert len(calls) < 2000, len(calls)
+
+
+@check
+def key_spline_is_exact():
+    # At any parameter s, the spline's value at the Bezier's x(s) is its y(s), near x1 = 0 too, where Newton's method
+    # alone stalls.
+    for c in ((0.1, 0.25, 0.75, 0.9), (0.0, 0.3, 0.8, 0.9), (0.001, 0.27, 0.77, 0.91), (0.1, 0.9, 0.2, 1), (0, 0, 1, 1)):
+        f = ml.key_spline(*c)
+        for i in range(65):
+            s = i / 64
+            r = 1 - s
+            x = 3 * c[0] * s * r * r + 3 * c[2] * s * s * r + s ** 3
+            y = 3 * c[1] * s * r * r + 3 * c[3] * s * s * r + s ** 3
+            near(f(x), y, 1e-10, 'KeySpline %s at s %g' % (c, s))
+
+
+@check
+def tilt_release_stops_on_too_little():
+    # A run whose returns log one frame each has no frame spacing of its own: the script leaves it out and says so,
+    # then, with no run left, stops, not a crash.
+    import tempfile
+    with tempfile.TemporaryDirectory() as run:
+        with open(os.path.join(run, 'probe.txt'), 'w', encoding='utf-8') as f:
+            f.write('0.0\tlayout\tbutton A 19 120 120 60 root Grid\n1000.0\tpressed\tA 0 0 in-control 5 3 Touch\n')
+            f.write('1020.0\tvalue\tprojection A rot -8 8 0 centre 0.5 0.5 0 local 0 0 0 global -1 -2 -0.6\n')
+            f.write('1500.0\treleased\tA 0 0 in-control 5 3 Touch\n')
+            f.write('1690.0\tvalue\tprojection A rot 0 0 0 centre 0.5 0.5 0 local 0 0 0 global -1 -2 0\n')
+        code, out = run_script('tiltrelease.py', run)
+    assert code != 0 and 'left out, no press logged two or more frames' in out and 'no run with a press' in out, out
+    assert 'Traceback' not in out, out
+
+
+@check
+def tilt_release_in_frames():
+    # Releases logged as the probe logs them: frames 15.0 ms apart by the stopwatch, each moving animation time
+    # 15.625 ms, the first frame after the release at time 0; the tilt held 182.6 ms, then back down KeySpline
+    # 0.1,0.25 0.75,0.9 over 167 ms; a value logged to 0.001, only when it changes. The fits must give them back.
+    import re
+    import tempfile
+    e = ml.key_spline(0.1, 0.25, 0.75, 0.9)
+    held = (-8.5, 8.2, -0.6)
+    line = '%.1f\tvalue\tprojection A rot %g %g 0 centre 0.5 0.5 0 local 0 0 0 global -1 -2 %g\n'
+    with tempfile.TemporaryDirectory() as run:
+        with open(os.path.join(run, 'probe.txt'), 'w', encoding='utf-8') as f:
+            f.write('0.0\tlayout\tbutton A 19 120 120 60 root Grid\n')
+            for i in range(12):
+                t = 1000.0 + 2000 * i
+                f.write('%.1f\tpressed\tA 0 0 in-control 5 3 Touch handled\n' % t)
+                f.write(line % ((t + 20,) + held))
+                released = t + 500 + i * 1.25  # at twelve phases of a frame
+                f.write('%.1f\treleased\tA 0 0 in-control 5 3 Touch handled\n' % released)
+                frame = t + 507.0  # the first frame after the release
+                while frame <= released:
+                    frame += 15.0
+                last = held
+                for k in range(1, 40):
+                    u = ((k - 1) * ml.TICK - 182.6) / 167
+                    left = 1.0 if u <= 0 else 0.0 if u >= 1 else 1 - e(u)
+                    v = tuple(round(c * left, 3) + 0.0 for c in held)
+                    if v != last:
+                        f.write(line % ((frame + (k - 1) * 15.0,) + v))
+                    last = v
+                    if not any(v):
+                        break
+            # And one dragged off the button (a move below it) and let go while its tilt was halfway back: left out.
+            t = 1000.0 + 2000 * 12
+            f.write('%.1f\tpressed\tA 0 0 in-control 5 3 Touch handled\n' % t)
+            f.write(line % ((t + 20,) + held))
+            f.write('%.1f\tmoved\tA 0 0 in-control 5 90 Touch\n' % (t + 300))
+            f.write(line % ((t + 600,) + tuple(c / 2 for c in held)))
+            f.write('%.1f\treleased\tA 0 0 in-control 5 90 Touch handled\n' % (t + 610))
+            f.write(line % ((t + 625,) + tuple(c / 4 for c in held)))
+            f.write(line % ((t + 640,) + (0, 0, 0)))
+        code, out = run_script('tiltrelease.py', run)
+    assert code == 0, out
+    assert '12 presses, 1 left out' in out, out
+    assert 'the first change is frame 13 after the release' in out, out
+    m = re.search(r'control points fixed: hold ([\d.]+) ms, return ([\d.]+) ms; rms ([\d.]+)', out)
+    assert m, out
+    near(float(m.group(1)), 182.6, 0.3, 'hold')
+    near(float(m.group(2)), 167.0, 0.5, 'return')
+    assert float(m.group(3)) < 0.0002, out
+
+
 for fn in checks:
     fn()
     print('ok  %s' % fn.__name__)

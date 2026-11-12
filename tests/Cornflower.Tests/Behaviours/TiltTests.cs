@@ -169,38 +169,64 @@ public class TiltTests
         }
     }
 
+    // Run 2307's first press, released, on the emulator's 15.625 ms frames: frame k after the release,
+    // the release animation's time (k - 1) x 15.625 ms, the first frame after it its time 0. Held
+    // through frame 12; from frame 13 each component is the reading's fraction of its held value,
+    // within the model's worst against the readings (0.0010 of the tilt, with its hold and return
+    // rounded to 182.6 and 167.0 ms) and the reading's rounding (0.0005 over the held value); at rest
+    // on frame 24. With #60's sine (a 180 ms hold, 195 ms back) every frame is out by more: frame 13
+    // by 0.0016 beyond the rounding, the rest further. Timed from the release instead of its first
+    // frame, frame 12 would already have moved.
     [AvaloniaFact]
-    public void A_Release_Holds_For_180_ms_Then_Eases_Back_Over_195_ms()
+    public void A_Release_Holds_Then_Eases_Back_As_The_Emulator_Did()
     {
-        using var clock = new TestClock();
+        using var clock = new TestClock { FrameInterval = TimeSpan.FromMilliseconds(15.625), FramesOnGrid = true };
         using var page = new Page(GridButtons);
         var button = page.Buttons["A"];
         var corner = page.At("A", new Point(5.848, 3.344));
+        var read = new TiltState(-8.527, 8.233, -0.623);            // the reading's held tilt
 
         var touch = page.Window.TouchBegin(corner);
         clock.At(SettleMs);
         var held = CfTilt.Current(button);
-        AssertNear(new TiltState(-8.527, 8.233, -0.623), held);
+        AssertNear(read, held);
 
         page.Window.TouchEnd(touch, corner);
-        var released = clock.Now.TotalMilliseconds;
+        var first = (Math.Floor(clock.Now.TotalMilliseconds / 15.625) + 1) * 15.625;   // frame 1, time 0
+        double Frame(int k) => first + (k - 1) * 15.625;
 
-        Assert.Equal(held, CfTilt.Current(button));
-        clock.At(released + 176);                                   // eleven frames on: still held
-        Assert.Equal(held, CfTilt.Current(button));
+        for (var frame = 1; frame < ReleaseFirstFrame; frame++)
+        {
+            clock.At(Frame(frame));
+            Assert.True(held == CfTilt.Current(button), $"frame {frame}: moved in the hold");
+        }
 
-        // The return's frames are 16 ms apart from the end of the hold. Six frames in, it is 96 ms
-        // of 195 along a sine ease-out: 1 - sin(96 / 195 × π / 2) of the held tilt is left.
-        clock.At(released + 180 + 96);
-        AssertNear(held.Scale(1 - Math.Sin(96.0 / 195 * Math.PI / 2)), CfTilt.Current(button), angle: 1e-9, depth: 1e-9);
+        for (var i = 0; i < ReleaseFrames.Length; i++)
+        {
+            var frame = ReleaseFirstFrame + i;
+            clock.At(Frame(frame));
+            var now = CfTilt.Current(button);
+            var (rotationX, rotationY, offsetZ) = ReleaseFrames[i];
+            if (i == ReleaseFrames.Length - 1)
+            {
+                Assert.Equal(TiltState.Rest, now);
+                break;
+            }
 
-        clock.At(released + 180 + 192);                             // 3 ms short of the end: all but gone
-        Assert.InRange(Math.Abs(CfTilt.Current(button).RotationX), 1e-6, 0.01);
+            AssertFraction(frame, "RotationX", now.RotationX / held.RotationX, rotationX / read.RotationX, read.RotationX);
+            AssertFraction(frame, "RotationY", now.RotationY / held.RotationY, rotationY / read.RotationY, read.RotationY);
+            AssertFraction(frame, "OffsetZ", now.OffsetZ / held.OffsetZ, offsetZ / read.OffsetZ, read.OffsetZ);
+        }
 
-        clock.At(released + 180 + 208);
-        Assert.Equal(TiltState.Rest, CfTilt.Current(button));
         Assert.Null(CfTilt.TargetOf(button).RenderTransform);
         Assert.Equal(0, clock.Pending);
+
+        static void AssertFraction(int frame, string what, double shown, double reading, double heldReading)
+        {
+            var tolerance = 0.0011 + 0.0005 / Math.Abs(heldReading);
+            Assert.True(Math.Abs(shown - reading) <= tolerance,
+                $"frame {frame}, {what}: {shown:F5} of the held tilt shown, {reading:F5} read (within {tolerance:F5})");
+        }
     }
 
     // Run 2118 dragged a press down from the centre: the tilt followed the finger. Its settled
@@ -823,10 +849,11 @@ public class TiltTests
         Assert.NotEqual(TiltState.Rest, CfTilt.Current(item));
         scene.Window.TouchEnd(touch, corner);
         var released = clock.Now.TotalMilliseconds;
-        clock.At(released + 180);                                   // the hold over: the item starts back
+        var holdOver = released + (CornflowerClock.FrameInterval + TiltModel.Hold).TotalMilliseconds;   // time 0 is a frame on
+        clock.At(holdOver);                                         // the hold over: the item starts back
 
         scene.Window.TouchBegin(new Point(50 + 20 + 30, 100 + 20 + 20));
-        clock.At(released + 180 + SettleMs);                        // the item still easing, the Button settled
+        clock.At(holdOver + 6 * CornflowerClock.FrameInterval.TotalMilliseconds);  // the item halfway back, the Button settled
         Assert.NotEqual(TiltState.Rest, CfTilt.Current(item));
         var settled = CfTilt.Current(button);
         Assert.NotEqual(TiltState.Rest, settled);

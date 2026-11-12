@@ -304,4 +304,41 @@ internal static class TiltReadings
         (89.967, 4.071, -19.078),
         (114.164, 7.662, -13.857),
     ];
+
+    /// <summary>
+    /// The release, frame by frame. Every release of the five tilt runs (252 presses, both profiles;
+    /// <c>tools/motion/tiltrelease.py</c>) reads the same fraction of its held tilt at each frame,
+    /// within 0.0002, whatever the frames' spacing by the stopwatch: the return moves on animation
+    /// time, 15.625 ms a frame. Nothing changes for <see cref="ReleaseFirstFrame"/> − 1 frames; these
+    /// are the medians from that frame on, the last at rest.
+    /// </summary>
+    public static readonly double[] ReleaseFractions =
+        [0.9412, 0.8039, 0.6885, 0.5832, 0.4845, 0.3913, 0.3030, 0.2210, 0.1431, 0.0737, 0.0163, 0];
+
+    /// <summary>
+    /// The frame after the release the first change is on, counted by the stopwatch: 12.4 frames'
+    /// spacing after the release on average, 11.95 to 12.90 for 90% of the presses. In animation
+    /// time, with the first frame after the release as time 0, it is (13 − 1) × 15.625 = 187.5 ms.
+    /// </summary>
+    public const int ReleaseFirstFrame = 13;
+
+    /// <summary>
+    /// Run <c>20261109-2307-dev11</c>: the first press, button A at 5.848, 3.344, held at −8.527,
+    /// 8.233, −0.623; its projection on each frame from <see cref="ReleaseFirstFrame"/> on.
+    /// </summary>
+    public static readonly (double RotationX, double RotationY, double OffsetZ)[] ReleaseFrames =
+    [
+        (-8.026, 7.749, -0.586),
+        (-6.855, 6.618, -0.501),
+        (-5.871, 5.668, -0.429),
+        (-4.973, 4.802, -0.363),
+        (-4.132, 3.989, -0.302),
+        (-3.337, 3.222, -0.244),
+        (-2.584, 2.494, -0.189),
+        (-1.884, 1.82, -0.138),
+        (-1.22, 1.178, -0.089),
+        (-0.628, 0.607, -0.046),
+        (-0.139, 0.134, -0.01),
+        (0, 0, 0),
+    ];
 }

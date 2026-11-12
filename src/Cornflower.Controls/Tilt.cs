@@ -18,10 +18,10 @@ namespace Cornflower.Controls;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Measured on Windows Phone 8.1 (#60): the rule, the eye and the timing are in
-/// <see cref="TiltModel"/>. A press jumps to the tilt for its point, which settles over the next
+/// Measured on Windows Phone 8.1 (#60, modelled in #65; the timing re-read in frames,
+/// <c>tools/motion/tiltrelease.py</c>): the rule, the eye and the timing are in <see cref="TiltModel"/>. A press jumps to the tilt for its point, which settles over the next
 /// frames as the phone's does; a move follows the finger; a release, a lost capture or the finger
-/// leaving the control holds the tilt for 180 ms, then eases it back over 195 ms. A finger that
+/// leaving the control holds the tilt for 182.6 ms, then eases it back over 167 ms. A finger that
 /// comes back onto the control before it lets go tilts it again, as the toolkit's TiltEffect does.
 /// The tilt runs frame by frame on <see cref="CornflowerClock"/>, not on Avalonia's transitions, so
 /// a test can step it. One pointer at a time: the first down is the one that tilts.
@@ -176,7 +176,7 @@ public static class Tilt
         private Point _press;          // the finger, in the target's parent's space
         private Point _eye;            // the point under the eye, in the target's space, as of the last frame
         private int _steps;            // steps taken for this point of the finger
-        private TimeSpan _released;
+        private TimeSpan _released;    // the release's time 0: the first frame after it
         private TiltState _held;
         private IDisposable? _pending; // in Pressed, a step; in Paused or Returning, the return
         private Visual? _target;
@@ -348,12 +348,24 @@ public static class Tilt
         {
             _phase = phase;
             _held = State;
-            _released = CornflowerClock.Now;
             Cancel();
-            _pending = CornflowerClock.Schedule(Return, TiltModel.Hold);
+            _pending = CornflowerClock.RequestFrame(_control, BeginReturn);
         }
 
-        /// <summary>One frame of the return: the held tilt, eased back by the time since the release.</summary>
+        /// <summary>
+        /// The first frame after the release: the release animation's time 0, as on the phone, whose
+        /// first frame after a release reads its time 0. The hold is one timer from here, ending a frame
+        /// short of <see cref="TiltModel.Hold"/>; frames run from then on.
+        /// </summary>
+        private void BeginReturn()
+        {
+            _released = CornflowerClock.Now;
+            var wait = TiltModel.Hold - CornflowerClock.FrameInterval;
+            _pending = CornflowerClock.Schedule(() => _pending = CornflowerClock.RequestFrame(_control, Return),
+                wait > TimeSpan.Zero ? wait : TimeSpan.Zero);
+        }
+
+        /// <summary>One frame of the return: the held tilt, eased back by the time since time 0.</summary>
         private void Return()
         {
             _pending = null;
@@ -362,6 +374,12 @@ public static class Tilt
             {
                 if (_phase == Phase.Paused) Clear();
                 else ToRest();
+                return;
+            }
+
+            if (factor >= 1)                                                    // the hold's last frame or two
+            {
+                _pending = CornflowerClock.RequestFrame(_control, Return);
                 return;
             }
 

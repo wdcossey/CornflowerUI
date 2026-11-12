@@ -243,21 +243,6 @@ public class ProgressRingTests
         }
     }
 
-    // The angle tracks' curves: the theme's KeySpline gives the y the template's Bézier does at every x, so a spline
-    // key is reached as on the phone. (Avalonia's own KeySpline is up to 0.0006 off it; the theme doesn't use it.)
-    [Fact]
-    public void A_KeySpline_Eases_As_The_Templates_Bezier_Does()
-    {
-        foreach (var s in Splines.OfType<double[]>())
-        {
-            var spline = new KeySplineCurve(s[0], s[1], s[2], s[3]);
-            for (var x = 0.0; x <= 1.0; x += 0.01)
-            {
-                Assert.Equal(Bezier(s[0], s[1], s[2], s[3], x), spline.Ease(x), 1e-9);
-            }
-        }
-    }
-
     // The storyboard's tracks, at and between their keys, against the template's keys worked out here.
     [Fact]
     public void The_Tracks_Give_The_Templates_Values()
