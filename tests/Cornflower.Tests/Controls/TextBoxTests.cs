@@ -720,5 +720,4 @@ public class TextBoxTests
                     Math.Abs(expected.B - actual.B) <= 1 && actual.A == 255,
             $"{Hex(actual)} is not {Hex(expected)}, within one step a channel");
     }
-
 }

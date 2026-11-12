@@ -64,10 +64,10 @@ public class FramesTests
     {
         using var a = Bitmap(PixelFormat.Rgba8888, [0x11, 0x22, 0x33, 0xFF]);
         using var b = Bitmap(PixelFormat.Rgba8888, [0x11, 0x22, 0x33, 0xFF]);
+        Assert.True(Frames.SameAs(a, b));
         using (var buffer = b.Lock())
             System.Runtime.InteropServices.Marshal.WriteByte(buffer.Address, buffer.RowBytes + 4 + 2, 0x01);
 
-        Assert.True(Frames.SameAs(a, a));
         Assert.False(Frames.SameAs(a, b));
     }
 

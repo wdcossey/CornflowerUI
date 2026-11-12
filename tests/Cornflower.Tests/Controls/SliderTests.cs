@@ -822,5 +822,4 @@ public class SliderTests
     /// <summary>Whether two colours are within one step a channel.</summary>
     private static bool Near(Color a, Color b) =>
         Math.Abs(a.A - b.A) <= 1 && Math.Abs(a.R - b.R) <= 1 && Math.Abs(a.G - b.G) <= 1 && Math.Abs(a.B - b.B) <= 1;
-
 }
