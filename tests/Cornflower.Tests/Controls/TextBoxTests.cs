@@ -274,6 +274,11 @@ public class TextBoxTests
         Dispatcher.UIThread.RunJobs();
         Assert.Contains(HeaderOf(box).GetVisualDescendants(), v => v is Border { Name: "Mine" });
         Assert.Equal(30, HeaderOf(box).Bounds.Height, 0.001);
+
+        // What the template makes keeps its own line: not the box's, which inherits.
+        ControlHeader.SetHeaderTemplate(box, new FuncDataTemplate<string>((s, _) => new TextBlock { Name = "MyText", Text = s }));
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(double.IsNaN(Part<TextBlock>(HeaderOf(box), "MyText").LineHeight));
     }
 
     // The wrapped specimen: two lines of the phone's, the text view 54.1667 (1.33 em twice to the grid), the box
@@ -448,8 +453,10 @@ public class TextBoxTests
         box.PlaceholderForeground = mine;
         using var stage = new Stage(box: box);
         var placeholder = PlaceholderOf(box);
+        var text = placeholder.GetVisualDescendants().OfType<TextBlock>().Single();
 
-        Assert.Equal(FontSize, placeholder.GetVisualDescendants().OfType<TextBlock>().Single().FontSize);
+        Assert.Equal(FontSize, text.FontSize);
+        Assert.Equal(PhoneTextLine.FontLine * FontSize, text.LineHeight, 0.0001);    // its own line, not the box's
         Assert.Same(mine, placeholder.Foreground);
 
         box.IsEnabled = false;
@@ -639,9 +646,11 @@ public class TextBoxTests
     public void Inner_Content_Sits_Either_Side_Of_The_Text()
     {
         var box = Specimen(text: Text);
-        box.InnerLeftContent = new Border { Name = "Left", Width = 20 };
-        box.InnerRightContent = new Border { Name = "Right", Width = 30 };
+        box.InnerLeftContent = new Border { Name = "Left", Width = 20, Child = new TextBlock { Name = "LeftText", Text = "x" } };
+        box.InnerRightContent = new Border { Name = "Right", Width = 30, Child = new TextBlock { Name = "RightText", Text = "x" } };
         using var stage = new Stage(box: box);
+        Assert.True(double.IsNaN(Part<TextBlock>(box, "LeftText").LineHeight), "the box's line reached the inner left content");
+        Assert.True(double.IsNaN(Part<TextBlock>(box, "RightText").LineHeight), "the box's line reached the inner right content");
 
         var left = Part<Border>(box, "Left");
         var right = Part<Border>(box, "Right");
