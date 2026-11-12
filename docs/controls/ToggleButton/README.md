@@ -74,6 +74,7 @@ None.
   `DisabledContent` finds nothing.
 - **Access keys** are Avalonia's, as Button's: a deliberate difference.
 - **Not captured on the phone**: a finger sliding back onto a pressed ToggleButton.
+- **A finger held still while the ToggleButton moves away** keeps the pressed look until the finger moves.
 - **Owed**: the device run on the Pixel 8.
 
 ## The checklist

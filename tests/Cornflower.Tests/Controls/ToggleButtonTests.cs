@@ -402,15 +402,18 @@ public class ToggleButtonTests
     [AvaloniaFact]
     public void A_Press_In_A_Popup_It_Holds_Is_Not_Followed()
     {
-        var inside = new Border { Width = 100, Height = 100, Background = Brushes.Red };
-        var popup = new Popup { Child = inside, Placement = PlacementMode.Bottom };
+        // Headless, the popup sits in the window's overlay layer at its target; its content reaches well below the button.
+        var inside = new Border { Width = 100, Height = 100, Margin = new Thickness(0, 150, 0, 0), Background = Brushes.Red };
+        var popup = new Popup { Child = new Panel { Children = { inside } } };
         var toggle = new ToggleButton { IsChecked = true, Content = new Panel { Children = { new TextBlock { Text = "toggle" }, popup } } };
-        using var stage = new ButtonStage<ToggleButton>(toggle);
+        using var scene = new Scene(new StackPanel { Margin = new Thickness(19, 12), Children = { toggle } });   // the full view, room below
         popup.IsOpen = true;
         Dispatcher.UIThread.RunJobs();
         var popupTop = TopLevel.GetTopLevel(inside)!;                                    // headless: the window's overlay layer
         Assert.False(toggle.IsVisualAncestorOf(inside));
 
+        var at = inside.TranslatePoint(new Point(50, 50), toggle)!.Value;
+        Assert.True(at.Y > toggle.Bounds.Height, $"the press is at {at} in the ToggleButton: on it");
         popupTop.MouseDown(inside.TranslatePoint(new Point(50, 50), popupTop)!.Value, MouseButton.Left);
         Dispatcher.UIThread.RunJobs();
 

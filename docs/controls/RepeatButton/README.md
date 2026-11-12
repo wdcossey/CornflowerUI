@@ -66,7 +66,8 @@ None.
 - **The text is Selawik**: "repeat button" 2.08 wider.
 - **Access keys** are Avalonia's, as Button's.
 - **A repeat's `Click` is held back by marking it handled**: a handler an app adds with `handledEventsToo` still sees
-  it while the finger is off.
+  it while the finger is off, and a `Flyout` on the button still opens and closes with each held-back repeat
+  (Avalonia's Button does that before it raises Click).
 - **Owed**: the device run on the Pixel 8.
 
 ## The checklist
