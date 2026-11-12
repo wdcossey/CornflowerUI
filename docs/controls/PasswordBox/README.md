@@ -29,8 +29,8 @@ line, the reveal button and the phone's pointer-over look.
 - **Masked** with `●`, WinRT's default `PasswordChar`, on one line with no return.
 - **The keyboard is told it's a password** (`TextInputOptions`: `ContentType` `Password`, `IsSensitive`, no
   suggestions), masked or shown, as by every TextBox with a `PasswordChar` under Wp81 (`PhonePasswordKeyboard`, the
-  TextBox's too): on the Pixel 8 Gboard had suggested words from a typed password (#104). An app's own
-  `TextInputOptions` on the box win. Whether the phone's own keyboard suggests in a PasswordBox is unmeasured.
+  TextBox's too): on the Pixel 8 Gboard had suggested words from a typed password (#104), and with this shows none,
+  masked or shown. An app's own `TextInputOptions` on the box, its style's or a derived theme's win (a PIN box's `Pin`). Whether the phone's own keyboard suggests in a PasswordBox is unmeasured.
 - **"Show Password"**: with the `revealPasswordButton` class, Wp81's CheckBox below the box, lifted 6.5 into the box's
   row, at the left; ticking it is `RevealPassword`, which shows the password, and setting `RevealPassword` ticks it. It
   shows whether or not there is a password, as on the phone, but not on a read-only or many-line box. A tap on it
@@ -74,6 +74,8 @@ None new.
 - **A tap on "Show Password" focuses an unfocused box**; the phone's leaves focus where it was.
 - **The keyboard's options inherit** (Avalonia's): a control an app puts in `InnerLeftContent`, `InnerRightContent` or
   the header gets a password keyboard too.
+- **A `PasswordChar` set or cleared on a focused box** reaches the keyboard at the next focus: the keyboard reads the
+  options when the box takes it.
 - **Unmeasured on the phone**: a shown password, the caret, the selection and the keyboard.
 
 ## The checklist
