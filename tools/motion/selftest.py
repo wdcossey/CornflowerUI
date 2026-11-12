@@ -291,6 +291,36 @@ def scripts_on_partial_logs():
 
 
 @check
+def frame_spacing():
+    # Frames on a 15.0 ms grid, logged as a sparse probe logs them: a frame now and then missing (a 30 ms gap), one
+    # late by 10 ms (25 then 5), a stretch of 240 ms with nothing logged; and a frame's readings 0.5 ms apart, a chain
+    # of them longer than the merge (each within 3 ms of the one before) still one frame. The mean comes back 15.0.
+    grid = [100 + 15.0 * k for k in range(400) if k % 7 != 3 and not 200 < k < 216]
+    grid[50] += 10
+    times = [t + d for t in grid for d in (0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5)]
+    frames = ml.frames(times)
+    assert len(frames) == len(grid), (len(frames), len(grid))
+    mean, med, counted = ml.frame_spacing(frames)
+    near(mean, 15.0, 1e-9, 'mean')
+    # With the frames each gap held given, as a clock read each frame gives them: the time over their sum.
+    near(ml.frame_spacing([0.0, 15.0, 45.0, 60.0], [1, 2, 1])[0], 15.0, 1e-9, 'mean with ticks')
+
+
+@check
+def clock_factor():
+    # Frames 15.0 ms apart, two readings a frame, and a 240 ms stretch with nothing logged: 15.625 / 15.0.
+    import tempfile
+    with tempfile.TemporaryDirectory() as run:
+        with open(os.path.join(run, 'probe.txt'), 'w', encoding='utf-8') as f:
+            t = 100.0
+            for k in range(200):
+                t += 240 if k == 100 else 15.0
+                f.write('%.1f\tvalue\ta %d\n%.1f\ttree\tb %d\n' % (t, k, t + 0.5, k))
+        code, out = run_script('clock.py', run)
+    assert code == 0 and '200 frames logged, 198 counted' in out and 'stopwatch 1.0417' in out, out
+
+
+@check
 def minimize_finds_a_minimum():
     # Rosenbrock's valley, from well off it; and a bowl, where it stops once converged, long before its iterations.
     v, x = ml.minimize(lambda p: (1 - p[0]) ** 2 + 100 * (p[1] - p[0] ** 2) ** 2, [-1.2, 1.0], [0.5, 0.5], 4000)

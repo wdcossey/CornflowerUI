@@ -47,6 +47,7 @@ frames are already in their `analysis\` folders; `decode.py` itself has not been
 | `toggle.py` | `-Probe toggleswitch`, `toggletap` and `togglehalf` runs | each press (with its last pointer event, its gesture events and, from #33, its pointer timestamps), the tap limits, and the knob positions either side of the halfway line |
 | `tiltcurve.py` | a `-Probe tiltgrid` run | #60's tilt curve against each press |
 | `tiltrelease.py` | `-Probe tilt`, `tiltedge` and `tiltgrid` runs | the tilt's release frame by frame, which frame after the release it starts on, and its hold and return in animation time: a sine and a `KeySpline` fitted; #60's stopwatch fit beside them. A few seconds a run |
+| `clock.py` | any probe run that logs its frames | the frames' mean spacing by the stopwatch (`motionlib.frame_spacing`), and the factor, 15.625 ms over it, that takes the run's stopwatch durations to animation time |
 | `motionlib.py` | | what they share: the run, the frame measurements, the projection, the easing curves and the fits |
 | `selftest.py` | nothing | checks the measurements and fits on synthetic data with known answers |
 
@@ -90,7 +91,7 @@ Each published number, run again on its original run on 2026-11-11. The runs are
 | Number | Cited in | Script | Run | Reproduced |
 |---|---|---|---|---|
 | PlaneProjection's camera: 999 view px, looking at (224, 400), within 0.53 px over 13 states | README "Motion", ADR | `camera.py` | `20261110-0756-dev11` | Yes: 999, 224.00, rms 0.526 px over 13 states |
-| The 64 Hz clock: the MenuFlyout's `ScaleX` up 0.041 a step, 380 ms in 24.3 steps | README "Motion", ADR | `menuflyout.py` | `20261110-0745-dev11`, `-0753-dev11` | Yes: +0.0411 a step, 24.3 steps, 380 ms at 15.625 ms a step. The 15.625 ms is the clock's, not measured here: the app's own frames over the rise are 15.4 ms apart on average |
+| The 64 Hz clock: the MenuFlyout's `ScaleX` up 0.041 a step, 380 ms in 24.3 steps | README "Motion", ADR | `menuflyout.py` | `20261110-0745-dev11`, `-0753-dev11` | Yes: +0.0411 a step, 24.3 steps, 380 ms at 15.625 ms a step. The 15.625 ms is the clock's, not measured here: the app's own frames over the rise are 15.0 to 15.2 ms apart (`ScaleX`, `ScaleY`) once the frames with nothing logged are counted; 15.4 before, which counted each logged frame as one |
 | MenuFlyout: `ScaleX` 0 to 1 linearly over 380 ms, origin (0.5, 0); then `ScaleY` linearly over 120 ms | README "Motion", ADR | `menuflyout.py` | `20261110-0745-dev11`, `-0753-dev11` | Yes: both within 0.0005 of a straight line; 380 ms and 120 ms (7.7 steps); origin (0.5, 0) |
 | Turnstile: an axis 44 px left of the page and 99 px behind the screen; nine forward turns within 0.24 px | README, ADR | `turnstile.py` | `20261110-0810-dev11` | Yes: fitted x −43.4, z −98.8 (rms 0.236 px); at −44, −99, rms 0.241 px |
 | Turnstile: the angle falls ×0.803 a step, a time constant of 71 ms | README | `turnstile.py` | `20261110-0810-dev11` | Yes: 0.8031, 71.3 ms, forward and back |
@@ -108,6 +109,7 @@ Each published number, run again on its original run on 2026-11-11. The runs are
 | ProgressRing `Active`: five dots at the default size (57.5), six at 120 px; 150 to 167 ms apart; a 4.13 s cycle (nine cycles); a dot hides 3.10 s into it | README, ADR | `ring.py` | `20261110-0829-dev11` | **In part.** Five and six dots, 4.132 s over nine cycles: yes (and 4.132 s on `20261110-0846-dev10`, the 720p re-run). Apart: 150 to 165 ms in the first cycle, but 129 to 167 ms over all nine. Hides: 3.090 s after the dot shows again (the median of 47), not 3.10 |
 | ProgressRing `SizeStates`: `Large` when the smaller laid-out side is over 60 view px (60 `Small`, 60.417 `Large`), no hysteresis, the smaller side when not square; `SixthCircle` shown exactly when `Large` | README "ProgressRing: the size threshold and the clock", ADR | `ringsize.py` | `20261111-2316-dev11` | Yes: `Small` up to 60, `Large` from 60.417, all 208 steps agree |
 | The clock: animation time 15.625 ms a frame; frames 15.0 ms apart (mean 15.017); ratio 1.0405 (step over mean frame), 1.0416 (fit); the cycle wraps at 4,296.9 ms of its own time; a 4 s storyboard's `Completed` at 3,856.5, 3,862.6 and 3,861.1 ms | README "Motion" and "ProgressRing: the size threshold and the clock", ADR | `ringsize.py` | `20261111-2316-dev11` | Yes: all 663 moves 15.625 ms; the rest as published |
+| The factor from stopwatch to animation time, by run: 1.0425 on the ring run, 1.0390 and 1.0371 on the ToggleSwitch runs, 1.0405 on the tilt grid | README "Motion", "Which clock each duration below is on"; ADR | `clock.py` | `20261110-0829-dev11`, `20261110-0733-dev10`, `20261109-2128-dev11`, `20261109-2307-dev11` | Yes (added 2026-11-12): 1.0425, 1.0390, 1.0371, 1.0405; and 1.0418 on `20261111-2316-dev11`, where the storyboard's own time gives 1.0405 to 1.0416 |
 | ToggleSwitch on the 720p profile: moved 17.76 taps, 18.85 doesn't (17.47 and 18.33 on the reference); held 984 ms taps, 1,018 doesn't; `ToggleStates` changes about 380 ms after the release | README, ADR | `toggle.py` | `20261110-0733-dev10`, `20261109-2128-dev11` | Yes: 17.76 / 18.85 and 984 / 1018 ms; 17.47 / 18.33 and 993 / 1019 ms on the reference; the state changes 374 to 391 ms after the release |
 | ToggleSwitch, #33: a tap is `Tapped` (127 presses); the hold starts at the first pointer event 1,000 ms or more after the press by `ts` (984 taps, 1,000 doesn't; by the stopwatch 971.6 and 988.1), the release not checked; over #25's runs and these, every press whose last event came by 901 ms (stopwatch) toggled and none at 999 ms or later; the distance limit 2.63 to 2.64 mm taps, 2.75 to 2.79 mm doesn't, on devices 10, 11 and 13 (19.16 view px taps on 13); the halfway line between 27.77 and 28.04 on device 13 (offset 55.83), between 28.06 and 28.35 on device 11 (56.67) | README "ToggleSwitch: the hold limit, the distance and the halfway line" | `toggle.py` | `20261111-2345-dev11`, `20261112-0003-dev13`, `20261111-2350-dev11`, `20261112-0007-dev13` | Yes, as published (2026-11-12) |
 | #60's tilt curve on the reference profile: rms 0.08° once each button's offset is out, 0.38° raw, worst 1.26°; the depth within 0.002 px | README "Tilt: the model", ADR | `tiltcurve.py` | `20261109-2307-dev11` | Yes: 0.083°, 0.379°, 1.256°; depth worst 0.0015 px |
@@ -117,16 +119,17 @@ Each published number, run again on its original run on 2026-11-11. The runs are
 
 ### Published and reproduced, where they differ
 
-Not corrected here; the docs are corrected separately.
+Each was corrected or explained in the README and ADR 0005 on 2026-11-12 (gap register B9 to B12), as the last
+column says. The rows above quote what was published, before that.
 
-| Number | Published | Reproduced | Why they differ |
-|---|---|---|---|
-| Slide out, how long it accelerates | about 220 ms | 188 ms (the eased fit ends at tick 12) | 2026-11-10's offsets were picked by hand, with 1.0 px and without 4.2; the script takes every offset of 2 px or more |
-| Slide out, how far the page goes before the one under it shows | about 140 to 200 px | 64.6 to 137.3 px, the last offset seen in each run | |
-| Continuum forward, the black | 60 to 100 ms | 94 to 125 ms | measured from the first black frame to the first of the new page, so an upper bound, at about 31 ms a frame |
-| ProgressRing, the dots apart | 150 to 167 ms | 150 to 165 ms in the first cycle; 129 to 167 ms over all nine | the published range is the first cycle's |
-| ProgressRing, when a dot hides | 3.10 s into the cycle | 3.090 s after the dot shows again (median of 47) | |
-| Popups, ListPickerFlyout close | 242 / 375 / 425 ms | 284 / 392 / 434 ms without `--lag`; the published values with `--lag 29.15` | the lag (29.158 s from the knob, 29.15 s typed in on 2026-11-10) moves this row's window by 8 ms |
+| Number | Published | Reproduced | Why they differ | Now |
+|---|---|---|---|---|
+| Slide out, how long it accelerates | about 220 ms | 188 ms (the eased fit ends at tick 12) | 2026-11-10's offsets were picked by hand, with 1.0 px and without 4.2; the script takes every offset of 2 px or more | corrected: about 190 ms (188), in frames |
+| Slide out, how far the page goes before the one under it shows | about 140 to 200 px | 64.6 to 137.3 px, the last offset seen in each run | not known: the 2026-11-10 notes don't say how it was read | corrected: the last offset seen, 65 to 137 px |
+| Continuum forward, the black | 60 to 100 ms | 94 to 125 ms | measured from the first black frame to the first of the new page, so an upper bound, at about 31 ms a frame | corrected: at most 94 to 125 ms, by the recording |
+| ProgressRing, the dots apart | 150 to 167 ms | 150 to 165 ms in the first cycle; 129 to 167 ms over all nine | the published range is the first cycle's, its top not reproduced | corrected in the README's first account of the ring and in the ADR (the README's later paragraph already had both); 156 to 172 and 134 to 174 ms of animation time at the run's factor, 1.0425 |
+| ProgressRing, when a dot hides | 3.10 s into the cycle | 3.090 s after the dot shows again (median of 47) | not known: 3.090 is the median of 47, from a dot showing again to its hiding, which is what "into the cycle" meant | corrected: 3.09 s after it shows; 3.221 s of animation time, the keyframes' 3.22 |
+| Popups, ListPickerFlyout close | 242 / 375 / 425 ms | 284 / 392 / 434 ms without `--lag`; the published values with `--lag 29.15` | the lag (29.158 s from the knob, 29.15 s typed in on 2026-11-10) moves this row's window by 8 ms | explained: the README's row gives both, and says it is less certain than ±25 ms |
 
 Not covered, with no script here:
 

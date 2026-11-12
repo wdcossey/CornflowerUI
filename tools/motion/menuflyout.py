@@ -54,7 +54,9 @@ for name, (pattern, axis) in parts.items():
     mv = sum(v for _, v in pts) / n
     step = sum((k - mk) * (v - mv) for k, v in pts) / sum((k - mk) ** 2 for k, _ in pts)
     worst = max(abs(v - (mv + step * (k - mk))) for k, v in pts)
-    gaps = [(r[-1][0] - r[1][0]) / (len(r) - 2) for r in rises if len(r) > 2] or [float('nan')]
+    # Each reading on a rise is a frame, and its value's move says how many frames each gap held.
+    gaps = [ml.frame_spacing([t for t, _ in r[1:]], [max(1, round((b - a) / step)) for (_, a), (_, b) in zip(r[1:], r[2:])])[0]
+            for r in rises if len(r) > 2] or [float('nan')]
     print('%s Scale%s: %d rises, %d distinct values (%s ... %s)' % (
         name, 'XY'[axis], len(rises), len(vals), ', '.join('%g' % v for v in vals[:4]), ', '.join('%g' % v for v in vals[-2:])))
     print('  +%.4f a step, within %.4f of a straight line: 0 to 1 in %.1f steps, %.0f ms at %.3f ms a step%s' % (
