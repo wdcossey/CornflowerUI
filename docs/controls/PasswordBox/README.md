@@ -27,6 +27,8 @@ line, the reveal button and the phone's pointer-over look.
 - **As the TextBox** (#36): the box at 0.8 at rest, the accent round white focused, the border alone disabled; the
   header; the placeholder while empty, here at the box's own size; the text in the phone's line.
 - **Masked** with `●`, WinRT's default `PasswordChar`, on one line with no return.
+- **The keyboard is told it's a password** (`TextInputOptions`: `ContentType` `Password`, `IsSensitive`, no
+  suggestions), masked or shown, as the phone's PasswordBox tells its own (#104).
 - **"Show Password"**: with the `revealPasswordButton` class, Wp81's CheckBox below the box, lifted 6.5 into the box's
   row, at the left; ticking it is `RevealPassword`, which shows the password, and setting `RevealPassword` ticks it. It
   shows whether or not there is a password, as on the phone, but not on a read-only or many-line box. A tap on it

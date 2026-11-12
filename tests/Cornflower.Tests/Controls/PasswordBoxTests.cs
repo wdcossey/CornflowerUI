@@ -4,6 +4,7 @@ using Avalonia.Controls.Presenters;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
+using Avalonia.Input.TextInput;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
@@ -309,6 +310,29 @@ public class PasswordBoxTests
         holder.Child = box;
         Dispatcher.UIThread.RunJobs();
         Assert.True(box.RevealPassword);
+    }
+
+    // The platform keyboard is told the box holds a password (#104): no suggestions, nothing learned, shown or not. A
+    // plain TextBox, even with a PasswordChar, keeps Avalonia's defaults.
+    [AvaloniaFact]
+    public void The_Keyboard_Is_Told_It_Is_A_Password()
+    {
+        var box = Specimen(reveal: true);
+        var plain = new TextBox { PasswordChar = '●' };
+        using var stage = new TextBoxTests.Stage(box: box);
+        Dispatcher.UIThread.RunJobs();
+
+        foreach (var shown in new[] { false, true })
+        {
+            box.RevealPassword = shown;
+            Dispatcher.UIThread.RunJobs();
+            Assert.Equal(TextInputContentType.Password, TextInputOptions.GetContentType(box));
+            Assert.True(TextInputOptions.GetIsSensitive(box));
+            Assert.False(TextInputOptions.GetShowSuggestions(box));
+        }
+        Assert.Equal(TextInputContentType.Normal, TextInputOptions.GetContentType(plain));
+        Assert.False(TextInputOptions.GetIsSensitive(plain));
+        Assert.Null(TextInputOptions.GetShowSuggestions(plain));
     }
 
     // Typing is masked with the phone's circle.
