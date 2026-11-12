@@ -47,6 +47,12 @@ namespace RefApp
                 case "toggleswitch":
                     await probe.ToggleSwitchDrag(host);
                     break;
+                case "togglehalf":
+                    await probe.ToggleSwitchHalf(host);
+                    break;
+                case "toggletap":
+                    await probe.ToggleSwitchTap(host);
+                    break;
                 case "tilt":
                     await probe.Tilt(host);
                     break;
@@ -79,29 +85,188 @@ namespace RefApp
 
         /// <summary>
         /// The ToggleSwitch's drag threshold (#25): from Off, press on the knob, move right by a distance, and lift
-        /// when the press has lasted a given time. A grid of distances and press times, then distances near the
-        /// knob's halfway point, then near each limit the grid found. After each, the switch is put back Off. The log
-        /// shows, for each touch, the ToggleStates changes, the thumb's drag, the knob's transform every frame, and
-        /// whether it toggled. What it found is in README.md, "Probes".
+        /// when the press has lasted a given time. A grid of distances and press times, then distances about half the
+        /// knob's offset (its TemplateSettings.KnobOnToOffOffset, which moves with the profile), then near each limit
+        /// the grid found. After each, the switch is put back Off. The log shows, for each touch, the ToggleStates
+        /// changes, the thumb's drag, the knob's transform every frame, the gesture events, and whether it toggled.
+        /// What it found is in README.md, "Probes".
         /// </summary>
         private async Task ToggleSwitchDrag(Grid host)
         {
-            var toggle = new ToggleSwitch { Header = "probe", IsOn = false, Margin = new Thickness(19, 120, 19, 0), VerticalAlignment = VerticalAlignment.Top };
-            await Page(host, toggle);
+            var press = await PlaceToggle(host, 1);
+            if (press == null)
+            {
+                return;
+            }
 
+            // Distance and press time apart: each distance is moved quickly, 10 ms a step, and the press is then held
+            // until it has lasted the given time. Then the drags at a steady pace, for where position takes over.
+            foreach (var ms in new[] { 400, 900, 1100, 1500 })
+            {
+                foreach (var d in new[] { 0, 4, 12, 20, 26 })
+                {
+                    Timed(press.Target, press.X, press.Y, d, ms);
+                }
+            }
+
+            // About halfway: half the knob's offset, and a view pixel and a half either side. A touch moves in whole
+            // screen pixels (0.83 view px at the zoom that fits the VM's screen), so these land on that grid; the log
+            // has where each was released. ToggleSwitchHalf reads the line finer.
+            var half = press.Toggle.TemplateSettings.KnobOnToOffOffset / 2;
+            foreach (var d in new[] { -1.5, -1.0, -0.5, 0, 0.5, 1.0, 1.5 })
+            {
+                Timed(press.Target, press.X, press.Y, half + d, 500);
+            }
+
+            // Closer to each limit: the distance between 16 and 20, the press time between 1000 and 1100 ms.
+            foreach (var d in new[] { 16, 17, 18, 19 })
+            {
+                Timed(press.Target, press.X, press.Y, d, 500);
+            }
+
+            foreach (var ms in new[] { 1000, 1025, 1050, 1075 })
+            {
+                Timed(press.Target, press.X, press.Y, 0, ms);
+            }
+
+            await Ready();
+        }
+
+        /// <summary>
+        /// The drag's halfway line, finer than a touch moves (#33): drags about half the knob's offset, as
+        /// <see cref="ToggleSwitchDrag"/> makes, on a ToggleSwitch drawn three times its size in a Viewbox. The knob
+        /// follows the finger in the switch's own coordinates, so a screen pixel of the finger moves it a third as far,
+        /// and the drags land on a grid three times finer (0.28 view px at 1.2 screen px a view px). The log has the
+        /// knob's offset, and its size on screen and in the switch, so the scale is read, not assumed. Two drags at
+        /// each distance from 0.6 view px short of half the offset to 0.9 past it, in steps of 0.1, which takes in
+        /// both 27.92 and 28.33 on a 55.83 offset and on a 56.67 one; then one well short and one well past.
+        /// </summary>
+        private async Task ToggleSwitchHalf(Grid host)
+        {
+            var press = await PlaceToggle(host, 3);
+            if (press == null)
+            {
+                return;
+            }
+
+            var half = press.Toggle.TemplateSettings.KnobOnToOffOffset / 2;
+            var drags = new List<double>();
+            for (var k = -6; k <= 9; k++)
+            {
+                drags.Add(half + k * 0.1);
+                drags.Add(half + k * 0.1);
+            }
+
+            drags.Add(20);
+            drags.Add(40);
+            foreach (var d in drags)
+            {
+                Timed(press.Target, press.X, press.Y, d * press.Scale, 1500);
+            }
+
+            await Ready();
+        }
+
+        /// <summary>
+        /// The tap's time limit (#33). Earlier runs toggled on every still press whose last pointer event came by 901 ms
+        /// after the press, and on none with an event at 999 ms or later, however long the press lasted; the emulator
+        /// sends a still touch's position every 100 ms. So the limit may be checked when an event arrives, not by a
+        /// timer. Still presses with one move of a view pixel at a set time between 905 and 975 ms, each lifted 20 ms
+        /// later (by 995 ms, before the 1000 ms event), two of each, in rising then falling order; still presses
+        /// lifted at 1050 and 1150 ms with no move of their own; and quick presses moved 17 and 19 px, either side of
+        /// the distance limit. The log has each pointer event's timestamp and the gesture events (Tapped, Holding,
+        /// RightTapped).
+        /// </summary>
+        private async Task ToggleSwitchTap(Grid host)
+        {
+            var press = await PlaceToggle(host, 1);
+            if (press == null)
+            {
+                return;
+            }
+
+            var times = new[] { 905, 915, 925, 935, 945, 955, 965, 975 };
+            foreach (var t in times.Concat(times.Reverse()))
+            {
+                Nudged(press.Target, press.X, press.Y, t, t + 20);
+            }
+
+            foreach (var ms in new[] { 1050, 1150, 1050, 1150 })
+            {
+                Timed(press.Target, press.X, press.Y, 0, ms);
+            }
+
+            foreach (var d in new[] { 17, 19, 17, 19 })
+            {
+                Timed(press.Target, press.X, press.Y, d, 500);
+            }
+
+            await Ready();
+        }
+
+        /// <summary>
+        /// The toggle probes' ToggleSwitch, Off, with the header "probe", alone on its page 19 from the left and 120 down,
+        /// watched as <see cref="WatchToggle"/> says. At scale 1 it is the page's width less the margins; at another
+        /// scale it is 140 wide, drawn that many times its size in a Viewbox. Null, with the run finished, when its
+        /// template has no SwitchKnob.
+        /// </summary>
+        private async Task<KnobPress> PlaceToggle(Grid host, double scale)
+        {
+            const double width = 140;
+            var toggle = new ToggleSwitch { Header = "probe", IsOn = false };
+            FrameworkElement placed = toggle;
+            if (scale == 1)
+            {
+                toggle.Margin = new Thickness(19, 120, 19, 0);
+                toggle.VerticalAlignment = VerticalAlignment.Top;
+            }
+            else
+            {
+                toggle.Width = width;
+                placed = new Viewbox { Width = width * scale, Stretch = Stretch.Uniform, Child = toggle, Margin = new Thickness(19, 120, 0, 0), HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top };
+            }
+
+            await Page(host, placed);
+            return await WatchToggle(toggle);
+        }
+
+        /// <summary>Where the toggle probes press: the knob's centre in the window, the element the press is for, the switch, and its scale on screen.</summary>
+        private sealed class KnobPress
+        {
+            public ToggleSwitch Toggle;
+            public UIElement Target;
+            public double X;
+            public double Y;
+            public double Scale;
+        }
+
+        /// <summary>
+        /// Logs a ToggleSwitch's knob (its bounds in the window, its size in the switch, so the scale, and the knob's
+        /// and curtain's offsets), its pointer events, states and gesture events, its Toggled, the thumb's drag and the
+        /// knob's transform every frame, and puts the switch back Off after each touch. Null, with the run finished,
+        /// when the template has no SwitchKnob.
+        /// </summary>
+        private async Task<KnobPress> WatchToggle(ToggleSwitch toggle)
+        {
             var knob = Find(toggle, "SwitchKnob");
             var knobTransform = knob != null ? knob.RenderTransform as TranslateTransform : null;
             var thumb = Find(toggle, "SwitchThumb") as Windows.UI.Xaml.Controls.Primitives.Thumb;
             if (knob == null)
             {
                 await Finish("no SwitchKnob in the ToggleSwitch's template");
-                return;
+                return null;
             }
 
-            var bounds = knob.TransformToVisual(null).TransformBounds(new Rect(0, 0, knob.ActualWidth, knob.ActualHeight));
-            Log("layout", "knob " + Num(bounds.X) + " " + Num(bounds.Y) + " " + Num(bounds.Width) + " " + Num(bounds.Height));
+            var bounds = Bounds(knob);
+            var settings = toggle.TemplateSettings;
+            var scale = knob.ActualWidth > 0 ? bounds.Width / knob.ActualWidth : 1;
+            Log("layout", "knob " + Num(bounds.X) + " " + Num(bounds.Y) + " " + Num(bounds.Width) + " " + Num(bounds.Height) + " local " + Num(knob.ActualWidth) + " " + Num(knob.ActualHeight) + " scale " + Num(scale));
+            Log("layout", "offsets knob " + Num(settings.KnobOnToOffOffset) + " " + Num(settings.KnobOffToOnOffset) + " curtain " + Num(settings.CurtainOnToOffOffset) + " " + Num(settings.CurtainOffToOnOffset));
             Watch(toggle);
             toggle.Toggled += (s, e) => Log("toggled", "IsOn " + toggle.IsOn);
+            toggle.AddHandler(UIElement.TappedEvent, new TappedEventHandler((s, e) => Log("gesture", "Tapped " + e.PointerDeviceType + (e.Handled ? " handled" : ""))), true);
+            toggle.AddHandler(UIElement.HoldingEvent, new HoldingEventHandler((s, e) => Log("gesture", "Holding " + e.HoldingState + " " + e.PointerDeviceType + (e.Handled ? " handled" : ""))), true);
+            toggle.AddHandler(UIElement.RightTappedEvent, new RightTappedEventHandler((s, e) => Log("gesture", "RightTapped " + e.PointerDeviceType + (e.Handled ? " handled" : ""))), true);
             WatchValue("knobX", sample =>
             {
                 if (knobTransform != null)
@@ -120,39 +285,11 @@ namespace RefApp
             {
                 Log("layout", "no SwitchThumb");
             }
+
             _afterRelease = () => toggle.IsOn = false;
 
             // The press is on the knob, but the Thumb lies over it and takes the press: it is what the touches are for.
-            UIElement pressed = thumb != null ? (UIElement)thumb : toggle;
-            var x = bounds.X + bounds.Width / 2;
-            var y = bounds.Y + bounds.Height / 2;
-            // Distance and press time apart: each distance is moved quickly, 10 ms a step, and the press is then held
-            // until it has lasted the given time. Then the drags at a steady pace, for where position takes over.
-            foreach (var ms in new[] { 400, 900, 1100, 1500 })
-            {
-                foreach (var d in new[] { 0, 4, 12, 20, 26 })
-                {
-                    Timed(pressed, x, y, d, ms);
-                }
-            }
-
-            foreach (var d in new[] { 27, 28, 29, 30 })
-            {
-                Timed(pressed, x, y, d, 500);
-            }
-
-            // Closer to each limit: the distance between 16 and 20, the press time between 1000 and 1100 ms.
-            foreach (var d in new[] { 16, 17, 18, 19 })
-            {
-                Timed(pressed, x, y, d, 500);
-            }
-
-            foreach (var ms in new[] { 1000, 1025, 1050, 1075 })
-            {
-                Timed(pressed, x, y, 0, ms);
-            }
-
-            await Ready();
+            return new KnobPress { Toggle = toggle, Target = thumb != null ? (UIElement)thumb : toggle, X = bounds.X + bounds.Width / 2, Y = bounds.Y + bounds.Height / 2, Scale = scale };
         }
 
         /// <summary>
@@ -516,6 +653,18 @@ namespace RefApp
             Wait(2000);
         }
 
+        /// <summary>A touch on the target held still at (x, y), moved a view pixel right at moveMs after the press, and lifted there at upMs.</summary>
+        private void Nudged(UIElement target, double x, double y, int moveMs, int upMs)
+        {
+            _expected++;
+            Step("down", x, y, target);
+            Wait(moveMs);
+            Step("move", x + 1, y);
+            Wait(upMs - moveMs);
+            Step("up", x + 1, y);
+            Wait(2000);
+        }
+
         /// <summary>A touch on the target at (x, y) that moves by (dx, dy) one view pixel at a time, 30 ms apart, holds, and lifts.</summary>
         private void Touch(UIElement target, double x, double y, double dx, double dy)
         {
@@ -567,9 +716,10 @@ namespace RefApp
 
         private void Pointer(string what, Control control, PointerRoutedEventArgs e)
         {
-            var inWindow = e.GetCurrentPoint(null).Position;
+            var point = e.GetCurrentPoint(null);
+            var inWindow = point.Position;
             var inControl = e.GetCurrentPoint(control).Position;
-            Log(what, Tag(control) + Num(inWindow.X) + " " + Num(inWindow.Y) + " in-control " + Num(inControl.X) + " " + Num(inControl.Y) + " " + e.Pointer.PointerDeviceType + (e.Handled ? " handled" : ""));
+            Log(what, Tag(control) + Num(inWindow.X) + " " + Num(inWindow.Y) + " in-control " + Num(inControl.X) + " " + Num(inControl.Y) + " " + e.Pointer.PointerDeviceType + (e.Handled ? " handled" : "") + " ts " + point.Timestamp.ToString(CultureInfo.InvariantCulture));
         }
 
         private async void Released(Control control, PointerRoutedEventArgs e)

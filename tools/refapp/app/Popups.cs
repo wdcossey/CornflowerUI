@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using Windows.Foundation;
+using Windows.UI.Popups;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
@@ -17,9 +19,24 @@ namespace RefApp
         public string Variant;
         public double Height = 100;
         public int SettleMs = 900;
+
+        /// <summary>
+        /// Shown by the system, as a MessageDialog is: outside the popups the app can list, drawn in the phone's
+        /// theme, not the stage's (the app sets no theme of its own, so the runs, dark, can't tell the phone's from the
+        /// app's), and not closed by cancelling its ShowAsync (2026-11-11). A second can't open while it shows
+        /// (E_ACCESSDENIED), so it stays over every later capture: <see cref="Suite"/> runs one only when -Only picks
+        /// it and nothing else, once, dark, and leaves it out otherwise.
+        /// </summary>
+        public bool System;
         public Func<FrameworkElement> MakeHost;
         public Func<FrameworkElement, object> Open;
         public Action<FrameworkElement, object> Close;
+
+        /// <summary>
+        /// For a popup the app can't list (<see cref="System"/>): given what <see cref="Open"/> returned, why it isn't
+        /// showing, or null when it is. Asked once it has settled and again after the hold.
+        /// </summary>
+        public Func<object, string> Fault;
     }
 
     /// <summary>What the reference app opens and captures outside the stage. Add a popup by adding lines here.</summary>
@@ -53,6 +70,11 @@ namespace RefApp
 
             list.Add(Dialog("default", false));
             list.Add(Dialog("full-size", true));
+
+            // Windows.UI.Popups.MessageDialog (B18): a one-line title, and one long enough to wrap; the message wraps in
+            // both. One per run, and only when -Only picks it alone (PopupSpecimen.System), so each has a name of its own.
+            list.Add(Message("MessageDialog", "default", "message dialog"));
+            list.Add(Message("MessageDialogLongTitle", "long-title", "Agjy 0123 a message dialog title long enough to wrap"));
 
             list.Add(ListPicker("single", ListPickerFlyoutSelectionMode.Single));
             list.Add(ListPicker("multiple", ListPickerFlyoutSelectionMode.Multiple));
@@ -157,6 +179,50 @@ namespace RefApp
                     return d;
                 },
                 Close = (host, h) => ((ContentDialog)h).Hide(),
+            };
+        }
+
+        /// <summary>
+        /// A MessageDialog with two commands, shown with ShowAsync. Close cancels that operation, which the API documents
+        /// as taking one down from code, but on the phone (2026-11-11, device 11) the dialog stayed open: see
+        /// <see cref="PopupSpecimen.System"/>. Fault reads the operation's status.
+        /// </summary>
+        private static PopupSpecimen Message(string name, string variant, string title)
+        {
+            return new PopupSpecimen
+            {
+                Name = name,
+                Variant = variant,
+                System = true,
+                MakeHost = () => new Button { Content = "open" },
+                Open = host =>
+                {
+                    var d = new MessageDialog("Agjy 0123 the dialog's message, long enough to wrap onto a second line.", title);
+                    d.Commands.Add(new UICommand("ok"));
+                    d.Commands.Add(new UICommand("cancel"));
+                    return d.ShowAsync();
+                },
+                Close = (host, h) =>
+                {
+                    // Null when ShowAsync threw, as it does (E_ACCESSDENIED) while another dialog shows.
+                    var op = h as IAsyncOperation<IUICommand>;
+                    if (op != null)
+                    {
+                        op.Cancel();
+                    }
+                },
+                Fault = h =>
+                {
+                    // Started while the dialog shows; anything else means it closed or never opened.
+                    var op = (IAsyncOperation<IUICommand>)h;
+                    if (op.Status == AsyncStatus.Started)
+                    {
+                        return null;
+                    }
+
+                    var error = op.Status == AsyncStatus.Error && op.ErrorCode != null ? ", " + op.ErrorCode.GetType().Name + " 0x" + op.ErrorCode.HResult.ToString("X8") + ": " + op.ErrorCode.Message : "";
+                    return "the dialog isn't showing: ShowAsync is " + op.Status + error;
+                },
             };
         }
 

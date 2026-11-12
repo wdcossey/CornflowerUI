@@ -69,8 +69,9 @@ the signed-in desktop. Run from an SSH session, `ISETool` starts a hidden second
 
 - **`Catalog.cs`** holds the specimens. Each is a control in one configuration, such as
   `CheckBox` `indeterminate`, with the height of its stage. Every TextBlock style key in the phone's
-  `generic.xaml` and `themeresources.xaml` is a specimen too, loaded through `XamlReader`. Add a
-  control by adding a line here.
+  `generic.xaml` and `themeresources.xaml` is a specimen too, loaded through `XamlReader`: with one line, with
+  two (a `LineBreak`), and, for those that wrap, with a wrapped sentence; `lines.py` reads their line pitch and
+  heights from a run. Add a control by adding a line here.
 - **`Suite.cs`** builds a fresh stage per capture. The stage is the window's width and the
   specimen's height, in the requested theme, over the page's own background. The specimen sits
   at the page margin of 19 logical pixels, or full width for Pivot and Hub. The suite forces each
@@ -79,8 +80,16 @@ the signed-in desktop. Run from an SSH session, `ISETool` starts a hidden second
 - **`Popups.cs`** holds the popups: Flyout (top and full), MenuFlyout, ContentDialog (default and
   full size), ListPickerFlyout (single and multiple), PickerFlyout, DatePickerFlyout,
   TimePickerFlyout, ComboBox open with every count of items from 3 to 10 (up to 5 open
-  inline, 6 or more open the full-screen picker; below), and the page's app bar, compact and
-  minimal, closed and open (below).
+  inline, 6 or more open the full-screen picker; below), the page's app bar, compact and
+  minimal, closed and open (below), and the system's `MessageDialog` (B18), with a one-line title and a long one.
+  The shell shows a `MessageDialog`: it isn't among the app's open popups, it is drawn in the phone's theme, not
+  the stage's (the app sets no theme of its own, so the runs, all dark, can't tell the phone's from the app's), and
+  cancelling its `ShowAsync` doesn't close it (2026-11-11), so it stays over every later capture and a second can't
+  open (`E_ACCESSDENIED`). So a run leaves the two out unless `-Only` picks exactly one and nothing else, and then
+  opens it once, dark: `-Popups only -Only '^MessageDialog$' -Grab`, then `'^MessageDialogLongTitle$'`, each a
+  fresh launch. Picked with anything else, the run captures nothing and its error says why. Where the app can't see
+  the dialog, the suite reads `ShowAsync`'s status instead, after it settles and after the hold, and records an
+  error if it isn't showing.
   **`Suite.Popups.cs`** opens each from a button or the control on a stage, gives each open popup
   the requested theme, renders the stage, and dumps every open popup's tree, in window
   coordinates, to `<theme>__<name>__<variant>__popup<n>.json`. It then closes the popup and waits
@@ -328,17 +337,14 @@ on all seven. The `SizeStates` (`Large`, `Small`) don't change them.
 slide is over. The knob's offset is a whole number of raw pixels, so it moves with the profile:
 on the reference it is 56.67, where the template's `On` state sets 56.5 and the recording measured
 a travel of 56.56; [the knob's slide](#toggleswitch-the-knobs-slide) says which is which. The
-drag's halfway line, 28.33, is half of 56.67 and not of 56.5, on the two profiles read, both at
-56.67 ([tap or drag](#toggleswitch-tap-or-drag-2026-11-09-device-11-25)).
+drag's halfway line is half of it: 28.33 on the reference, and between 27.77 and 28.04 on qHD, whose offset is
+55.83 ([the hold limit, the distance and the halfway line](#toggleswitch-the-hold-limit-the-distance-and-the-halfway-line-2026-11-11-and-12-33)).
 
 ### What this didn't read
 
 - **The `Current` offsets during a drag.** They are what a drag's release animates from, so they
   can only be non-zero mid-drag; reading them needs a touch probe (`toggleswitch` drags, but
   doesn't read them).
-- **The drag's halfway line on another offset.** Devices 10 and 11 both have a knob offset of
-  56.67, so their line, 28.33, could be half the offset or a constant. A `toggleswitch` probe on
-  WVGA or qHD (devices 7, 8 or 13, offset 55.83) tells them apart: half the offset is 27.92 there.
 - **The tray's pixels.** Whether its background is opaque, and what colour, is the shell's
   drawing: the API reports only the app's own `BackgroundOpacity` (0). A `-Grab` screenshot
   with the tray shown would settle it.
@@ -396,10 +402,14 @@ last touch has settled. `touch.log` says where each step landed on the VM's scre
 - **Resolution:** at the zoom that fits the VM's 1440-high screen, one screen pixel is 0.83 view
   pixels on the reference profile, so a probe can't place a touch finer than that. The app logs
   the positions it got.
-- **Moves arrive in bursts about 100 ms apart.** The emulator delivers the mouse's moves to the
-  phone in batches, so a probe reads a position, not a speed. Press and release times are kept.
+- **A still touch reports every 100 ms; a moving one, every 15 to 30 ms.** While a touch is held the emulator
+  sends its position every 100 ms from the press, moved or not, and now and then drops one; the mouse's own moves
+  reach the phone 15 to 30 ms apart (the logs of #33). So a probe reads a position, not a smooth speed, and a press
+  is seen by whatever reads pointer events on that 100 ms beat: the ToggleSwitch's hold limit is one
+  ([the hold limit](#toggleswitch-the-hold-limit-the-distance-and-the-halfway-line-2026-11-11-and-12-33)).
+  Press and release times are kept.
 
-Probes: `toggleswitch` (#25), `tilt`, `tiltedge` and `tiltgrid` (#22), and for #24 `motion`, `pages`,
+Probes: `toggleswitch` (#25), `toggletap` and `togglehalf` (#33), `tilt`, `tiltedge` and `tiltgrid` (#22), and for #24 `motion`, `pages`,
 `projections` and `ring` ([Motion](#motion-2026-11-10-device-11-24)), and `ringsize` for #28 (B6:
 [the size threshold and the clock](#progressring-the-size-threshold-and-the-clock)). Each frame's value is read on the UI thread in
 `CompositionTarget.Rendering`. That reads the animated values of the theme animations too: the
@@ -416,7 +426,8 @@ and those are what is quoted. In view pixels on the reference profile:
   knob's `KnobTranslateTransform.X` follows the finger one for one from the first move. There is
   no distance before the knob moves.
 - **A release is a tap, and toggles, when the press moved less than about 18 view px and lasted
-  less than about 1,020 ms.** Moved 17.47: tap; 18.33: not, in two runs. Lasted 993, 1,001
+  less than about 1,020 ms** (later runs: a physical 2.7 mm, and 1,000 ms checked at each pointer event; see
+  [the next section](#toggleswitch-the-hold-limit-the-distance-and-the-halfway-line-2026-11-11-and-12-33)). Moved 17.47: tap; 18.33: not, in two runs. Lasted 993, 1,001
   and 1,022 ms: tap; 1,020, 1,021, 1,033 and 1,060: not. The two limits act on their own: a still press
   of 1,124 ms doesn't toggle, nor does a quick 20 px drag of 548 ms.
 - **Otherwise the knob's position decides**: released at 28.32 it goes back Off, at 29.18 it goes
@@ -424,9 +435,8 @@ and those are what is quoted. In view pixels on the reference profile:
   still goes back Off. On the 720p profile 28.34 goes On (below): the two profiles' releases fall
   either side of 28.33, within 0.01. 28.33 is half the knob's offset as the control computes it,
   `KnobOnToOffOffset` 56.67 ([Native readings](#templatesettings)), but both profiles have that
-  offset, so these runs can't tell half the offset from a fixed 28.33. Unconfirmed beyond these
-  two profiles: a drag on a profile with another offset is owed
-  ([What this didn't read](#what-this-didnt-read)).
+  offset, so these runs can't tell half the offset from a fixed 28.33. The qHD profile, offset 55.83, did: it is
+  half the offset (next section).
 - **After a tap**, `ToggleStates` goes `Dragging` > `Off` at once, and `Off` > `On` about 380 ms
   later. After a drag, `Dragging` > `On` or `Off` comes about 380 ms after the release. That is
   the knob's slide into place.
@@ -438,7 +448,53 @@ and those are what is quoted. In view pixels on the reference profile:
   to 2.76 here (a view pixel is 0.147 mm at 312 dpi) and 2.66 to 2.79 on the reference (0.152 mm,
   about 400 dpi from its 5.5 inch diagonal): the two profiles' view pixels differ by 4%, which a
   0.83 px step can't separate, so view pixels and a physical distance both fit. View pixels are
-  the simpler reading.
+  the simpler reading. **Later runs settle it, and the hold limit too: next section.**
+
+### ToggleSwitch: the hold limit, the distance and the halfway line (2026-11-11 and 12, #33)
+
+Four runs, each from a cold emulator or a warm one with no other running; `tools/motion/toggle.py` prints every
+number below from them. From #33 the probes also log each pointer event's `PointerPoint.Timestamp` (`ts`, in
+microseconds) and the switch's gesture events (`Tapped`, `Holding`, `RightTapped`), and every ToggleSwitch probe logs
+the knob's offsets from `TemplateSettings`. Times are the app's stopwatch unless they say `ts`.
+
+| Run | Probe | Device | What |
+|---|---|---|---|
+| `20261111-2345-dev11` | `toggletap` | 11 | 24 presses: still, with one move of a view pixel at 905 to 975 ms, lifted 20 ms later; still, lifted at 1,050 and 1,150 ms; moved 17 and 19 px |
+| `20261112-0003-dev13` | `toggleswitch` | 13, qHD, offset 55.83 | 35 presses: the grid of #25, drags about half the offset, the limits' sides |
+| `20261111-2350-dev11` | `togglehalf` | 11, offset 56.67 | 34 drags of a switch drawn three times its size in a `Viewbox` |
+| `20261112-0007-dev13` | `togglehalf` | 13, offset 55.83 | the same 34 |
+
+- **A tap is the `Tapped` gesture.** In all four runs, every press that toggled raised `Tapped` on its release, and no
+  press that didn't toggle raised it (127 presses, on two profiles).
+- **The hold limit is 1,000 ms, by the pointer's timestamps, and it is checked when a pointer event arrives, not by a
+  timer.** A press is a hold, and raises `Holding` instead of `Tapped`, at the first pointer event during the press
+  whose timestamp is 1,000 ms or more after the press's; the release itself doesn't count. The timestamps step by
+  15.625 ms (the system clock's tick): on `toggletap` the latest event that still tapped was 984 ms after the press
+  by `ts` (63 ticks; 971.6 ms by the stopwatch), and every event at 1,000 ms (64 ticks; 988.1 ms and later by the
+  stopwatch) started `Holding` at once, even with the release 1 ms later. The emulator sends a still touch's
+  position every 100 ms from the press, so a press is held past its 1,000 ms event, and sometimes it drops one:
+  that is what made #25's limit look scattered round 1,020 ms. Over the eleven `toggleswitch` and `toggletap` runs on
+  devices 10, 11 and 13 (#25's and these), every press whose last event before the release came by 984 ms (by `ts`) or 901 ms (by the
+  stopwatch, where there is no `ts`) toggled, and none with one at 999 ms or later did, however long the press: a
+  still press of 1,071 ms toggled (`20261111-1942-dev11`) because its 1,000 ms event never came, and one of 1,020
+  didn't because it did. On a real phone the digitiser reports the touch all along, so the limit there would be
+  1,000 ms itself; that isn't checked (no device, gap register B24).
+- **The distance limit is a physical distance, about 2.7 mm**, not view pixels: on the qHD profile (device 13, 221
+  dpi, 1.2 raw px a view px, so 0.138 mm a view px) presses moved 18.36 and 19.16 view px tapped and 19.96 didn't,
+  where 18.33 didn't on the reference. In millimetres from each profile's `RawDpiX`, the farthest taps are 2.64
+  (device 13, 23 raw px), 2.64 (device 11) and 2.63 mm (device 10), and the nearest misses 2.75, 2.77 and 2.79 mm.
+  A press that moves 12.48 view px still becomes a hold at its 1,000 ms event; 19.96 doesn't (no `Holding`).
+- **The halfway line is half the knob's offset**, `KnobOnToOffOffset` / 2, not a fixed 28.33. A touch moves in
+  whole screen pixels, 0.83 view px on these profiles, which can't put a release between 27.92 and 28.33; so
+  `togglehalf` draws the switch three times its size in a `Viewbox`, where the knob follows the finger in the
+  switch's own pixels, a third as far, on a 0.28 px grid. The log reads the scale (the knob 3 times as wide on
+  screen as in the switch) and the offset in the switch's pixels, the same as unscaled. On device 13 (offset 55.83,
+  half 27.92) the knob released at 27.77 went back Off, 6 times of 6, and at 28.04 went On, 6 of 6. On device 11
+  (offset 56.67, half 28.33) 28.06 went back Off, 4 of 4, and 28.35 went On, 6 of 6, as the unscaled runs had it
+  (28.32 Off, and 28.34 On on device 10). So 28.04 goes On where the offset is 55.83 and 28.06 goes back Off where it is
+  56.67. Unscaled on device 13 (`toggleswitch`): 27.51 Off and 28.31 On, which also puts the line below device 11's
+  (28.32 Off there).
+- The slide after the release still ends about 380 ms after it (374 to 412 ms on these runs).
 
 ### Tilt: first readings (2026-11-09, device 11, for #22)
 
