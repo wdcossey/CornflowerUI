@@ -75,8 +75,8 @@ class Recording:
         if gray is None:
             found = [p for p in sorted(glob.glob(os.path.join(run, 'analysis', '*.gray'))) if os.path.getsize(p) == size]
             if not found:
-                raise SystemExit('%s: no decoded recording of %d x %d x %d frames in analysis\\; run decode.py %s first'
-                                 % (run, self.w, self.h, len(self.times), run))
+                raise SystemExit('%s: no decoded recording of %d x %d x %d frames in %s; run decode.py %s first'
+                                 % (run, self.w, self.h, len(self.times), os.path.join(run, 'analysis'), run))
             gray = found[0]
         elif os.path.getsize(gray) != size:
             raise SystemExit('%s is %d bytes, not %d x %d x %d frames' % (gray, os.path.getsize(gray), self.w, self.h, len(self.times)))

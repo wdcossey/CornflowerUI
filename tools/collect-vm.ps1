@@ -1,6 +1,7 @@
 <#
 .SYNOPSIS
-  Inventories a reference VM: what is installed, and where the design sources are.
+  Inventories a reference VM: what is installed, and where the design sources are. Windows only:
+  it runs on the VM, not on the machine that drives it.
 
 .DESCRIPTION
   Read-only, apart from its own output folder. Works on Windows PowerShell 4.0 (Windows 8.1)

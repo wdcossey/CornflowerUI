@@ -1,4 +1,4 @@
-# Runs on the reference VM in the signed-in desktop session, started by session.ps1 -Probe.
+# Windows only: runs on the reference VM in the signed-in desktop session, started by session.ps1 -Probe.
 #
 # Plays a probe's gestures.txt on the emulator's display as mouse input, which the emulator turns into touches
 # (its default input mode). The file's first line is "view <width> <height>", the app's window in view pixels;
