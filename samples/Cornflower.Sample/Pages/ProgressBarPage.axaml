@@ -1,0 +1,41 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sample="using:Cornflower.Sample"
+             x:Class="Cornflower.Sample.Pages.ProgressBarPage"
+             Background="{DynamicResource ApplicationPageBackgroundThemeBrush}"
+             Foreground="{DynamicResource PhoneForegroundBrush}"
+             FontFamily="{DynamicResource PhoneFontFamilyNormal}"
+             FontSize="{DynamicResource TextStyleLargeFontSize}">
+  <!--
+    The 8.1 ProgressBar, as an 8.1 page writes one: no style, no size. It stretches across the page, 3.5 high. The
+    first is at 40% and the button adds 10 (back to 0 after 100); the indeterminate one runs the phone's five dots,
+    and the second button turns it determinate and back; the disabled one looks as an enabled one does, as on the
+    phone. The light section is the same bars in the light theme.
+  -->
+  <ScrollViewer>
+    <StackPanel Margin="19,12,19,24">
+      <sample:SamplePageHeader x:Name="Header" />
+
+      <TextBlock Text="40%" Theme="{DynamicResource GroupHeaderTextBlockStyle}" />
+      <ProgressBar x:Name="Determinate" Value="40" Margin="0,12" />
+      <Button x:Name="Step" Content="add 10" Click="OnStep" />
+
+      <TextBlock Text="indeterminate" Theme="{DynamicResource GroupHeaderTextBlockStyle}" Margin="0,12,0,0" />
+      <ProgressBar x:Name="Indeterminate" IsIndeterminate="True" Margin="0,12" />
+      <Button x:Name="Toggle" Content="stop" Click="OnToggle" />
+
+      <TextBlock Text="disabled, 70%" Theme="{DynamicResource GroupHeaderTextBlockStyle}" Margin="0,12,0,0" />
+      <ProgressBar x:Name="Disabled" Value="70" IsEnabled="False" Margin="0,12" />
+
+      <ThemeVariantScope RequestedThemeVariant="Light" Margin="-19,12,-19,0">
+        <Border Background="{DynamicResource ApplicationPageBackgroundThemeBrush}" Padding="19,6,19,12">
+          <StackPanel>
+            <TextBlock Text="light" Theme="{DynamicResource GroupHeaderTextBlockStyle}" />
+            <ProgressBar x:Name="Light" Value="40" Margin="0,12" />
+            <ProgressBar x:Name="LightIndeterminate" IsIndeterminate="True" Margin="0,12" />
+          </StackPanel>
+        </Border>
+      </ThemeVariantScope>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>
