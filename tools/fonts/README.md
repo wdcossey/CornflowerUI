@@ -23,5 +23,8 @@ node measure-fonts.js <downloads folder> <selawik folder> C:/Windows/Fonts [symb
 node measure-segoewp.js <segoe wp folder> <selawik folder> C:/Windows/Fonts
 ```
 
+The last folder is the one holding Segoe UI's files (`segoeui.ttf` and its weights): `C:/Windows/Fonts`
+on Windows; on Linux or macOS, wherever a copy of them is kept outside the repository.
+
 Versions measured on 2026-11-07: `@fontsource/open-sans` 5.3.0, `@fontsource/noto-sans` 5.3.0 (Latin
 subset, `.woff`), Selawik release 1.01. `node_modules/` is ignored by git.
