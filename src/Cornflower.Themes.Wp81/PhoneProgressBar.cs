@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Shapes;
 using Avalonia.Data;
+using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -37,13 +38,15 @@ namespace Cornflower.Themes.Wp81;
 /// from the bar's width. Avalonia's <c>ProgressBar.TemplateSettings</c> has other values, worked out another way, so
 /// the storyboard works the phone's out here, as the reference app read them on all seven profiles (native.json): the
 /// start −63, the end the width over 9 for each of the 3.917 s on from it, the well a third of the width and the end two
-/// thirds. The tracks below hold the E slides and the grid's travel in widths, so one set of tracks serves every width.
+/// thirds (<see cref="TemplateSettings"/>). The tracks below hold the grid's way from its start to its end, and each
+/// E's stops (0, the well, the end), so one set of tracks serves every width.
 /// </para>
 /// <para>
 /// The storyboard is as long as its longest track, the grid's 3.917 s, and repeats forever. It runs from the moment the
 /// bar is indeterminate, attached to a window and has its template, at the storyboard's start, as the phone's
 /// <c>VisualStateManager.GoToState</c> starts it; it stops, and gives the parts back their own values, when any of
-/// those ends. While the bar isn't visible it asks for no frames, and looks again four times a second.
+/// those ends. While the bar isn't visible it asks for no frames, and looks again four times a second. A vertical bar
+/// (Avalonia's, not the phone's) doesn't run it: the template's dots run only across.
 /// </para>
 /// </remarks>
 internal static class PhoneProgressBar
@@ -84,9 +87,12 @@ internal static class PhoneProgressBar
         [Seconds(1.167), Seconds(2.667), Seconds(3.667)],
     ];
 
-    /// <summary>The grid's travel from the start, in widths: a straight line from 0 at 0 to 3.917 / 9 at 3.917 s.</summary>
+    /// <summary>
+    /// The grid's way from <c>ContainerAnimationStartPosition</c> (0) to <c>ContainerAnimationEndPosition</c> (1): a
+    /// straight line over 3.917 s, the template's <c>DoubleAnimation</c>.
+    /// </summary>
     internal static readonly PhoneKeyframeTrack Container = new(Kind.Spline, TimeSpan.Zero,
-        new Key(TimeSpan.Zero, 0), new Key(ContainerDuration, ContainerWidthsPerSecond * ContainerDuration.TotalSeconds));
+        new Key(TimeSpan.Zero, 0), new Key(ContainerDuration, 1));
 
     /// <summary>
     /// B1 to B5: −40, 0, 0, 80, in straight lines. The template's keys are <c>EasingDoubleKeyFrame</c>s with no easing,
@@ -98,8 +104,9 @@ internal static class PhoneProgressBar
         .ToArray();
 
     /// <summary>
-    /// E1 to E5, in widths: 0 until the dot's begin, a third (the well) a second later, held for a second, two thirds
-    /// (the end) a second after that. The template eases into the well and the end through <see cref="Ease"/>; its
+    /// E1 to E5, as stops: 0 until the dot's begin, 1 (<c>EllipseAnimationWellPosition</c>) a second later, held for a
+    /// second, 2 (<c>EllipseAnimationEndPosition</c>) a second after that; <see cref="MoveAt"/> turns a stop into a
+    /// position. The template eases into the well and the end through <see cref="Ease"/>; its
     /// other keys carry an <c>ExponentialEase</c>, but each joins two equal values, so it moves nothing.
     /// </summary>
     internal static readonly PhoneKeyframeTrack[] Dots = DotBegins
@@ -111,9 +118,9 @@ internal static class PhoneProgressBar
                 keys.Add(new Key(begin, 0));
             }
 
-            keys.Add(new Key(begin + Seconds(1), 1.0 / 3, Ease));
-            keys.Add(new Key(begin + Seconds(2), 1.0 / 3));
-            keys.Add(new Key(begin + Seconds(3), 2.0 / 3, Ease));
+            keys.Add(new Key(begin + Seconds(1), 1, Ease));
+            keys.Add(new Key(begin + Seconds(2), 1));
+            keys.Add(new Key(begin + Seconds(3), 2, Ease));
             return new PhoneKeyframeTrack(Kind.Spline, TimeSpan.Zero, keys.ToArray());
         })
         .ToArray();
@@ -167,6 +174,13 @@ internal static class PhoneProgressBar
                 runner.Update();
             }
         });
+        ProgressBar.OrientationProperty.Changed.AddClassHandler<ProgressBar>((bar, _) =>
+        {
+            if (Runners.TryGetValue(bar, out var runner))
+            {
+                runner.Update();
+            }
+        });
     }
 
     /// <summary>Gets <see cref="IsAnimatedProperty"/>.</summary>
@@ -179,7 +193,21 @@ internal static class PhoneProgressBar
     internal static TimeSpan StoryboardTime(TimeSpan elapsed) => TimeSpan.FromTicks(elapsed.Ticks % Duration.Ticks);
 
     /// <summary>The grid's <c>X</c> at a storyboard time, for a bar this wide.</summary>
-    internal static double ContainerAt(TimeSpan time, double width) => ContainerStart + width * Container.ValueAt(time)!.Value;
+    internal static double ContainerAt(TimeSpan time, double width)
+    {
+        var settings = TemplateSettings(width);
+        return settings.ContainerStart + (settings.ContainerEnd - settings.ContainerStart) * Container.ValueAt(time)!.Value;
+    }
+
+    /// <summary>A dot's <c>X</c> at a storyboard time, for a bar this wide: its track's stop between 0, the well and the end.</summary>
+    internal static double MoveAt(int dot, TimeSpan time, double width)
+    {
+        var settings = TemplateSettings(width);
+        var stop = Dots[dot].ValueAt(time)!.Value;
+        return stop <= 1
+            ? settings.EllipseWell * stop
+            : settings.EllipseWell + (settings.EllipseEnd - settings.EllipseWell) * (stop - 1);
+    }
 
     /// <summary>Runs one bar's storyboard.</summary>
     private sealed class Runner(ProgressBar bar)
@@ -264,7 +292,7 @@ internal static class PhoneProgressBar
         /// <summary>Starts or stops the storyboard as the bar's state says.</summary>
         public void Update()
         {
-            var run = bar.IsIndeterminate && _attached && (_container is not null || _dots.Any(d => d is not null));
+            var run = bar.IsIndeterminate && bar.Orientation == Orientation.Horizontal && _attached && (_container is not null || _dots.Any(d => d is not null));
             if (run && !_running)
             {
                 _running = true;
@@ -312,7 +340,7 @@ internal static class PhoneProgressBar
 
                 if (_moves[i] is { } move)
                 {
-                    move.X = width * Dots[i].ValueAt(time)!.Value;
+                    move.X = MoveAt(i, time, width);
                 }
 
                 Show(i, Opacities[i].ValueAt(time));

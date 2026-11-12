@@ -20,7 +20,8 @@
       sets it.
     - PART_DeterminateRoot, the track: Background, BorderBrush, BorderThickness and MinHeight from the bar.
     - PART_Indicator in it, the phone's ProgressBarIndicator: the part Avalonia's ProgressBar sizes, so a Border
-      (Avalonia requires one), in the Foreground, at the left, inside the bar's Padding.
+      (Avalonia requires one), in the Foreground, at the left, inside the bar's Padding. Avalonia sizes it from its
+      parent's bounds, so it sits in a Panel inside the track's border, not in the border itself.
 
     The states: Avalonia's ProgressBar raises :indeterminate only. Indeterminate shows PART_EllipseGrid, hides the
     track and the high-contrast bars, and PhoneProgressBar runs the storyboard (the grid, each B and each E sliding,
@@ -93,10 +94,13 @@
                   BorderBrush="{TemplateBinding BorderBrush}"
                   BorderThickness="{TemplateBinding BorderThickness}"
                   MinHeight="{TemplateBinding MinHeight}">
-            <Border x:Name="PART_Indicator"
-                    Margin="{TemplateBinding Padding}"
-                    Background="{TemplateBinding Foreground}"
-                    HorizontalAlignment="Left" />
+            <!-- Not the phone's: Avalonia sizes the indicator from its parent's bounds, so a panel inside the border. -->
+            <Panel>
+              <Border x:Name="PART_Indicator"
+                      Margin="{TemplateBinding Padding}"
+                      Background="{TemplateBinding Foreground}"
+                      HorizontalAlignment="Left" />
+            </Panel>
           </Border>
         </Grid>
       </ControlTemplate>
@@ -133,7 +137,13 @@
       <Setter Property="Opacity" Value="0" />
     </Style>
 
-    <!-- Not the phone's, whose bar is only horizontal: Avalonia's Orientation, the indicator filling from the bottom. -->
+    <!--
+      Not the phone's, whose bar is only horizontal: Avalonia's Orientation, the indicator filling from the bottom. The
+      dots run only across, so a vertical bar doesn't show them (PhoneProgressBar doesn't run them either).
+    -->
+    <Style Selector="^:vertical /template/ Grid#PART_EllipseGrid">
+      <Setter Property="Opacity" Value="0" />
+    </Style>
     <Style Selector="^:vertical /template/ Border#PART_Indicator">
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="VerticalAlignment" Value="Bottom" />

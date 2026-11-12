@@ -309,7 +309,7 @@ public class ProgressBarTests
             {
                 var why = $"dot {dot + 1} at {ms} ms";
                 Assert.True(Math.Abs(SlideAt(dot, s) - PhoneProgressBar.Slides[dot].ValueAt(time)!.Value) < 1e-9, $"{why}: B");
-                Assert.True(Math.Abs(MoveAt(dot, s, width) - width * PhoneProgressBar.Dots[dot].ValueAt(time)!.Value) < 1e-6, $"{why}: E");
+                Assert.True(Math.Abs(MoveAt(dot, s, width) - PhoneProgressBar.MoveAt(dot, time, width)) < 1e-6, $"{why}: E");
                 Assert.Equal(OpacityAt(dot, s), PhoneProgressBar.Opacities[dot].ValueAt(time));
             }
         }
@@ -317,8 +317,8 @@ public class ProgressBarTests
         for (var dot = 0; dot < 5; dot++)
         {
             var begin = DotBeginSeconds[dot];
-            Assert.Equal(width / 3, width * PhoneProgressBar.Dots[dot].ValueAt(PhoneKeyframeTrack.Seconds(begin + 1))!.Value, 1e-9);
-            Assert.Equal(2 * width / 3, width * PhoneProgressBar.Dots[dot].ValueAt(PhoneKeyframeTrack.Seconds(begin + 3))!.Value, 1e-9);
+            Assert.Equal(width / 3, PhoneProgressBar.MoveAt(dot, PhoneKeyframeTrack.Seconds(begin + 1), width), 1e-9);
+            Assert.Equal(2 * width / 3, PhoneProgressBar.MoveAt(dot, PhoneKeyframeTrack.Seconds(begin + 3), width), 1e-9);
             Assert.Equal(0, PhoneProgressBar.Slides[dot].ValueAt(PhoneKeyframeTrack.Seconds(SlideSeconds[dot][0]))!.Value, 1e-9);
             Assert.Equal(80, PhoneProgressBar.Slides[dot].ValueAt(PhoneKeyframeTrack.Seconds(SlideSeconds[dot][2]))!.Value, 1e-9);
         }
@@ -373,7 +373,7 @@ public class ProgressBarTests
                     else if (visible)
                     {
                         var x = PhoneProgressBar.ContainerAt(time, width) + DotX[dot] + PhoneProgressBar.Slides[dot].ValueAt(time)!.Value
-                                + width * PhoneProgressBar.Dots[dot].ValueAt(time)!.Value;
+                                + PhoneProgressBar.MoveAt(dot, time, width);
                         off = Math.Max(off, Math.Abs(x - shown[dot]));
                     }
                 }
@@ -649,7 +649,8 @@ public class ProgressBarTests
         Assert.NotEqual(BindingPriority.Animation, dot.GetDiagnostic(Visual.OpacityProperty).Priority);
     }
 
-    // Not the phone's: Avalonia's Orientation. Vertical, the indicator fills from the bottom.
+    // Not the phone's: Avalonia's Orientation. Vertical, the indicator fills from the bottom; turned, it fills across
+    // again (Avalonia clears the other side's size each time).
     [AvaloniaFact]
     public void Vertical_The_Indicator_Fills_From_The_Bottom()
     {
@@ -660,6 +661,52 @@ public class ProgressBarTests
         Assert.Equal(10, indicator.Bounds.Width, 0.001);
         Assert.Equal(80, indicator.Bounds.Height, 0.5);
         Assert.Equal(200, indicator.Bounds.Bottom, 0.5);
+
+        bar.Orientation = Orientation.Horizontal;
+        bar.Width = 300;
+        bar.Height = double.NaN;
+        stage.Layout();
+        Assert.Equal(120, indicator.Bounds.Width, 0.5);
+        Assert.Equal(bar.Bounds.Height, indicator.Bounds.Height, 0.001);
+
+        bar.Orientation = Orientation.Vertical;
+        bar.Width = 10;
+        bar.Height = 200;
+        stage.Layout();
+        Assert.Equal(10, indicator.Bounds.Width, 0.001);
+        Assert.Equal(80, indicator.Bounds.Height, 0.5);
+    }
+
+    // The phone's dots run only across: a vertical indeterminate bar shows no dots and runs no storyboard; turned
+    // across, it runs.
+    [AvaloniaFact]
+    public void Vertical_No_Dots_Run()
+    {
+        using var clock = new TestClock();
+        var bar = new ProgressBar { IsIndeterminate = true, Orientation = Orientation.Vertical, Width = 10, Height = 200 };
+        using var stage = new Stage(bar: bar);
+        clock.At(10 * FrameMs);
+
+        Assert.Equal(0, Part<Grid>(bar, "PART_EllipseGrid").Opacity);
+        Assert.Equal(0, clock.Pending);
+        Assert.Equal(0, GridMove(bar).X);
+
+        bar.Orientation = Orientation.Horizontal;
+        Assert.Equal(1, Part<Grid>(bar, "PART_EllipseGrid").Opacity);
+        Assert.Equal(-63, GridMove(bar).X, 1e-9);
+        Assert.Equal(1, clock.Pending);
+    }
+
+    // The indicator stays inside an app's border: at 100% it fills the border's inside, not the whole bar.
+    [AvaloniaFact]
+    public void The_Indicator_Stays_Inside_The_Border()
+    {
+        var bar = new ProgressBar { Value = 100, BorderThickness = new Thickness(2), Height = 20 };
+        using var stage = new Stage(bar: bar);
+        var indicator = Part<Border>(bar, "PART_Indicator");
+
+        Assert.Equal(bar.Bounds.Width - 4, indicator.Bounds.Width, 0.5);
+        Assert.Equal(2, indicator.TranslatePoint(default, bar)!.Value.X, 0.5);
     }
 
     // The phone's bar has no text: Avalonia's ShowProgressText draws nothing.
