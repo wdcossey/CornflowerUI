@@ -381,6 +381,7 @@ public class ProgressRingTests
 
         ring.IsActive = false;
         Assert.Equal(0, clock.Pending);
+        Dispatcher.UIThread.RunJobs();                          // the opacities go back after the dispatcher's pass
         for (var dot = 0; dot < 6; dot++)
         {
             Assert.Equal(0, Dot(ring, dot).Opacity);
@@ -458,6 +459,42 @@ public class ProgressRingTests
         at = part.TranslatePoint(default, ring)!.Value;
         Assert.Equal(ring.Bounds.Width - RingBounds.Width, at.X, 0.001);
         Assert.InRange(at.Y, down - raw, down + raw);
+    }
+
+    // Turned off and on again in one pass (a theme swapped for one based on it): the new storyboard reads the dots' own
+    // angles, not the old one's mid-animation angles, and gives those back when it stops.
+    [AvaloniaFact]
+    public void Turned_Off_And_On_In_One_Pass_It_Keeps_The_Dots_Own_Angles()
+    {
+        using var clock = new TestClock();
+        using var stage = new Stage();
+        var ring = stage.Ring;
+        ring.IsActive = true;
+        clock.At(20 * FrameMs);
+        Assert.NotEqual(0, Rotation(ring, 1).Angle);
+
+        PhoneProgressRing.SetIsAnimated(ring, false);
+        ring.ClearValue(PhoneProgressRing.IsAnimatedProperty);
+        ring.IsActive = false;
+        Dispatcher.UIThread.RunJobs();
+
+        for (var dot = 0; dot < 6; dot++)
+        {
+            Assert.Equal(0, Rotation(ring, dot).Angle);
+            Assert.Equal(0, Dot(ring, dot).Opacity);
+        }
+    }
+
+    // The vertical alignment is bound as the phone binds it, though the template's Auto row leaves Ring where it is.
+    [AvaloniaFact]
+    public void The_Vertical_Content_Alignment_Reaches_Ring()
+    {
+        using var stage = new Stage();
+        var part = Part<Grid>(stage.Ring, "PART_Ring");
+
+        Assert.Equal(VerticalAlignment.Center, part.VerticalAlignment);
+        stage.Ring.VerticalContentAlignment = VerticalAlignment.Bottom;
+        Assert.Equal(VerticalAlignment.Bottom, part.VerticalAlignment);
     }
 
     // The storyboard turned on after the template is applied (a theme replacing another) still finds the dots.

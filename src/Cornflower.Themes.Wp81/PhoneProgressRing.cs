@@ -58,7 +58,10 @@ internal static class PhoneProgressRing
     internal static readonly TimeSpan[] AngleTimes =
         [Seconds(0), Seconds(0.433), Seconds(1.2), Seconds(1.617), Seconds(2.017), Seconds(2.783), Seconds(3.217)];
 
-    /// <summary>The angle keys' <c>KeySpline</c>s, the same for every dot; null where the key has none (a straight line).</summary>
+    /// <summary>
+    /// The angle keys' <c>KeySpline</c>s, the same for every dot; null where the key has none (a straight line). The first
+    /// key's, as the template has it, eases nothing: it is reached at 0, from no value, so no time passes on its curve.
+    /// </summary>
     internal static readonly KeySplineCurve?[] AngleSplines =
     [
         new(0.13, 0.21, 0.1, 0.7),
@@ -100,13 +103,17 @@ internal static class PhoneProgressRing
     {
         IsAnimatedProperty.Changed.AddClassHandler<ProgressRing>((ring, e) =>
         {
+            if (e.GetOldValue<bool>() == e.GetNewValue<bool>())
+            {
+                return;
+            }
+
             if (Runners.TryGetValue(ring, out var old))
             {
-                // This can come inside a theme's unset pass, where taking other values away is unsafe (CLAUDE.md,
-                // PhoneTextLine): stop listening now, and give the dots their own values back once the pass is over.
+                // Stopped now, so that a runner made in the same pass reads the dots' own angles, not the old one's.
                 Runners.Remove(ring);
                 old.Unsubscribe();
-                Dispatcher.UIThread.Post(old.Stop);
+                old.Stop();
             }
 
             if (e.GetNewValue<bool>())
@@ -155,7 +162,16 @@ internal static class PhoneProgressRing
             _attached = ring.IsAttachedToVisualTree();
             // The template may already be applied: a theme that turns this on after it (one replacing another) gets
             // no TemplateApplied for it.
-            FindParts(name => ring.GetVisualDescendants().OfType<Control>().FirstOrDefault(c => c.Name == name));
+            var named = new Dictionary<string, Control>();
+            foreach (var control in ring.GetVisualDescendants().OfType<Control>())
+            {
+                if (control.Name is { } name)
+                {
+                    named.TryAdd(name, control);
+                }
+            }
+
+            FindParts(name => named.GetValueOrDefault(name));
             Update();
         }
 
@@ -259,7 +275,12 @@ internal static class PhoneProgressRing
                 : null;
         }
 
-        /// <summary>Stops the frames and gives every dot its own opacity and angle back.</summary>
+        /// <summary>
+        /// Stops the frames and gives every dot its own angle back at once, and its own opacity after the dispatcher's
+        /// pass. The angle is a value set on the transform, safe in any pass. Taking the opacity's animation value away
+        /// isn't: this can run inside a theme's unset pass (the theme leaving, or a value of its going), where taking
+        /// another value away stops the rest (CLAUDE.md, <c>PhoneTextLine</c>).
+        /// </summary>
         public void Stop()
         {
             _running = false;
@@ -267,11 +288,24 @@ internal static class PhoneProgressRing
             _pending = null;
             for (var i = 0; i < 6; i++)
             {
-                Show(i, null);
                 if (_rotations[i] is { } rotation)
                 {
                     rotation.Angle = _ownAngles[i];
                 }
+            }
+
+            var shown = (IDisposable?[])_shown.Clone();
+            Array.Clear(_shown);
+            Array.Clear(_opacity);
+            if (shown.Any(s => s is not null))
+            {
+                Dispatcher.UIThread.Post(() =>
+                {
+                    foreach (var value in shown)
+                    {
+                        value?.Dispose();
+                    }
+                });
             }
         }
     }
