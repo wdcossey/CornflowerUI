@@ -50,7 +50,6 @@ PathIcon
 PipsPager
 PopupRoot
 ProgressBar
-RadioButton
 RefreshContainer
 RefreshVisualizer
 RepeatButton

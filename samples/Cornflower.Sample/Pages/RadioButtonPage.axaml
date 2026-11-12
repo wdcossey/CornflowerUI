@@ -1,0 +1,65 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sample="using:Cornflower.Sample"
+             x:Class="Cornflower.Sample.Pages.RadioButtonPage"
+             Background="{DynamicResource ApplicationPageBackgroundThemeBrush}"
+             Foreground="{DynamicResource PhoneForegroundBrush}"
+             FontFamily="{DynamicResource PhoneFontFamilyNormal}"
+             FontSize="{DynamicResource TextStyleLargeFontSize}">
+  <!--
+    The 8.1 RadioButton, as an 8.1 page writes one: no style, no size. Tap one to check it, and the one checked
+    before in its group loses its dot; press and hold to see the accent and the tilt. The first group is a group by
+    its parent, the second by its GroupName across two panels. The light section is the same in the light theme. The
+    section headings are the type ramp's.
+  -->
+  <ScrollViewer>
+    <StackPanel Margin="19,12,19,24">
+      <sample:SamplePageHeader x:Name="Header" />
+
+      <TextBlock Text="default" Theme="{DynamicResource GroupHeaderTextBlockStyle}" />
+      <StackPanel x:Name="Colours">
+        <RadioButton x:Name="Red" Content="red" IsCheckedChanged="OnChanged" />
+        <RadioButton x:Name="Green" Content="green" IsChecked="True" IsCheckedChanged="OnChanged" />
+        <RadioButton x:Name="Blue" Content="blue" IsCheckedChanged="OnChanged" />
+      </StackPanel>
+      <TextBlock x:Name="State" Theme="{DynamicResource ControlContextualInfoTextBlockStyle}" />
+
+      <TextBlock Text="one group in two panels" Theme="{DynamicResource GroupHeaderTextBlockStyle}" Margin="0,12,0,0" />
+      <StackPanel Orientation="Horizontal">
+        <StackPanel>
+          <RadioButton x:Name="Small" Content="small" GroupName="size" IsChecked="True" />
+          <RadioButton x:Name="Medium" Content="medium" GroupName="size" />
+        </StackPanel>
+        <StackPanel>
+          <RadioButton x:Name="Large" Content="large" GroupName="size" />
+        </StackPanel>
+      </StackPanel>
+
+      <TextBlock Text="disabled" Theme="{DynamicResource GroupHeaderTextBlockStyle}" Margin="0,12,0,0" />
+      <StackPanel>
+        <RadioButton x:Name="Disabled" Content="unchecked" IsEnabled="False" />
+        <RadioButton x:Name="DisabledChecked" Content="checked" IsChecked="True" IsEnabled="False" />
+      </StackPanel>
+
+      <TextBlock Text="longer content" Theme="{DynamicResource GroupHeaderTextBlockStyle}" Margin="0,12,0,0" />
+      <RadioButton x:Name="Longer" Content="a radio button with longer content that wraps onto a second line">
+        <RadioButton.ContentTemplate>
+          <DataTemplate>
+            <TextBlock Text="{Binding}" TextWrapping="Wrap" Theme="{DynamicResource BodyTextBlockStyle}" />
+          </DataTemplate>
+        </RadioButton.ContentTemplate>
+      </RadioButton>
+
+      <ThemeVariantScope RequestedThemeVariant="Light" Margin="-19,12,-19,0">
+        <Border Background="{DynamicResource ApplicationPageBackgroundThemeBrush}" Padding="19,6,19,12">
+          <StackPanel>
+            <TextBlock Text="light" Theme="{DynamicResource GroupHeaderTextBlockStyle}" />
+            <RadioButton x:Name="Light" Content="radio button" IsChecked="True" />
+            <RadioButton x:Name="LightUnchecked" Content="radio button" />
+            <RadioButton x:Name="LightDisabled" Content="radio button" IsEnabled="False" />
+          </StackPanel>
+        </Border>
+      </ThemeVariantScope>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>
