@@ -28,7 +28,8 @@ line, the reveal button and the phone's pointer-over look.
   header; the placeholder while empty, here at the box's own size; the text in the phone's line.
 - **Masked** with `●`, WinRT's default `PasswordChar`, on one line with no return.
 - **The keyboard is told it's a password** (`TextInputOptions`: `ContentType` `Password`, `IsSensitive`, no
-  suggestions), masked or shown, as the phone's PasswordBox tells its own (#104).
+  suggestions), masked or shown: on the Pixel 8 Gboard had suggested words from a typed password (#104). Whether the
+  phone's own keyboard suggests in a PasswordBox is unmeasured.
 - **"Show Password"**: with the `revealPasswordButton` class, Wp81's CheckBox below the box, lifted 6.5 into the box's
   row, at the left; ticking it is `RevealPassword`, which shows the password, and setting `RevealPassword` ticks it. It
   shows whether or not there is a password, as on the phone, but not on a read-only or many-line box. A tap on it
@@ -70,9 +71,6 @@ None new.
 - **The text's baseline**, and so the circles, 0.95 DIP above the phone's (#36's).
 - **Selawik has no `●`**: the circles come from the platform's fallback font.
 - **A tap on "Show Password" focuses an unfocused box**; the phone's leaves focus where it was.
-- **The keyboard suggests the password** ([#104](https://github.com/wdcossey/CornflowerUI/issues/104)): on the Pixel 8,
-  Gboard offered words from what was typed with the password masked, and its strip stayed with it shown. Whether the
-  phone's keyboard suggests in a PasswordBox is unmeasured; a keyboard that may learn a password is a bug either way.
 - **Unmeasured on the phone**: a shown password, the caret, the selection and the keyboard.
 
 ## The checklist
