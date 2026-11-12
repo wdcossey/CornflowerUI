@@ -79,7 +79,6 @@ None.
 - **The text is Selawik**, its baseline 0.025 em above the phone's (ADR 0003).
 - **The tilt on a CheckBox isn't measured on the phone**: its target is flatter than any Button probed, and a press in
   the overhang, outside the target, takes the tilt of the nearest edge. Nor is sliding off while pressed.
-- **Device run**: passed on the Pixel 8, 2026-11-12 (the status line).
 
 ## The checklist
 

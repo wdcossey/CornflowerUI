@@ -1,6 +1,6 @@
 # RadioButton
 
-Status: done · [#32](https://github.com/wdcossey/CornflowerUI/issues/32) · device run passed 2026-11-12 (Pixel 8, Release, over wireless adb, `run.ps1 -Page radiobutton` on `main` at `764c435`: cold 836 ms, the page opened in 416 ms, the specimens above the fold drawn; the page scrolls) · owed: a probe of the tilt and its release
+Status: done · [#32](https://github.com/wdcossey/CornflowerUI/issues/32) · device run passed 2026-11-12 (Pixel 8, Release, over wireless adb, `run.ps1 -Page radiobutton` on `main` at `764c435`: cold 836 ms, the page opened in 416 ms, every specimen drawn, scrolled into view by hand) · owed: a probe of the tilt and its release
 
 The Windows Phone 8.1 RadioButton: Avalonia's `RadioButton`, themed by `Wp81Theme` with the phone's default style
 and template, in `src/Cornflower.Themes.Wp81/Controls/RadioButton.axaml`. The plan, with every value and its source,
@@ -86,7 +86,6 @@ None.
   phone's may snap back where ours eases, as the Button's does.
 - **An app's `TextBlock` style** doesn't reach the template's empty `TextBlock` (here `PhoneLineSpacer`); on the
   phone an app-wide implicit style may, and move the circle. Unmeasured.
-- **Device run**: passed on the Pixel 8, 2026-11-12 (the status line).
 
 ## The checklist
 

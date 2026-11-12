@@ -68,7 +68,6 @@ None.
 - **A repeat's `Click` is held back by marking it handled**: a handler an app adds with `handledEventsToo` still sees
   it while the finger is off, and a `Flyout` on the button still opens and closes with each held-back repeat
   (Avalonia's Button does that before it raises Click).
-- **Device run**: passed on the Pixel 8, 2026-11-12 (the status line).
 
 ## The checklist
 
