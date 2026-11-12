@@ -15,20 +15,25 @@ numbers are kept below.
 From this PC, with the VM up and signed in:
 
 ```
-powershell -ExecutionPolicy Bypass -File tools\refapp\run.ps1             # device 11, the reference: 8.1 Update 1 1080p 5.5"
-powershell -ExecutionPolicy Bypass -File tools\refapp\run.ps1 -Device 10  # 8.1 Update 1 720p 4.7"
-powershell -ExecutionPolicy Bypass -File tools\refapp\run.ps1 -Popups only                     # the popups alone, in about 2 minutes
-powershell -ExecutionPolicy Bypass -File tools\refapp\run.ps1 -Only 'CheckBox|Radio'             # just these specimens
-powershell -ExecutionPolicy Bypass -File tools\refapp\run.ps1 -Popups only -Grab               # the popups, with a screenshot of each, in about 4 minutes
-powershell -ExecutionPolicy Bypass -File tools\refapp\run.ps1 -Demo                            # the demo page, left open in the emulator
-powershell -ExecutionPolicy Bypass -File tools\refapp\run.ps1 -Probe tilt                        # one probe, with real touches (see Probes)
-powershell -ExecutionPolicy Bypass -File tools\refapp\run.ps1 -Probe pages -Record               # a probe, with a recording of the screen (see Motion)
-powershell -ExecutionPolicy Bypass -File tools\refapp\run.ps1 -Native -Device 13                 # what the phone computes, read through its API, in about 4 minutes (see Native readings)
+pwsh -NoProfile -File tools/refapp/run.ps1             # device 11, the reference: 8.1 Update 1 1080p 5.5"
+pwsh -NoProfile -File tools/refapp/run.ps1 -Device 10  # 8.1 Update 1 720p 4.7"
+pwsh -NoProfile -File tools/refapp/run.ps1 -Popups only                     # the popups alone, in about 2 minutes
+pwsh -NoProfile -File tools/refapp/run.ps1 -Only 'CheckBox|Radio'             # just these specimens
+pwsh -NoProfile -File tools/refapp/run.ps1 -Popups only -Grab               # the popups, with a screenshot of each, in about 4 minutes
+pwsh -NoProfile -File tools/refapp/run.ps1 -Demo                            # the demo page, left open in the emulator
+pwsh -NoProfile -File tools/refapp/run.ps1 -Probe tilt                        # one probe, with real touches (see Probes)
+pwsh -NoProfile -File tools/refapp/run.ps1 -Probe pages -Record               # a probe, with a recording of the screen (see Motion)
+pwsh -NoProfile -File tools/refapp/run.ps1 -Native -Device 13                 # what the phone computes, read through its API, in about 4 minutes (see Native readings)
 ```
 
-Results go to `R:\cornflower-reference\refapp\<yyyyMMdd-HHmm>-dev<n>\`: one PNG and one JSON per
+`run.ps1` runs under PowerShell 7.4 or later (`pwsh`, [`tools/README.md`](../README.md#powershell)), on
+Linux, macOS or Windows, with OpenSSH's `ssh` and `scp`; the scripts in `vm\` run on the VM. `-Out`
+names the folder the runs go in; without it, `$CORNFLOWER_REFERENCE/refapp`, or on Windows, with that
+unset, `R:\cornflower-reference\refapp`.
+
+Results go to a run folder, `<yyyyMMdd-HHmm>-dev<n>`, in that `-Out` folder: one PNG and one JSON per
 capture, `index.json` for the run, and `index.html`, which lays every state out dark beside light.
-Device indexes are in `R:\cornflower-reference\wp81-emulator-profiles.md`.
+Device indexes are in `wp81-emulator-profiles.md` in the reference folder.
 
 `-Only <regex>` keeps the specimens and popups whose name matches. `-Popups also` adds the popups to a
 run and `-Popups only` runs them alone; by default a run leaves them out, because with them inside
