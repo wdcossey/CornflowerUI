@@ -88,14 +88,13 @@ internal static class PhonePasswordKeyboard
 
     /// <summary>
     /// Which of its values a change asks this to look at again, taking its own away to see whether anything else sets
-    /// the property: the option that changed, or all three when the switch did; none for a <c>PasswordChar</c>, which
-    /// only masks or unmasks.
+    /// the property: the option that changed; none for the switch or a <c>PasswordChar</c>, which only mask or unmask (when
+    /// the switch comes on, this holds no values yet; when it goes, it takes them all).
     /// </summary>
     private static Slots LookAt(AvaloniaProperty property) =>
         property == TextInputOptions.ContentTypeProperty ? Slots.ContentType
         : property == TextInputOptions.IsSensitiveProperty ? Slots.IsSensitive
         : property == TextInputOptions.ShowSuggestionsProperty ? Slots.ShowSuggestions
-        : property == IsEnabledProperty ? Slots.All
         : Slots.None;
 
     /// <summary>Sets or takes the three, looking again at those in <paramref name="look"/>.</summary>
@@ -154,7 +153,6 @@ internal static class PhonePasswordKeyboard
         ContentType = 1,
         IsSensitive = 2,
         ShowSuggestions = 4,
-        All = ContentType | IsSensitive | ShowSuggestions,
 
         /// <summary>A change in the middle of a pass that asks for another pass but no value looked at again.</summary>
         Pass = 8,
