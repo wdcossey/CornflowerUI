@@ -746,10 +746,13 @@ public class ToggleSwitchTests
         using (stage.Capture())
             Assert.Contains(t, stage.Window.GetVisualsAt(stage.At(200, 40)).SelectMany(v => v.GetSelfAndVisualAncestors()));
 
-        // The right button: no tap.
+        // The right button: no drag, no tap.
         var knob = stage.Knob();
         stage.Window.MouseDown(knob, MouseButton.Right);
-        stage.Window.MouseUp(knob, MouseButton.Right);
+        stage.Window.MouseMove(knob + new Point(40, 0));
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(0, KnobAt(t));
+        stage.Window.MouseUp(knob + new Point(40, 0), MouseButton.Right);
         Dispatcher.UIThread.RunJobs();
         Assert.False(t.IsChecked, "a right click toggled");
 
