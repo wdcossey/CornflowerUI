@@ -350,7 +350,8 @@ public class RepeatButtonTests
         Assert.Contains(inner, reached);
     }
 
-    // The keyboard's clicks are Avalonia's, and nothing holds them back: Space clicks.
+    // The keyboard's clicks are Avalonia's, and nothing holds them back, not a pointer's press slid off and lifted
+    // before: a held Space clicks and repeats.
     [AvaloniaFact]
     public void Space_Clicks_Whatever_The_Pointer_Did_Before()
     {
@@ -366,9 +367,10 @@ public class RepeatButtonTests
 
         stage.Button.Focus();
         stage.Window.KeyPressQwerty(PhysicalKey.Space, RawInputModifiers.None);
-        Dispatcher.UIThread.RunJobs();
+        RunFor(10_000, () => clicks >= before + 3);                                       // held: the repeats too
+        stage.Window.KeyReleaseQwerty(PhysicalKey.Space, RawInputModifiers.None);
 
-        Assert.True(clicks > before);
+        Assert.True(clicks >= before + 3, $"{clicks - before} clicks from a held Space");
     }
 
     // PhonePress is the theme's: a RepeatButton without it repeats wherever the pointer is, as Avalonia's does.
