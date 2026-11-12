@@ -44,7 +44,8 @@ internal static class Spike
 
     public static void Settle() => Dispatcher.UIThread.RunJobs();
 
-    private sealed class Undo(Action undo) : IDisposable
+    /// <summary>Runs an action on dispose.</summary>
+    internal sealed class Undo(Action undo) : IDisposable
     {
         public void Dispose() => undo();
     }

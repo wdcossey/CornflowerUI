@@ -1,10 +1,11 @@
+#Requires -Version 7.4
 <#
 .SYNOPSIS
     The device run: builds the Android sample, installs it on the phone over ADB, starts it at a page
     of its catalogue, waits for the page to draw, and pulls back a frame and what the device reported.
 
 .DESCRIPTION
-    Writes into one folder per run (artifacts\device\<yyyyMMdd-HHmmss>-<model> by default, which git
+    Writes into one folder per run (artifacts/device/<yyyyMMdd-HHmmss>-<model> by default, which git
     ignores): frame.png, the phone's screen at its own resolution; run.json, the device, the start
     time Android measured and the sample's ready line; and logcat.txt, the run's log. Exits non-zero
     if any step fails, with logcat.txt kept.
@@ -16,12 +17,16 @@
     The phone must be the only device `adb devices` lists, with USB or wireless debugging on. A
     phone with a secure lock has to be unlocked by hand: the script wakes the screen and waits.
 
+    PowerShell 7.4 or later, on Linux, macOS or Windows. adb is taken from ANDROID_HOME, then
+    ANDROID_SDK_ROOT, then the SDK's default folder on the OS, then PATH; the build is given the SDK
+    that adb is in. -NoProfile keeps a profile's settings out of the run.
+
 .EXAMPLE
-    powershell -ExecutionPolicy Bypass -File tools\android\run.ps1
+    pwsh -NoProfile -File tools/android/run.ps1
 .EXAMPLE
-    powershell -ExecutionPolicy Bypass -File tools\android\run.ps1 -NoBuild -Out C:\temp\run1
+    pwsh -NoProfile -File tools/android/run.ps1 -NoBuild -Out ~/temp/run1
 .EXAMPLE
-    powershell -ExecutionPolicy Bypass -File tools\android\run.ps1 -Page theme
+    pwsh -NoProfile -File tools/android/run.ps1 -Page theme
 #>
 [CmdletBinding()]
 param(
@@ -37,10 +42,14 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-# PowerShell 5.1 passes a double quote inside an argument to adb mangled, so such a title can't reach the app intact.
-if ($Page -and $Page.Contains('"')) { throw "A -Page title can't have a double quote in it: $Page" }
-$Repo = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
-$Project = Join-Path $Repo 'samples\Cornflower.Sample.Android\Cornflower.Sample.Android.csproj'
+# A native command's exit code is what counts, checked after each call; a profile that turned this on would make a
+# failing adb throw before the script could read its output.
+$PSNativeCommandUseErrorActionPreference = $false
+# Each argument reaches adb as it is, quotes and all; a profile that set Legacy would mangle a -Page title's quotes.
+$PSNativeCommandArgumentPassing = 'Standard'
+$Repo = (Resolve-Path (Join-Path $PSScriptRoot '..' '..')).Path
+$SampleDir = Join-Path $Repo 'samples' 'Cornflower.Sample.Android'
+$Project = Join-Path $SampleDir 'Cornflower.Sample.Android.csproj'
 $Package = 'io.github.wdcossey.cornflower.sample'
 $Activity = "$Package/cornflower.sample.MainActivity"
 $ReadyMarker = 'CORNFLOWER ready'
@@ -49,24 +58,40 @@ $CostMarker = 'CORNFLOWER cost'
 # The intent extra the app reads its start page from (App.PageExtra).
 $PageExtra = 'page'
 
+# Where Android Studio puts the SDK on this OS.
+function Get-DefaultSdk {
+    if ($IsWindows) { if ($env:LOCALAPPDATA) { Join-Path $env:LOCALAPPDATA 'Android' 'Sdk' } }
+    elseif ($IsMacOS) { Join-Path $HOME 'Library' 'Android' 'sdk' }
+    else { Join-Path $HOME 'Android' 'Sdk' }
+}
+
+# adb in an SDK folder: Get-Command finds adb.exe on Windows and adb elsewhere by the same name.
+function Find-AdbIn([string]$sdk) {
+    if (-not $sdk) { return $null }
+    Get-Command (Join-Path $sdk 'platform-tools' 'adb') -CommandType Application -ErrorAction SilentlyContinue |
+        Select-Object -First 1
+}
+
+# adb from ANDROID_HOME, ANDROID_SDK_ROOT, the default SDK folder, then PATH. The order matters: a different adb
+# restarts the adb server, which can drop the phone's wireless pairing.
 function Find-Adb {
-    $candidates = @()
-    foreach ($root in @($env:ANDROID_HOME, $env:ANDROID_SDK_ROOT, (Join-Path $env:LOCALAPPDATA 'Android\Sdk'))) {
-        if ($root) { $candidates += (Join-Path $root 'platform-tools\adb.exe') }
-    }
-    foreach ($c in $candidates) { if (Test-Path $c) { return $c } }
-    $onPath = Get-Command adb -ErrorAction SilentlyContinue
-    if ($onPath) { return $onPath.Source }
-    throw "adb not found. Set ANDROID_HOME, or put platform-tools on PATH."
+    $found = (Find-AdbIn $env:ANDROID_HOME) ?? (Find-AdbIn $env:ANDROID_SDK_ROOT) ?? (Find-AdbIn (Get-DefaultSdk)) ??
+        (Get-Command adb -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1)
+    if ($found) { return $found.Source }
+    throw "adb not found. Set ANDROID_HOME to the Android SDK, or put its platform-tools on PATH."
 }
 
 $Adb = Find-Adb
+# The SDK adb is in, for the build, so that one SDK is used for both: adb's folder's parent, if adb is in an SDK's
+# platform-tools (an SDK has platforms or build-tools beside it). Otherwise, such as a packaged adb on PATH, the build
+# finds its SDK itself.
+$AdbDir = Split-Path -Parent $Adb
+$AdbSdk = if ((Split-Path -Leaf $AdbDir) -eq 'platform-tools') { Split-Path -Parent $AdbDir }
+if ($AdbSdk -and -not ((Test-Path (Join-Path $AdbSdk 'platforms')) -or (Test-Path (Join-Path $AdbSdk 'build-tools')))) { $AdbSdk = $null }
 
-# Runs adb and returns its output as one string; throws if adb fails. adb writes some status to
-# stderr (pull's "1 file pulled"), which PowerShell 5.1 turns into an error record under 'Stop', so
-# the exit code alone decides.
+# Runs adb and returns its output, stderr included, as one string; throws if adb fails. The exit code alone
+# decides: adb writes some status to stderr.
 function Adb {
-    $ErrorActionPreference = 'Continue'
     $output = & $Adb @args 2>&1 | ForEach-Object { "$_" } | Out-String
     if ($LASTEXITCODE -ne 0) { throw "adb $($args -join ' ') failed ($LASTEXITCODE): $output" }
     return $output
@@ -74,9 +99,9 @@ function Adb {
 
 function Step([string]$text) { Write-Host "-- $text" }
 
-# Without a BOM, which Set-Content -Encoding utf8 adds in PowerShell 5.1 and JSON readers reject.
+# The text as it is, in UTF-8 without a BOM, which JSON readers reject.
 function Write-Utf8([string]$path, [string]$text) {
-    [IO.File]::WriteAllText($path, $text, (New-Object Text.UTF8Encoding $false))
+    Set-Content -LiteralPath $path -Value $text -Encoding utf8NoBOM -NoNewline
 }
 
 # The app's crash, if it has crashed since the log was cleared, with the lines that say why: Java's report
@@ -98,7 +123,7 @@ function Find-Crash {
 trap {
     if ($Out -and (Test-Path $Out)) {
         try { Write-Utf8 (Join-Path $Out 'logcat.txt') (Adb logcat -d) } catch { }
-        Write-Host "   Log kept in $Out\logcat.txt"
+        Write-Host "   Log kept in $(Join-Path $Out 'logcat.txt')"
     }
     break
 }
@@ -117,20 +142,22 @@ Step "$model, Android $release (API $sdk); $wmSize; $wmDensity"
 
 if (-not $Out) {
     $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
-    $Out = Join-Path $Repo ("artifacts\device\$stamp-" + ($model -replace '[^A-Za-z0-9]+', '-'))
+    $Out = Join-Path $Repo 'artifacts' 'device' ("$stamp-" + ($model -replace '[^A-Za-z0-9]+', '-'))
 }
 New-Item -ItemType Directory -Force -Path $Out | Out-Null
 $Out = (Resolve-Path $Out).Path
 
 # 2. Build.
 if (-not $NoBuild) {
-    Step "Building the sample ($Configuration)"
-    & dotnet build $Project -c $Configuration -nologo -v q
+    $sdkArg = @(if ($AdbSdk) { "-p:AndroidSdkDirectory=$AdbSdk" })
+    Step "Building the sample ($Configuration)$(if ($AdbSdk) { " with the SDK at $AdbSdk" } else { ", adb not in an SDK: the build finds its own" })"
+    & dotnet build $Project -c $Configuration -nologo -v q @sdkArg
     if ($LASTEXITCODE -ne 0) { throw "dotnet build failed ($LASTEXITCODE)." }
 }
-$apk = Get-ChildItem (Join-Path $Repo "samples\Cornflower.Sample.Android\bin\$Configuration") -Recurse -Filter "$Package-Signed.apk" -ErrorAction SilentlyContinue |
+$bin = Join-Path $SampleDir 'bin' $Configuration
+$apk = Get-ChildItem $bin -Recurse -Filter "$Package-Signed.apk" -ErrorAction SilentlyContinue |
     Sort-Object LastWriteTime -Descending | Select-Object -First 1
-if (-not $apk) { throw "No $Package-Signed.apk under bin\$Configuration. Build first, or drop -NoBuild." }
+if (-not $apk) { throw "No $Package-Signed.apk under $bin. Build first, or drop -NoBuild." }
 
 # 3. Install.
 Step "Installing $($apk.Name)"
@@ -203,13 +230,21 @@ $openMs = if ($facts -match '(?:^| )open=(\d+)ms') { [int]$Matches[1] } else { $
 if (-not $opened) { throw "The ready line names no page: $facts" }
 if ($Page -and $opened -ne $Page) { throw "Asked for the page '$Page', but the app opened '$opened'." }
 
-# 7. The frame. Written on the phone and pulled, because piping exec-out through PowerShell 5.1
-#    would re-encode the PNG's bytes.
+# 7. The frame, straight from screencap: PowerShell 7.4 redirects a native command's output to a file byte for
+#    byte. exec-out, not shell, so that no terminal on the phone's side turns its line feeds into CR LF. exec-out
+#    gives back neither screencap's exit code nor its stderr apart (an error comes down the same stream), so the file
+#    has to start with PNG's signature.
 Start-Sleep -Milliseconds 500
-$remote = '/sdcard/cornflower-frame.png'
-Adb shell screencap -p $remote | Out-Null
-Adb pull $remote (Join-Path $Out 'frame.png') | Out-Null
-Adb shell rm $remote | Out-Null
+$frame = Join-Path $Out 'frame.png'
+& $Adb exec-out screencap -p > $frame
+if ($LASTEXITCODE -ne 0) { throw "adb exec-out screencap -p failed ($LASTEXITCODE)." }
+$head = [byte[]]::new(256)
+$stream = [IO.File]::OpenRead($frame)
+try { $read = $stream.Read($head, 0, $head.Length) } finally { $stream.Dispose() }
+if ($read -lt 8 -or [Convert]::ToHexString($head, 0, 8) -ne '89504E470D0A1A0A') {
+    $text = [Text.Encoding]::UTF8.GetString($head, 0, $read).Trim()
+    throw "adb exec-out screencap -p wrote no PNG ($((Get-Item -LiteralPath $frame).Length) bytes): $text"
+}
 
 $log = Adb logcat -d
 Write-Utf8 (Join-Path $Out 'logcat.txt') $log
