@@ -1,9 +1,11 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
+using Avalonia.Controls.Templates;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
+using Avalonia.Input.TextInput;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
@@ -309,6 +311,189 @@ public class PasswordBoxTests
         holder.Child = box;
         Dispatcher.UIThread.RunJobs();
         Assert.True(box.RevealPassword);
+    }
+
+    // A masked box tells the platform keyboard it holds a password (#104): no suggestions, nothing learned. The keyed
+    // PasswordBox and a plain TextBox with a PasswordChar alike, masked or shown; a box with no PasswordChar is left
+    // unset, so it keeps Avalonia's defaults or what an ancestor sets; an app's own value on the box wins. Not the
+    // phone's keyboard, which is unmeasured: the platform's, as the device run of #104 found it.
+    [AvaloniaFact]
+    public void A_Masked_Box_Tells_The_Keyboard_It_Is_A_Password()
+    {
+        var keyed = Specimen(reveal: true);
+        var plain = new TextBox { PasswordChar = '●' };
+        var unmasked = new TextBox();
+        var appsOwn = new TextBox { PasswordChar = '●' };
+        TextInputOptions.SetShowSuggestions(appsOwn, true);
+        var inheriting = new TextBox();
+        var parent = new StackPanel { Children = { inheriting } };
+        TextInputOptions.SetContentType(parent, TextInputContentType.Email);
+        var panel = new StackPanel { Children = { keyed, plain, unmasked, appsOwn, parent } };
+        using var scene = new Scene(panel);
+        Dispatcher.UIThread.RunJobs();
+
+        static void AssertMasked(TextBox box)
+        {
+            Assert.Equal(TextInputContentType.Password, TextInputOptions.GetContentType(box));
+            Assert.True(TextInputOptions.GetIsSensitive(box));
+            Assert.False(TextInputOptions.GetShowSuggestions(box));
+        }
+        AssertMasked(keyed);
+        AssertMasked(plain);
+        keyed.RevealPassword = true;
+        Dispatcher.UIThread.RunJobs();
+        AssertMasked(keyed);
+
+        Assert.Equal(TextInputContentType.Normal, TextInputOptions.GetContentType(unmasked));
+        Assert.False(TextInputOptions.GetIsSensitive(unmasked));
+        Assert.Null(TextInputOptions.GetShowSuggestions(unmasked));
+        Assert.True(TextInputOptions.GetShowSuggestions(appsOwn));
+        Assert.Equal(TextInputContentType.Email, TextInputOptions.GetContentType(inheriting));
+
+        // A PasswordChar cleared leaves the box unset again; one set later masks it.
+        plain.PasswordChar = default;
+        unmasked.PasswordChar = '*';
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(TextInputContentType.Normal, TextInputOptions.GetContentType(plain));
+        Assert.False(TextInputOptions.GetIsSensitive(plain));
+        Assert.Null(TextInputOptions.GetShowSuggestions(plain));
+        AssertMasked(unmasked);
+    }
+
+    // An app's style and a ControlTheme based on PasswordBox set the keyboard's options over the behaviour's: a PIN box.
+    [AvaloniaFact]
+    public void An_Apps_Style_Or_Derived_Theme_Sets_The_Keyboard_Over_It()
+    {
+        var pin = new ControlTheme(typeof(TextBox))
+        {
+            Setters = { new Setter(TextInputOptions.ContentTypeProperty, TextInputContentType.Pin) },
+        };
+        var derived = Specimen();
+        var styled = new TextBox { PasswordChar = '●', Classes = { "digits" } };
+        var panel = new StackPanel { Children = { derived, styled } };
+        panel.Styles.Add(new Style(x => x.OfType<TextBox>().Class("digits"))
+        {
+            Setters = { new Setter(TextInputOptions.ContentTypeProperty, TextInputContentType.Digits) },
+        });
+        using var scene = new Scene(panel);
+        pin.BasedOn = (ControlTheme)scene.Window.FindResource("PasswordBox")!;
+        derived.Theme = pin;
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(TextInputContentType.Pin, TextInputOptions.GetContentType(derived));
+        Assert.True(TextInputOptions.GetIsSensitive(derived));
+        Assert.False(TextInputOptions.GetShowSuggestions(derived));
+        Assert.Equal(TextInputContentType.Digits, TextInputOptions.GetContentType(styled));
+        Assert.True(TextInputOptions.GetIsSensitive(styled));
+
+        // The app's style going gives the box the behaviour's again.
+        styled.Classes.Remove("digits");
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(TextInputContentType.Password, TextInputOptions.GetContentType(styled));
+    }
+
+    // A PIN box: a theme based on PasswordBox, there before the box joins the tree, its ContentType over the behaviour's
+    // from the start; an app's style switched on later wins too, and an app's local value changes nothing else.
+    [AvaloniaFact]
+    public void A_Derived_Theme_From_The_Start_And_An_Apps_Style_Later_Win()
+    {
+        var host = new StackPanel();
+        using var scene = new Scene(host);
+        var pin = new ControlTheme(typeof(TextBox))
+        {
+            BasedOn = (ControlTheme)scene.Window.FindResource("PasswordBox")!,
+            Setters = { new Setter(TextInputOptions.ContentTypeProperty, TextInputContentType.Pin) },
+        };
+        var derived = new TextBox { Theme = pin };
+        var later = new TextBox { PasswordChar = '●' };
+        host.Styles.Add(new Style(x => x.OfType<TextBox>().Class("digits"))
+        {
+            Setters = { new Setter(TextInputOptions.ContentTypeProperty, TextInputContentType.Digits) },
+        });
+        host.Children.Add(derived);
+        host.Children.Add(later);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(TextInputContentType.Pin, TextInputOptions.GetContentType(derived));
+        Assert.True(TextInputOptions.GetIsSensitive(derived));
+        Assert.Equal(TextInputContentType.Password, TextInputOptions.GetContentType(later));
+
+        later.Classes.Add("digits");
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(TextInputContentType.Digits, TextInputOptions.GetContentType(later));
+
+        // One option set by the app moves only that one: the other two raise no change.
+        var others = new List<AvaloniaProperty>();
+        later.PropertyChanged += (_, e) =>
+        {
+            if (e.Property == TextInputOptions.IsSensitiveProperty || e.Property == TextInputOptions.ShowSuggestionsProperty)
+                others.Add(e.Property);
+        };
+        TextInputOptions.SetContentType(later, TextInputContentType.Number);
+        later.ClearValue(TextInputOptions.ContentTypeProperty);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Empty(others);
+        Assert.True(TextInputOptions.GetIsSensitive(later));
+        Assert.False(TextInputOptions.GetShowSuggestions(later));
+    }
+
+    // The PasswordBox theme going takes every value it set, the behaviour's with them (spike 6: nothing taken away
+    // inside the unsetting): to the TextBox theme, which turns the behaviour on too, and to an app's theme, which
+    // doesn't, so the behaviour's own switch goes with the rest; the box unmasked, its keyboard Avalonia's.
+    [AvaloniaTheory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void The_Theme_Going_Takes_Everything_It_Set(bool toAnAppsTheme)
+    {
+        var box = Specimen(reveal: true);
+        using var scene = new Scene(new StackPanel { Children = { box } });
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(TextInputContentType.Password, TextInputOptions.GetContentType(box));
+        Assert.True(Cornflower.Themes.Wp81.PhonePasswordKeyboard.GetIsEnabled(box));
+
+        box.Theme = toAnAppsTheme
+            ? new ControlTheme(typeof(TextBox))
+            {
+                Setters = { new Setter(Avalonia.Controls.Primitives.TemplatedControl.TemplateProperty, new FuncControlTemplate<TextBox>((_, scope) => new TextPresenter { Name = "PART_TextPresenter" }.RegisterInNameScope(scope))) },
+            }
+            : null;
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(!toAnAppsTheme, Cornflower.Themes.Wp81.PhonePasswordKeyboard.GetIsEnabled(box));
+        if (toAnAppsTheme)
+            Assert.Equal(0, box.MinWidth); // the PasswordBox theme's TextControlThemeMinWidth gone, to Avalonia's default
+
+        Assert.Equal(default, box.PasswordChar);
+        Assert.DoesNotContain(box.GetVisualDescendants(), v => v is CheckBox);
+        Assert.Equal(TextInputContentType.Normal, TextInputOptions.GetContentType(box));
+        Assert.False(TextInputOptions.GetIsSensitive(box));
+        Assert.Null(TextInputOptions.GetShowSuggestions(box));
+    }
+
+    // A handler of the keyboard's options that masks or unmasks the box in the middle of a change leaves it right.
+    [AvaloniaFact]
+    public void A_Change_Made_In_The_Middle_Is_Worked_Out_Again()
+    {
+        var box = new TextBox();
+        using var scene = new Scene(new StackPanel { Children = { box } });
+        Dispatcher.UIThread.RunJobs();
+        var once = false;
+        box.PropertyChanged += (_, e) =>
+        {
+            if (e.Property == TextInputOptions.ContentTypeProperty && !once)
+            {
+                once = true;
+                box.PasswordChar = default;
+            }
+        };
+
+        box.PasswordChar = '●';
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(default, box.PasswordChar);
+        Assert.Equal(TextInputContentType.Normal, TextInputOptions.GetContentType(box));
+        Assert.False(TextInputOptions.GetIsSensitive(box));
+        Assert.Null(TextInputOptions.GetShowSuggestions(box));
     }
 
     // Typing is masked with the phone's circle.

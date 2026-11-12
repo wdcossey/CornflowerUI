@@ -194,3 +194,24 @@ value by `GetDiagnostic` (priority `Unset`, an overridden current value), makes 
 back still removes it inside the store's unsetting, and it makes a `ControlTheme` set after the phone's value win at
 once rather than at the next recompute, which `TextBlockTests` lines 441 (both cases), 481 and 641 hold the other way
 (#81).
+
+## 8. Telling the keyboard a box is a password
+
+**Question.** A masked box should tell the platform keyboard it holds a password (#104), and every other box keep
+what it would have had, an ancestor's `TextInputOptions` included. Can a theme's setter do that, with a binding on
+`PasswordChar` that gives no value for an unmasked box?
+
+**Answer.** Not by a setter bound to `PasswordChar`. The three `TextInputOptions` a password needs (`ContentType`,
+`IsSensitive`, `ShowSuggestions`) inherit, and a style setter whose binding gives `UnsetValue` still hides an
+ancestor's value: the box gets the default. A value set from code at style priority, once taken away, gives the
+ancestor's back. Not examined: a nested style whose selector matches masked boxes alone. XAML can't write "any
+`PasswordChar`" (` ` can't be written in XML, and a property selector matches one value), and #103's plan already
+turned down a selector on a `char` property; a selector built in code is left untried.
+
+**Evidence.** `KeyboardOptionsTests`: the three report `Inherits` and a `Border` takes a parent's `Email`; under a
+setter whose binding gives `UnsetValue` it is `Normal`; set at style priority and taken away, `Email` again.
+
+**Consequence.** `PhonePasswordKeyboard`, turned on by the TextBox and PasswordBox themes, sets the three from code
+while a box is masked and takes them away entirely while it isn't, as `PhoneTextLine` does its values (and, as it,
+from the dispatcher when a value goes, for spike 6). Inheriting, they reach an app's content inside a masked box: a
+recorded gap. On the Pixel 8, with it, Gboard shows no suggestions in a masked box, shown or not.

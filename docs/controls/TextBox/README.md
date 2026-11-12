@@ -39,6 +39,10 @@ a header adds its line and 4.8.
 - **No pointer-over look, no focus rectangle, no context menu, no clear button**, as on the phone.
 - **Selection** in the accent. The caret, the selected text's colour and the keyboard are Avalonia's and the
   platform's (`TextInputOptions` for the keyboard's kind, WinRT's `InputScope`).
+- **Masked** (any `PasswordChar`), the box tells the keyboard it holds a password: `TextInputOptions.ContentType`
+  `Password`, `IsSensitive`, no suggestions (`PhonePasswordKeyboard`, internal; an app's own values, its style's or a
+  derived theme's win; a box with no `PasswordChar` is left as Avalonia leaves it). On the Pixel 8 Gboard had suggested
+  words from a typed password (#104), and with this shows none.
 - **In Simple's templates** (AutoCompleteBox, CalendarDatePicker, ComboBox's editable box, the file dialog,
   NumericUpDown), a TextBox keeps Simple's theme (`HoleParts`), as their Buttons do.
 - **Dark and light**: every brush follows the theme variant; the focus border and the selection follow the app's
