@@ -1,0 +1,318 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:cf="using:Cornflower.Controls"
+                    xmlns:wp81="using:Cornflower.Themes.Wp81">
+  <!--
+    The Windows Phone 8.1 Slider: the default style of the 8.1 Update 1 runtime (slider.json, which equals the SDK's
+    generic.xaml), re-expressed as an Avalonia ControlTheme. Every value is the phone's resource key, by
+    DynamicResource, so it follows the theme variant and an app can override it by its key.
+    docs/controls/Slider/PLAN.md has the values and their sources.
+
+    The phone's template holds a horizontal and a vertical template and collapses the one not in use. Avalonia's Slider
+    looks for one PART_Track, so here each orientation has its own template, set by :horizontal and :vertical, as
+    Simple's are. Each is the phone's, part for part, but for what WinRT's Slider does in code and Avalonia's Track
+    does instead:
+    - HeaderContentPresenter shows cf:ControlHeader.Header and HeaderTemplate (WinRT's Header and HeaderTemplate,
+      which Avalonia's Slider lacks), in the phone's HeaderContentPresenterStyle, with the phone's 1.33 em line
+      (PhoneContentLine). With no header it is empty and takes no height.
+    - SliderContainer, transparent, takes the hits across the whole area below the header, as the phone's does. Here
+      PART_Track fills it, so a press anywhere in it lands on the Track's parts: Avalonia's Slider moves the thumb's
+      middle to a press on either RepeatButton and follows the finger from there.
+    - HorizontalTemplate: the phone's rows, 17.5, the track's 9 and 30.5, and a fourth, star row for the rest, which
+      the phone leaves empty and still takes the hits in. HorizontalTrackRect is the track's background across the
+      whole width; TopTickBar and BottomTickBar are the outside ticks.
+    - HorizontalDecreaseRect, which WinRT sizes in code, is drawn by PART_DecreaseButton: Avalonia's Track makes that
+      button as wide as the value's part of the track, so the rect is its width, 17.5 down, the track's height, in
+      the Slider's Foreground. PART_IncreaseButton draws nothing.
+    - HorizontalThumb, 9.5 wide, is the Track's Thumb. It is the whole height, so a press above or below the visible
+      thumb drags it too, and draws the phone's 9.5 × 19 Border 13 down.
+    - HorizontalBorder, last, in the Slider's BorderBrush, transparent by default. The phone's binds StrokeThickness
+      to BorderThickness, a Thickness where a double is wanted, so it falls back to 1 whatever BorderThickness says;
+      so does this one.
+    The vertical template is the same turned: the phone's columns 13.5, the track's 9 and 13.5, the decrease rect
+    below the thumb, the 9 × 9 thumb, LeftTickBar and RightTickBar.
+
+    The track's RepeatButtons and the Thumb set themes of their own (below), so Wp81's RepeatButton theme (#30), which
+    is keyed by type, and Simple's Thumb theme never reach them.
+
+    The visual states: the phone's template has only Normal and Disabled. Disabled (:disabled, which a template's
+    parts have too) dims the decrease rect, the thumb and the ticks to the keys the phone's state sets. No Pressed,
+    PointerOver or focus state: nothing changes under a finger, and FocusAdorner is cleared. The ticks show by
+    TickPlacement: TopLeft the top (or left) bar, BottomRight the bottom (or right), Outside both; WinRT's Inline has
+    no Avalonia member.
+  -->
+
+  <!-- The decrease part of a horizontal track: HorizontalDecreaseRect, the value's part of the track. -->
+  <ControlTheme x:Key="Wp81SliderHorizontalDecreaseTheme" TargetType="RepeatButton">
+    <Setter Property="Focusable" Value="False" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Panel Background="Transparent">
+          <Rectangle x:Name="HorizontalDecreaseRect"
+                     Margin="0,17.5,0,0"
+                     Height="{DynamicResource SliderTrackThemeHeight}"
+                     VerticalAlignment="Top"
+                     Fill="{TemplateBinding Foreground}" />
+        </Panel>
+      </ControlTemplate>
+    </Setter>
+    <Style Selector="^:disabled /template/ Rectangle#HorizontalDecreaseRect">
+      <Setter Property="Fill" Value="{DynamicResource SliderTrackDecreaseDisabledBackgroundThemeBrush}" />
+    </Style>
+  </ControlTheme>
+
+  <!-- The decrease part of a vertical track: VerticalDecreaseRect, below the thumb. -->
+  <ControlTheme x:Key="Wp81SliderVerticalDecreaseTheme" TargetType="RepeatButton">
+    <Setter Property="Focusable" Value="False" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Panel Background="Transparent">
+          <Rectangle x:Name="VerticalDecreaseRect"
+                     Margin="13.5,0,0,0"
+                     Width="{DynamicResource SliderTrackThemeHeight}"
+                     HorizontalAlignment="Left"
+                     Fill="{TemplateBinding Foreground}" />
+        </Panel>
+      </ControlTemplate>
+    </Setter>
+    <Style Selector="^:disabled /template/ Rectangle#VerticalDecreaseRect">
+      <Setter Property="Fill" Value="{DynamicResource SliderTrackDecreaseDisabledBackgroundThemeBrush}" />
+    </Style>
+  </ControlTheme>
+
+  <!-- The increase part of either track: it draws nothing over the track and takes the hits. -->
+  <ControlTheme x:Key="Wp81SliderIncreaseTheme" TargetType="RepeatButton">
+    <Setter Property="Focusable" Value="False" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Panel Background="Transparent" />
+      </ControlTemplate>
+    </Setter>
+  </ControlTheme>
+
+  <!-- The phone's SliderThumbStyle, for the horizontal thumb: a 9.5 × 19 Border, 13 down. -->
+  <ControlTheme x:Key="Wp81SliderHorizontalThumbTheme" TargetType="Thumb">
+    <Setter Property="BorderThickness" Value="0.8" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SliderThumbBorderThemeBrush}" />
+    <Setter Property="Background" Value="{DynamicResource SliderThumbBackgroundThemeBrush}" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Panel Background="Transparent">
+          <Border x:Name="ThumbBorder"
+                  Margin="0,13,0,0"
+                  Height="19"
+                  VerticalAlignment="Top"
+                  Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}" />
+        </Panel>
+      </ControlTemplate>
+    </Setter>
+    <Style Selector="^:disabled">
+      <Setter Property="Background" Value="{DynamicResource SliderThumbDisabledBackgroundThemeBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource SliderThumbDisabledBorderThemeBrush}" />
+    </Style>
+  </ControlTheme>
+
+  <!-- The phone's SliderThumbStyle, for the vertical thumb: a 9 × 9 Border in the track's column. -->
+  <ControlTheme x:Key="Wp81SliderVerticalThumbTheme" TargetType="Thumb">
+    <Setter Property="BorderThickness" Value="0.8" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SliderThumbBorderThemeBrush}" />
+    <Setter Property="Background" Value="{DynamicResource SliderThumbBackgroundThemeBrush}" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Panel Background="Transparent">
+          <Border x:Name="ThumbBorder"
+                  Margin="13.5,0,0,0"
+                  Width="{DynamicResource SliderTrackThemeHeight}"
+                  HorizontalAlignment="Left"
+                  Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}" />
+        </Panel>
+      </ControlTemplate>
+    </Setter>
+    <Style Selector="^:disabled">
+      <Setter Property="Background" Value="{DynamicResource SliderThumbDisabledBackgroundThemeBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource SliderThumbDisabledBorderThemeBrush}" />
+    </Style>
+  </ControlTheme>
+
+  <ControlTheme x:Key="{x:Type Slider}" TargetType="Slider">
+    <Setter Property="Background" Value="{DynamicResource SliderTrackBackgroundThemeBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SliderBorderThemeBrush}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource SliderBorderThemeThickness}" />
+    <Setter Property="Foreground" Value="{DynamicResource SliderTrackDecreaseBackgroundThemeBrush}" />
+    <Setter Property="FontFamily" Value="{DynamicResource ContentControlThemeFontFamily}" />
+    <Setter Property="FontSize" Value="{DynamicResource ControlContentThemeFontSize}" />
+    <Setter Property="FocusAdorner" Value="{x:Null}" />
+
+    <Style Selector="^:horizontal">
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Grid x:Name="Root" Margin="{TemplateBinding Padding}" RowDefinitions="Auto,*">
+            <ContentPresenter x:Name="HeaderContentPresenter"
+                              Content="{TemplateBinding (cf:ControlHeader.Header)}"
+                              ContentTemplate="{TemplateBinding (cf:ControlHeader.HeaderTemplate)}"
+                              FontFamily="{DynamicResource PhoneFontFamilyNormal}"
+                              FontSize="{DynamicResource TextStyleMediumFontSize}"
+                              FontWeight="Normal"
+                              Foreground="{DynamicResource PhoneMidBrush}"
+                              RecognizesAccessKey="True"
+                              wp81:PhoneContentLine.IsEnabled="True" />
+            <Grid x:Name="SliderContainer" Grid.Row="1" Background="Transparent">
+              <Grid x:Name="HorizontalTemplate" RowDefinitions="17.5,Auto,30.5,*">
+                <Rectangle x:Name="HorizontalTrackRect"
+                           Grid.Row="1"
+                           Height="{DynamicResource SliderTrackThemeHeight}"
+                           Fill="{TemplateBinding Background}"
+                           Stroke="{DynamicResource SliderTrackBorderThemeBrush}"
+                           StrokeThickness="1" />
+                <TickBar x:Name="TopTickBar"
+                         Grid.Row="0"
+                         IsVisible="False"
+                         Height="{DynamicResource SliderOutsideTickBarThemeHeight}"
+                         Margin="-4.5,0"
+                         Placement="Top"
+                         Orientation="Horizontal"
+                         Fill="{DynamicResource SliderTickmarkOutsideBackgroundThemeBrush}"
+                         ReservedSpace="{Binding #PART_Track.Thumb.Bounds}" />
+                <TickBar x:Name="BottomTickBar"
+                         Grid.Row="2"
+                         IsVisible="False"
+                         Height="{DynamicResource SliderOutsideTickBarThemeHeight}"
+                         Margin="-4.5,0"
+                         Placement="Bottom"
+                         Orientation="Horizontal"
+                         Fill="{DynamicResource SliderTickmarkOutsideBackgroundThemeBrush}"
+                         ReservedSpace="{Binding #PART_Track.Thumb.Bounds}" />
+                <Track x:Name="PART_Track" Grid.RowSpan="4" Orientation="Horizontal">
+                  <Track.DecreaseButton>
+                    <RepeatButton x:Name="PART_DecreaseButton" Theme="{StaticResource Wp81SliderHorizontalDecreaseTheme}" />
+                  </Track.DecreaseButton>
+                  <Track.IncreaseButton>
+                    <RepeatButton x:Name="PART_IncreaseButton" Theme="{StaticResource Wp81SliderIncreaseTheme}" />
+                  </Track.IncreaseButton>
+                  <Thumb x:Name="HorizontalThumb" Width="9.5" Theme="{StaticResource Wp81SliderHorizontalThumbTheme}" />
+                </Track>
+                <Rectangle x:Name="HorizontalBorder"
+                           Grid.RowSpan="3"
+                           IsHitTestVisible="False"
+                           Stroke="{TemplateBinding BorderBrush}"
+                           StrokeThickness="1" />
+              </Grid>
+            </Grid>
+          </Grid>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+
+    <Style Selector="^:vertical">
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Grid x:Name="Root" Margin="{TemplateBinding Padding}" RowDefinitions="Auto,*">
+            <ContentPresenter x:Name="HeaderContentPresenter"
+                              Content="{TemplateBinding (cf:ControlHeader.Header)}"
+                              ContentTemplate="{TemplateBinding (cf:ControlHeader.HeaderTemplate)}"
+                              FontFamily="{DynamicResource PhoneFontFamilyNormal}"
+                              FontSize="{DynamicResource TextStyleMediumFontSize}"
+                              FontWeight="Normal"
+                              Foreground="{DynamicResource PhoneMidBrush}"
+                              RecognizesAccessKey="True"
+                              wp81:PhoneContentLine.IsEnabled="True" />
+            <Grid x:Name="SliderContainer" Grid.Row="1" Background="Transparent">
+              <Grid x:Name="VerticalTemplate" ColumnDefinitions="13.5,Auto,13.5,*">
+                <Rectangle x:Name="VerticalTrackRect"
+                           Grid.Column="1"
+                           Width="{DynamicResource SliderTrackThemeHeight}"
+                           Fill="{TemplateBinding Background}"
+                           Stroke="{DynamicResource SliderTrackBorderThemeBrush}"
+                           StrokeThickness="1" />
+                <TickBar x:Name="LeftTickBar"
+                         Grid.Column="0"
+                         IsVisible="False"
+                         Width="{DynamicResource SliderOutsideTickBarThemeHeight}"
+                         HorizontalAlignment="Right"
+                         Margin="0,0,1.5,0"
+                         Placement="Left"
+                         Orientation="Vertical"
+                         Fill="{DynamicResource SliderTickmarkOutsideBackgroundThemeBrush}"
+                         ReservedSpace="{Binding #PART_Track.Thumb.Bounds}" />
+                <TickBar x:Name="RightTickBar"
+                         Grid.Column="2"
+                         IsVisible="False"
+                         Width="{DynamicResource SliderOutsideTickBarThemeHeight}"
+                         HorizontalAlignment="Left"
+                         Margin="1.5,0,0,0"
+                         Placement="Right"
+                         Orientation="Vertical"
+                         Fill="{DynamicResource SliderTickmarkOutsideBackgroundThemeBrush}"
+                         ReservedSpace="{Binding #PART_Track.Thumb.Bounds}" />
+                <Track x:Name="PART_Track" Grid.ColumnSpan="4" Orientation="Vertical">
+                  <Track.DecreaseButton>
+                    <RepeatButton x:Name="PART_DecreaseButton" Theme="{StaticResource Wp81SliderVerticalDecreaseTheme}" />
+                  </Track.DecreaseButton>
+                  <Track.IncreaseButton>
+                    <RepeatButton x:Name="PART_IncreaseButton" Theme="{StaticResource Wp81SliderIncreaseTheme}" />
+                  </Track.IncreaseButton>
+                  <Thumb x:Name="VerticalThumb"
+                         Height="{DynamicResource SliderTrackThemeHeight}"
+                         Theme="{StaticResource Wp81SliderVerticalThumbTheme}" />
+                </Track>
+                <Rectangle x:Name="VerticalBorder"
+                           Grid.Column="1"
+                           IsHitTestVisible="False"
+                           Stroke="{TemplateBinding BorderBrush}"
+                           StrokeThickness="1" />
+              </Grid>
+            </Grid>
+          </Grid>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+
+    <Style Selector="^ /template/ Track#PART_Track">
+      <Setter Property="Minimum" Value="{TemplateBinding Minimum}" />
+      <Setter Property="Maximum" Value="{TemplateBinding Maximum}" />
+      <Setter Property="Value" Value="{TemplateBinding Value, Mode=TwoWay}" />
+      <Setter Property="IsDirectionReversed" Value="{TemplateBinding IsDirectionReversed}" />
+    </Style>
+
+    <Style Selector="^ /template/ TickBar">
+      <Setter Property="Minimum" Value="{TemplateBinding Minimum}" />
+      <Setter Property="Maximum" Value="{TemplateBinding Maximum}" />
+      <Setter Property="TickFrequency" Value="{TemplateBinding TickFrequency}" />
+      <Setter Property="Ticks" Value="{TemplateBinding Ticks}" />
+      <Setter Property="IsDirectionReversed" Value="{TemplateBinding IsDirectionReversed}" />
+    </Style>
+
+    <Style Selector="^[TickPlacement=TopLeft] /template/ TickBar#TopTickBar">
+      <Setter Property="IsVisible" Value="True" />
+    </Style>
+    <Style Selector="^[TickPlacement=TopLeft] /template/ TickBar#LeftTickBar">
+      <Setter Property="IsVisible" Value="True" />
+    </Style>
+    <Style Selector="^[TickPlacement=BottomRight] /template/ TickBar#BottomTickBar">
+      <Setter Property="IsVisible" Value="True" />
+    </Style>
+    <Style Selector="^[TickPlacement=BottomRight] /template/ TickBar#RightTickBar">
+      <Setter Property="IsVisible" Value="True" />
+    </Style>
+    <Style Selector="^[TickPlacement=Outside] /template/ TickBar">
+      <Setter Property="IsVisible" Value="True" />
+    </Style>
+
+    <Style Selector="^:disabled">
+      <Style Selector="^ /template/ Rectangle#HorizontalBorder, ^ /template/ Rectangle#VerticalBorder">
+        <Setter Property="Stroke" Value="{DynamicResource SliderDisabledBorderThemeBrush}" />
+      </Style>
+      <Style Selector="^ /template/ Rectangle#HorizontalTrackRect, ^ /template/ Rectangle#VerticalTrackRect">
+        <Setter Property="Fill" Value="{DynamicResource SliderTrackDisabledBackgroundThemeBrush}" />
+        <Setter Property="Stroke" Value="{DynamicResource SliderTrackDisabledBorderThemeBrush}" />
+      </Style>
+      <Style Selector="^ /template/ TickBar">
+        <Setter Property="Fill" Value="{DynamicResource SliderTickMarkOutsideDisabledForegroundThemeBrush}" />
+      </Style>
+    </Style>
+  </ControlTheme>
+</ResourceDictionary>

@@ -55,7 +55,6 @@ RefreshVisualizer
 ScrollBar
 ScrollViewer
 Separator
-Slider
 SplitButton
 SplitView
 TabControl
