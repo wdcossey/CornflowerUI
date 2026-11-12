@@ -1,0 +1,166 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:wp81="using:Cornflower.Themes.Wp81">
+  <!--
+    The Windows Phone 8.1 ProgressBar: the default style of the 8.1 Update 1 runtime (progressbar.json, which equals
+    the SDK's generic.xaml), re-expressed as an Avalonia ControlTheme for Avalonia's ProgressBar. Every value the
+    phone takes from a resource is its key, by DynamicResource. docs/controls/ProgressBar/PLAN.md has the values and
+    their sources.
+
+    It is a thin bar, 3.5 high: the track in the accent at 0.16, and the indicator in the accent from the left.
+    Indeterminate, the track goes and five small squares slide across it. The template is the phone's, part for part
+    (our names PART_):
+    - PART_EllipseGrid, hidden until indeterminate: nine Auto columns, five dots (PART_B1 to PART_B5, each holding
+      PART_E1 to PART_E5, 3.5 square in ProgressBarIndeterminateForegroundThemeBrush, not the Foreground) with a
+      9-wide gap between each (the phone binds the gap to TemplateSettings.EllipseOffset, which it works out as 9 on
+      every profile read: native.json). The grid, each B and each E has a TranslateTransform for the storyboard.
+      Layout rounding is off in it, so the dots sit 12.5 apart as the phone's do.
+    - PART_HighContrastBtmAccentBar and PART_HighContrastRitAccentBar, 0.8 thick at the bottom and the right, shown
+      while determinate. Their brush is transparent in the dark and light themes, so they draw nothing unless an app
+      sets it.
+    - PART_DeterminateRoot, the track: Background, BorderBrush, BorderThickness and MinHeight from the bar.
+    - PART_Indicator in it, the phone's ProgressBarIndicator: the part Avalonia's ProgressBar sizes, so a Border
+      (Avalonia requires one), in the Foreground, at the left, inside the bar's Padding. Avalonia sizes it from its
+      parent's bounds, so it sits in a Panel inside the track's border, not in the border itself.
+
+    The states: Avalonia's ProgressBar raises :indeterminate only. Indeterminate shows PART_EllipseGrid, hides the
+    track and the high-contrast bars, and PhoneProgressBar runs the storyboard (the grid, each B and each E sliding,
+    each E shown and hidden) frame by frame on CornflowerClock. The phone's Updating, Paused and Error states have no
+    Avalonia property to raise them (the plan says why).
+
+    The phone's ProgressBar clips itself to its bounds (the dumps' clip), so the dots are drawn only on the bar.
+  -->
+  <ControlTheme x:Key="{x:Type ProgressBar}" TargetType="ProgressBar">
+    <Setter Property="Foreground" Value="{DynamicResource ProgressBarForegroundThemeBrush}" />
+    <Setter Property="Background" Value="{DynamicResource ProgressBarBackgroundThemeBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ProgressBarBorderThemeBrush}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource ProgressBarBorderThemeThickness}" />
+    <Setter Property="MinHeight" Value="{DynamicResource ProgressBarThemeMinHeight}" />
+    <Setter Property="IsTabStop" Value="False" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <!-- Not set by the phone's style: the phone's ProgressBar sets its own Clip to its bounds. -->
+    <Setter Property="ClipToBounds" Value="True" />
+    <Setter Property="wp81:PhoneProgressBar.IsAnimated" Value="True" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Grid>
+          <Grid x:Name="PART_EllipseGrid" ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+            <Grid.RenderTransform><TranslateTransform /></Grid.RenderTransform>
+            <Border x:Name="PART_B1" Grid.Column="8" RenderTransformOrigin="50%,50%">
+              <Border.RenderTransform><TranslateTransform /></Border.RenderTransform>
+              <Rectangle x:Name="PART_E1" Classes="dot" RenderTransformOrigin="50%,50%">
+                <Rectangle.RenderTransform><TranslateTransform /></Rectangle.RenderTransform>
+              </Rectangle>
+            </Border>
+            <Rectangle Grid.Column="7" Classes="gap" />
+            <Border x:Name="PART_B2" Grid.Column="6" RenderTransformOrigin="50%,50%">
+              <Border.RenderTransform><TranslateTransform /></Border.RenderTransform>
+              <Rectangle x:Name="PART_E2" Classes="dot" RenderTransformOrigin="50%,50%">
+                <Rectangle.RenderTransform><TranslateTransform /></Rectangle.RenderTransform>
+              </Rectangle>
+            </Border>
+            <Rectangle Grid.Column="5" Classes="gap" />
+            <Border x:Name="PART_B3" Grid.Column="4" RenderTransformOrigin="50%,50%">
+              <Border.RenderTransform><TranslateTransform /></Border.RenderTransform>
+              <Rectangle x:Name="PART_E3" Classes="dot" RenderTransformOrigin="50%,50%">
+                <Rectangle.RenderTransform><TranslateTransform /></Rectangle.RenderTransform>
+              </Rectangle>
+            </Border>
+            <Rectangle Grid.Column="3" Classes="gap" />
+            <Border x:Name="PART_B4" Grid.Column="2" RenderTransformOrigin="50%,50%">
+              <Border.RenderTransform><TranslateTransform /></Border.RenderTransform>
+              <Rectangle x:Name="PART_E4" Classes="dot" RenderTransformOrigin="50%,50%">
+                <Rectangle.RenderTransform><TranslateTransform /></Rectangle.RenderTransform>
+              </Rectangle>
+            </Border>
+            <Rectangle Grid.Column="1" Classes="gap" />
+            <Border x:Name="PART_B5" Grid.Column="0" RenderTransformOrigin="50%,50%">
+              <Border.RenderTransform><TranslateTransform /></Border.RenderTransform>
+              <Rectangle x:Name="PART_E5" Classes="dot" RenderTransformOrigin="50%,50%">
+                <Rectangle.RenderTransform><TranslateTransform /></Rectangle.RenderTransform>
+              </Rectangle>
+            </Border>
+          </Grid>
+          <Rectangle x:Name="PART_HighContrastBtmAccentBar"
+                     VerticalAlignment="Bottom"
+                     Height="0.8"
+                     Fill="{DynamicResource ProgressBarHighContrastAccentBarThemeBrush}" />
+          <Rectangle x:Name="PART_HighContrastRitAccentBar"
+                     HorizontalAlignment="Right"
+                     Width="0.8"
+                     Fill="{DynamicResource ProgressBarHighContrastAccentBarThemeBrush}" />
+          <Border x:Name="PART_DeterminateRoot"
+                  Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}"
+                  MinHeight="{TemplateBinding MinHeight}">
+            <!-- Not the phone's: Avalonia sizes the indicator from its parent's bounds, so a panel inside the border. -->
+            <Panel>
+              <Border x:Name="PART_Indicator"
+                      Margin="{TemplateBinding Padding}"
+                      Background="{TemplateBinding Foreground}"
+                      HorizontalAlignment="Left" />
+            </Panel>
+          </Border>
+        </Grid>
+      </ControlTemplate>
+    </Setter>
+
+    <!-- Defaults a state changes go in styles, not on the element (docs/ARCHITECTURE.md, "Precedence"). -->
+    <Style Selector="^ /template/ Grid#PART_EllipseGrid">
+      <Setter Property="Opacity" Value="0" />
+      <!-- The phone's dots are 12.5 apart (8 + 22 raw pixels at 2.4); rounded up, Avalonia's would be 12.92. -->
+      <Setter Property="UseLayoutRounding" Value="False" />
+    </Style>
+    <!-- The template's ProgressBarRectangleStyle: every dot. -->
+    <Style Selector="^ /template/ Rectangle.dot">
+      <Setter Property="Width" Value="{DynamicResource ProgressBarIndeterminateRectagleThemeSize}" />
+      <Setter Property="Height" Value="{DynamicResource ProgressBarIndeterminateRectagleThemeSize}" />
+      <Setter Property="Fill" Value="{DynamicResource ProgressBarIndeterminateForegroundThemeBrush}" />
+    </Style>
+    <!-- The gap between two dots: the phone's TemplateSettings.EllipseOffset, 9 on all seven profiles (native.json). -->
+    <Style Selector="^ /template/ Rectangle.gap">
+      <Setter Property="Width" Value="9" />
+    </Style>
+
+    <Style Selector="^:indeterminate /template/ Grid#PART_EllipseGrid">
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+    <Style Selector="^:indeterminate /template/ Border#PART_DeterminateRoot">
+      <Setter Property="Opacity" Value="0" />
+    </Style>
+    <!-- The phone's Determinate state shows the high-contrast bars; Indeterminate doesn't. -->
+    <Style Selector="^:indeterminate /template/ Rectangle#PART_HighContrastBtmAccentBar">
+      <Setter Property="Opacity" Value="0" />
+    </Style>
+    <Style Selector="^:indeterminate /template/ Rectangle#PART_HighContrastRitAccentBar">
+      <Setter Property="Opacity" Value="0" />
+    </Style>
+
+    <!--
+      Not the phone's, whose bar is only horizontal: Avalonia's Orientation, the phone's bar turned. It stands centred
+      across its slot and stretched down it, at least 3.5 wide, the indicator filling from the bottom. The dots run
+      only across, so a vertical bar doesn't show them (PhoneProgressBar doesn't run them either): indeterminate, it
+      keeps its track, and the indicator, which Avalonia doesn't size while indeterminate, is hidden.
+    -->
+    <Style Selector="^:vertical">
+      <Setter Property="MinWidth" Value="{DynamicResource ProgressBarThemeMinHeight}" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="VerticalAlignment" Value="Stretch" />
+    </Style>
+    <!-- Out of the layout too: the dots' row would make a vertical bar 53.5 wide. -->
+    <Style Selector="^:vertical /template/ Grid#PART_EllipseGrid">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="^:vertical:indeterminate /template/ Border#PART_DeterminateRoot">
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+    <Style Selector="^:vertical:indeterminate /template/ Border#PART_Indicator">
+      <Setter Property="Opacity" Value="0" />
+    </Style>
+    <Style Selector="^:vertical /template/ Border#PART_Indicator">
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="VerticalAlignment" Value="Bottom" />
+    </Style>
+  </ControlTheme>
+</ResourceDictionary>

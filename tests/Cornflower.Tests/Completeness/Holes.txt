@@ -49,7 +49,6 @@ OverlayPopupHost
 PathIcon
 PipsPager
 PopupRoot
-ProgressBar
 RefreshContainer
 RefreshVisualizer
 ScrollBar
