@@ -173,7 +173,7 @@ Measured with the theme against the captures:
 | The ticks | WinRT's `TickBar`: one raw pixel wide, the bar's height, every one | Avalonia's `TickBar`: 1 wide, the ends the bar's height and the rest three quarters | 6, recorded, not measured (no capture) |
 | Focus | no `FocusStates` | a focus adorner | 1, the theme clears `FocusAdorner` |
 | The thumb's tooltip | off (`IsThumbToolTipEnabled` False) | none | none |
-| `ManipulationMode` None | WinRT's: a touch that starts on the Slider is its own, so a drag on it never pans the page's `ScrollViewer` (WinRT pans only for elements in the `System` mode) | the `ScrollViewer`'s gesture recogniser takes a touch drag past its threshold: measured headless, a drag up a Slider in a scrolling page scrolled it 293 and left the thumb (the second review's finding) | 2, `PhoneNoManipulation` (new, internal to the theme): Avalonia's `PreventGestureRecognition` on every pointer event that tunnels through the Slider |
+| `ManipulationMode` None | WinRT's: a touch that starts on the Slider is its own, so a drag on it never pans the page's `ScrollViewer` (WinRT pans only for elements in the `System` mode) | the `ScrollViewer`'s gesture recogniser takes a touch drag past its threshold: measured headless, a drag up a Slider in a scrolling page scrolled it 293 and left the thumb (the second review's finding) | 2, `PhoneNoManipulation` (new, internal to the theme): Avalonia's `PreventGestureRecognition` on a press as it tunnels through the Slider |
 | Rounding | the nearest raw pixel | up | ADR 0003's recorded deviation; the sizes below |
 
 No type is substituted. Rungs 1, 2 and 6.

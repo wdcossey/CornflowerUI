@@ -389,18 +389,20 @@ public class SliderTests
     {
         var slider = Specimen();
         using var stage = new Stage(slider: slider);
-        stage.Window.DataTemplates.Add(new FuncDataTemplate<string>((text, _) => new TextBlock { Text = text, LineHeight = 30 }));
+        stage.Window.DataTemplates.Add(new FuncDataTemplate<string>((text, _) => new TextBlock { Text = text }));
         ControlHeader.SetHeader(slider, "volume");
         Dispatcher.UIThread.RunJobs();
 
         var text = HeaderOf(slider).GetVisualDescendants().OfType<TextBlock>().Single();
         Assert.Equal("volume", text.Text);
-        Assert.Equal(30, text.LineHeight);
+        Assert.True(double.IsNaN(text.LineHeight));                 // its own: Selawik's, not the phone's 21.28
 
         // And a HeaderTemplate whose root is a plain TextBlock.
-        ControlHeader.SetHeaderTemplate(slider, new FuncDataTemplate<string>((data, _) => new TextBlock { Text = data, LineHeight = 40 }));
+        ControlHeader.SetHeaderTemplate(slider, new FuncDataTemplate<string>((data, _) => new TextBlock { Text = data.ToUpperInvariant() }));
         Dispatcher.UIThread.RunJobs();
-        Assert.Equal(40, HeaderOf(slider).GetVisualDescendants().OfType<TextBlock>().Single().LineHeight);
+        var made = HeaderOf(slider).GetVisualDescendants().OfType<TextBlock>().Single();
+        Assert.Equal("VOLUME", made.Text);
+        Assert.True(double.IsNaN(made.LineHeight));
     }
 
     // A tap on the track moves the thumb's middle to the finger (WinUI's Slider::MoveThumbToPoint), on either side of
