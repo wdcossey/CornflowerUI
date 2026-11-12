@@ -315,6 +315,22 @@ public class SliderTests
         Assert.Equal(OurUnstretchedHeight, slider.Bounds.Height, 0.001);
     }
 
+    // The header's font is HeaderContentPresenterStyle's, not the Slider's: the phone's presenter sets its own.
+    [AvaloniaFact]
+    public void The_Headers_Font_Is_Its_Own()
+    {
+        var slider = Specimen();
+        slider.FontFamily = new FontFamily("Courier New");
+        slider.FontSize = 30;
+        slider.FontWeight = FontWeight.Bold;
+        using var stage = new Stage(slider: slider);
+        var text = HeaderOf(slider).GetVisualDescendants().OfType<TextBlock>().Single();
+
+        Assert.Equal(stage.Window.FindResource("PhoneFontFamilyNormal"), text.FontFamily);
+        Assert.Equal(HeaderFontSize, text.FontSize);
+        Assert.Equal(FontWeight.Normal, text.FontWeight);
+    }
+
     // WinRT's HeaderTemplate: the attached ControlHeader.HeaderTemplate shows the header.
     [AvaloniaFact]
     public void The_HeaderTemplate_Is_Used()
@@ -363,6 +379,14 @@ public class SliderTests
             Dispatcher.UIThread.RunJobs();
             Assert.Equal(ValueAt(slider, x), slider.Value, 0.001);
         }
+
+        // Above the visible thumb, in its column: the thumb is the container's height, so it takes the press and drags.
+        var middle = In(ThumbOf(slider), slider).X + ThumbWidth / 2;
+        stage.Window.MouseDown(stage.At(middle, ContainerTop + 2), MouseButton.Left);
+        stage.Window.MouseMove(stage.At(320, ContainerTop + 2));
+        stage.Window.MouseUp(stage.At(320, ContainerTop + 2), MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(ValueAt(slider, 320), slider.Value, 0.001);
 
         var before = slider.Value;
         stage.Window.MouseDown(stage.At(350, HeaderHeight / 2), MouseButton.Left);
