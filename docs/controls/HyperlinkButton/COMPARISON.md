@@ -58,7 +58,7 @@ frames.
 |---|---|---|---|
 | 1 | The style's values | **Match** | Each setter equals `hyperlinkbutton.json`'s key's value or literal, and the dump's reading, dark and light |
 | 2 | Bounds | **Match**, but the width (the font's) | Above |
-| 3 | Content centred | **Match** | Centred within 0.5 in a 400-wide control |
+| 3 | Content centred | **Match** | Centred within 0.5 in a 400 × 80 control, across and down |
 | 4 | Data's line | **Match**, with ADR 0003's baseline | 39.7161 at 29.86 |
 | 5 | No underline | **Match** | The longest ink run is under an eighth of the text's width; no `TextDecorations` |
 | 6 | The text's colour | **Match** | The commonest ink, dark and light |

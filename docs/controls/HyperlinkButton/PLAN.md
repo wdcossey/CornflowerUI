@@ -152,7 +152,7 @@ Each has a test in `tests/Cornflower.Tests/Controls/HyperlinkButtonTests.cs` unl
    the presenter. `The_Style_Sets_What_The_Phone_Read`, `The_Font_Is_The_Phones_Whatever_It_Sits_In`.
 2. **The bounds**: at 19.1667, 32.5 on the stage, 47.0833 tall; `Grid` and `Border` fill it; the presenter 2.9167
    down, 40 tall, as wide as the control. `Its_Bounds_Are_The_Phones`.
-3. **The content is centred** in a wider control. `The_Content_Is_Centred_In_A_Wider_Control`.
+3. **The content is centred** in a larger control, across and down. `The_Content_Is_Centred_In_A_Larger_Control`.
 4. **Data's line is the phone's**, 1.33 em. `A_Strings_Line_Is_The_Phones`.
 5. **No underline**, in the frame and on the text. `There_Is_No_Underline`.
 6. **The text in the foreground**: the glyphs' insides `#FFFFFFFF` dark, `#FF000000` light.

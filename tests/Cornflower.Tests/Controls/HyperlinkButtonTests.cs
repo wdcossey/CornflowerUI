@@ -167,14 +167,16 @@ public class HyperlinkButtonTests
 
     // HorizontalContentAlignment and VerticalContentAlignment Center, WinRT's defaults, which the dump reads.
     [AvaloniaFact]
-    public void The_Content_Is_Centred_In_A_Wider_Control()
+    public void The_Content_Is_Centred_In_A_Larger_Control()
     {
-        using var stage = new Stage(link: new HyperlinkButton { Content = "link", Width = 400 });
+        using var stage = new Stage(link: new HyperlinkButton { Content = "link", Width = 400, Height = 80 });
         var presenter = PresenterOf(stage.Link);
         var box = new Rect(presenter.TranslatePoint(default, stage.Link)!.Value, presenter.Bounds.Size);
 
         Assert.Equal(200, box.Center.X, 0.5);
         Assert.True(box.Width < 200, $"the content is {box.Width} wide: stretched, not centred");
+        Assert.Equal(Padding.Top + (80 - Padding.Top - Padding.Bottom) / 2, box.Center.Y, 0.5);   // in the middle of the padding's space
+        Assert.Equal(ContentHeight, box.Height, 0.001);
     }
 
     // The phone's TextBlock is 39.7167 tall: Segoe WP's 1.33 em line at 29.86 (ADR 0003).
