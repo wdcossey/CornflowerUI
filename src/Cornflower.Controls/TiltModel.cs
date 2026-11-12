@@ -69,11 +69,30 @@ internal static class TiltModel
     /// </summary>
     public const double EyeDistance = 999;
 
-    /// <summary>How long the tilt holds after the finger lets go: 180 ms (fit to 1,199 frames: 178).</summary>
-    public static readonly TimeSpan Hold = TimeSpan.FromMilliseconds(180);
+    /// <summary>
+    /// How long the tilt holds after the finger lets go: 182.6 ms of animation time. The emulator's
+    /// release moves 15.625 ms of animation time a frame, however far apart its frames come (#84);
+    /// re-read so from the 252 releases of the five tilt runs (<c>tools/motion/tiltrelease.py</c>):
+    /// the first change is the 13th frame after the release, counted by the stopwatch (12.4 frames'
+    /// spacing on average), with the first frame after the release taken as time 0. Were time 0 the
+    /// second frame, the hold would be 167.0 ms. (#60 read 178 against the stopwatch.)
+    /// </summary>
+    public static readonly TimeSpan Hold = TimeSpan.FromMilliseconds(182.6);
 
-    /// <summary>How long it then takes to ease back, on a sine ease-out: 195 ms (fit: 196).</summary>
-    public static readonly TimeSpan Return = TimeSpan.FromMilliseconds(195);
+    /// <summary>
+    /// How long it then takes to ease back, on <see cref="ReturnSpline"/>: 167.0 ms of animation
+    /// time, fitted with <see cref="Hold"/> to the release's eleven frames (#60 fitted a sine over
+    /// 196 ms against the stopwatch; in frames the sine is out by up to 0.027 of the tilt).
+    /// </summary>
+    public static readonly TimeSpan Return = TimeSpan.FromMilliseconds(167.0);
+
+    /// <summary>
+    /// The return's easing, a <c>KeySpline</c> 0.1,0.25 0.75,0.9: the fraction of the tilt gone
+    /// at a fraction of <see cref="Return"/>. Every release reads the same fraction at each frame,
+    /// within 0.0002; this fits them within 0.00075 (rms 0.00024), and within 0.0010 with the hold and
+    /// return rounded to 182.6 and 167.0 ms, as here.
+    /// </summary>
+    public static readonly KeySplineCurve ReturnSpline = new(0.1, 0.25, 0.75, 0.9);
 
     /// <summary>Below this change in a frame, in degrees and view pixels, a press has settled.</summary>
     public const double Settled = 1e-4;
@@ -124,13 +143,13 @@ internal static class TiltModel
     public static Point Eye(Size size, Vector toScreenCentre) =>
         new Point(size.Width / 2, size.Height / 2) + toScreenCentre * EyeShift;
 
-    /// <summary>How much of the held tilt is left <paramref name="sinceRelease"/> after the finger let go: 1, then a sine ease-out to 0.</summary>
+    /// <summary>How much of the held tilt is left <paramref name="sinceRelease"/> after the finger let go: 1, then down <see cref="ReturnSpline"/> to 0.</summary>
     public static double ReturnFactor(TimeSpan sinceRelease)
     {
         var progress = (sinceRelease - Hold) / Return;
         if (progress <= 0) return 1;
         if (progress >= 1) return 0;
-        return 1 - Math.Sin(progress * Math.PI / 2);
+        return 1 - ReturnSpline.Ease(progress);
     }
 
     /// <summary>

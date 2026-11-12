@@ -88,7 +88,7 @@ the same value, and the states set it on the presenter as the phone's do.
 Every animation but the theme animation is an `ObjectAnimationUsingKeyFrames` with one `DiscreteObjectKeyFrame`
 at `KeyTime` 0: a setter. The transitions, `Pressed` → `PointerOver`, `PointerOver` → `Normal` and `Pressed` →
 `Normal`, each run `PointerUpThemeAnimation` on `Grid`: the tilt's return, which `Tilt` runs on release (hold
-180 ms, ease back over 195 ms; ADR 0005).
+182.6 ms, ease back down a `KeySpline` over 167 ms, in animation time; ADR 0005).
 
 ### The text's line
 
@@ -306,7 +306,7 @@ Avalonia's control looks for: `PART_ContentPresenter`.
 
 | ✓ | Group | From → To | Duration | What it runs | Action |
 |---|---|---|---|---|---|
-| [x] | `CommonStates` | `Pressed` → `PointerOver` |  | `PointerUpThemeAnimation on Grid` | `Tilt`'s return on release: hold 180 ms, ease back over 195 ms |
+| [x] | `CommonStates` | `Pressed` → `PointerOver` |  | `PointerUpThemeAnimation on Grid` | `Tilt`'s return on release: hold 182.6 ms, ease back over 167 ms |
 | [x] | `CommonStates` | `PointerOver` → `Normal` |  | `PointerUpThemeAnimation on Grid` | The same; with nothing tilted it does nothing |
 | [x] | `CommonStates` | `Pressed` → `Normal` |  | `PointerUpThemeAnimation on Grid` | The same |
 

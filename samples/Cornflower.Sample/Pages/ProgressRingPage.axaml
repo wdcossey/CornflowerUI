@@ -1,0 +1,39 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:cf="using:Cornflower.Controls"
+             xmlns:sample="using:Cornflower.Sample"
+             x:Class="Cornflower.Sample.Pages.ProgressRingPage"
+             Background="{DynamicResource ApplicationPageBackgroundThemeBrush}"
+             Foreground="{DynamicResource PhoneForegroundBrush}"
+             FontFamily="{DynamicResource PhoneFontFamilyNormal}"
+             FontSize="{DynamicResource TextStyleLargeFontSize}">
+  <!--
+    The 8.1 ProgressRing, as an 8.1 page writes one: no style. At its default size it is 57.5 square with five dots;
+    over 60 on its smaller side it is large and shows a sixth, though the ring itself stays 57.5 across. The button
+    turns the first ring off and on; the light section is the same in the light theme.
+  -->
+  <ScrollViewer>
+    <StackPanel Margin="19,12,19,24">
+      <sample:SamplePageHeader x:Name="Header" />
+
+      <TextBlock Text="default size" Theme="{DynamicResource GroupHeaderTextBlockStyle}" />
+      <cf:ProgressRing x:Name="Default" IsActive="True" HorizontalAlignment="Left" />
+      <Button x:Name="Toggle" Content="stop" Click="OnToggle" />
+
+      <TextBlock Text="large, 120 square" Theme="{DynamicResource GroupHeaderTextBlockStyle}" Margin="0,12,0,0" />
+      <cf:ProgressRing x:Name="Large" IsActive="True" Width="120" Height="120" HorizontalAlignment="Left" />
+
+      <TextBlock Text="stretched" Theme="{DynamicResource GroupHeaderTextBlockStyle}" Margin="0,12,0,0" />
+      <cf:ProgressRing x:Name="Stretched" IsActive="True" Height="108" />
+
+      <ThemeVariantScope RequestedThemeVariant="Light" Margin="-19,12,-19,0">
+        <Border Background="{DynamicResource ApplicationPageBackgroundThemeBrush}" Padding="19,6,19,12">
+          <StackPanel>
+            <TextBlock Text="light" Theme="{DynamicResource GroupHeaderTextBlockStyle}" />
+            <cf:ProgressRing x:Name="Light" IsActive="True" HorizontalAlignment="Left" />
+          </StackPanel>
+        </Border>
+      </ThemeVariantScope>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

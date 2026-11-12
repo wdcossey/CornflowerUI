@@ -146,12 +146,30 @@ public class TiltModelTests
         }
     }
 
+    // The emulator's release in animation time: frame k after the release at (k − 1) × 15.625 ms.
+    // Held until the first change, then each frame's fraction as every release read it. With #60's
+    // sine (a 180 ms hold, 195 ms back) frame 19 would read 0.272, not 0.303, and frame 24 not be at rest.
+    [Fact]
+    public void The_Return_Matches_The_Emulators_Frames()
+    {
+        for (var frame = 1; frame < TiltReadings.ReleaseFirstFrame; frame++)
+            Assert.Equal(1, TiltModel.ReturnFactor(TimeSpan.FromMilliseconds((frame - 1) * 15.625)));
+
+        for (var i = 0; i < TiltReadings.ReleaseFractions.Length; i++)
+        {
+            var at = TimeSpan.FromMilliseconds((TiltReadings.ReleaseFirstFrame - 1 + i) * 15.625);
+            var left = TiltModel.ReturnFactor(at);
+            Assert.True(Math.Abs(left - TiltReadings.ReleaseFractions[i]) <= 0.0011,           // the worst, 0.0010
+                $"frame {TiltReadings.ReleaseFirstFrame + i}: {left:F5} left, read {TiltReadings.ReleaseFractions[i]}");
+        }
+    }
+
     [Theory]
     [InlineData(0, 1)]
-    [InlineData(180, 1)]
-    [InlineData(277.5, 0.29289321881345254)]                       // halfway: 1 - sin(π / 4)
-    [InlineData(375, 0)]
-    public void The_Return_Holds_Then_Eases_Out_On_A_Sine(double sinceReleaseMs, double left)
+    [InlineData(182.6, 1)]
+    [InlineData(349.6, 0)]
+    [InlineData(1000, 0)]
+    public void The_Return_Holds_Then_Ends(double sinceReleaseMs, double left)
     {
         Assert.Equal(left, TiltModel.ReturnFactor(TimeSpan.FromMilliseconds(sinceReleaseMs)), 1e-9);
     }

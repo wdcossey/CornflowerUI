@@ -33,7 +33,36 @@ namespace RefApp
             "GroupHeaderTextBlockStyle", "ControlHeaderTextBlockStyle", "ControlContextualInfoTextBlockStyle",
             "ListViewItemTextBlockStyle", "ListViewItemSubheaderTextBlockStyle", "ListViewItemContentTextBlockStyle",
             "ListViewEmptyStaticTextBlockStyle", "FlyoutPickerTitleTextBlockStyle", "ComboBoxPlaceholderTextBlockStyle",
+            "MessageDialogTitleStyle", "MessageDialogContentStyle",
         };
+
+        /// <summary>The styles above that wrap (BaseTextBlockStyle's WrapWholeWords, not set back to NoWrap), which get a sentence wrapped by the stage's width too.</summary>
+        private static readonly string[] WrappingTextStyles =
+        {
+            "BaseTextBlockStyle", "SubheaderTextBlockStyle", "BodyTextBlockStyle", "GroupHeaderTextBlockStyle",
+            "ControlHeaderTextBlockStyle", "ControlContextualInfoTextBlockStyle", "ListViewEmptyStaticTextBlockStyle",
+            "MessageDialogTitleStyle", "MessageDialogContentStyle",
+        };
+
+        private const string Line = "Agjy 0123 cornflower";
+
+        /// <summary>
+        /// A TextBlock in a theme style, loaded through XamlReader so the key resolves as the phone's own XAML would. The
+        /// content is XAML (inlines); null sets Text to <see cref="Line"/> instead, as the first runs did.
+        /// </summary>
+        private static Specimen Text(string key, string variant, double height, string content)
+        {
+            return new Specimen
+            {
+                Name = "TextBlock",
+                Variant = variant,
+                Height = height,
+                States = false,
+                Make = () => (FrameworkElement)XamlReader.Load(content == null
+                    ? "<TextBlock " + Ns + " Style=\"{ThemeResource " + key + "}\" Text=\"" + Line + "\" />"
+                    : "<TextBlock " + Ns + " Style=\"{ThemeResource " + key + "}\">" + content + "</TextBlock>"),
+            };
+        }
 
         public static List<Specimen> All()
         {
@@ -41,18 +70,21 @@ namespace RefApp
             Action<string, string, double, Func<FrameworkElement>> add = (name, variant, height, make) =>
                 list.Add(new Specimen { Name = name, Variant = variant, Height = height, Make = make });
 
+            // One line; the same line twice, broken by a LineBreak, so the second line's ink is the first's moved down
+            // by the line pitch; and, for the styles that wrap, a sentence wrapped by the stage's width.
             foreach (var key in TextStyles)
             {
-                var k = key;
-                list.Add(new Specimen
-                {
-                    Name = "TextBlock",
-                    Variant = k,
-                    Height = 120,
-                    States = false,
-                    Make = () => (FrameworkElement)XamlReader.Load(
-                        "<TextBlock " + Ns + " Style=\"{ThemeResource " + k + "}\" Text=\"Agjy 0123 cornflower\" />"),
-                });
+                list.Add(Text(key, key, 120, null));
+            }
+
+            foreach (var key in TextStyles)
+            {
+                list.Add(Text(key, key + "-two-lines", 200, Line + "<LineBreak />" + Line));
+            }
+
+            foreach (var key in WrappingTextStyles)
+            {
+                list.Add(Text(key, key + "-wrapped", 200, Line + ", a sentence long enough to wrap onto the next line"));
             }
 
             add("Button", "default", 100, () => new Button { Content = "button" });

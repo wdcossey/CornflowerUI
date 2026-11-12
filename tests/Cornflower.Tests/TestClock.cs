@@ -7,7 +7,8 @@ namespace Cornflower.Tests;
 /// Replaces <see cref="CornflowerClock"/>'s time for the life of a test, so every Cornflower
 /// timeline is asserted exactly. Time starts at zero and moves only when <see cref="At"/> moves it,
 /// which runs each callback that falls due on the way, at its own due time, in order. A frame is
-/// <see cref="CornflowerClock.FrameInterval"/> after it is requested, in or out of a window.
+/// <see cref="FrameInterval"/> after it is requested, in or out of a window, or with
+/// <see cref="FramesOnGrid"/> at the next multiple of it.
 /// </summary>
 /// <remarks>
 /// Avalonia's <c>Transitions</c> and <c>Animation</c> don't read this clock and still run on real
@@ -35,6 +36,19 @@ internal sealed class TestClock : IClockSource, IDisposable
     }
 
     public TimeSpan Now { get; private set; }
+
+    /// <summary>
+    /// How long after it is requested a frame runs: <see cref="CornflowerClock.FrameInterval"/>, 16 ms,
+    /// unless a test sets another, as one checking against the emulator's 15.625 ms frames does.
+    /// </summary>
+    public TimeSpan FrameInterval { get; set; } = CornflowerClock.FrameInterval;
+
+    /// <summary>
+    /// Frames at the next multiple of <see cref="FrameInterval"/> after they are requested, as a
+    /// display's frames come on its own clock, rather than a whole interval after. Off by default:
+    /// the harness's own tests hold the interval-after rule.
+    /// </summary>
+    public bool FramesOnGrid { get; set; }
 
     /// <summary>Callbacks scheduled and not yet run or cancelled.</summary>
     public int Pending => _scheduled.Count(s => !s.IsDisposed);
@@ -86,7 +100,12 @@ internal sealed class TestClock : IClockSource, IDisposable
         return item;
     }
 
-    public IDisposable RequestFrame(Visual visual, Action callback) => Schedule(callback, CornflowerClock.FrameInterval);
+    public IDisposable RequestFrame(Visual visual, Action callback)
+    {
+        if (!FramesOnGrid) return Schedule(callback, FrameInterval);
+        var next = (Now.Ticks / FrameInterval.Ticks + 1) * FrameInterval.Ticks;
+        return Schedule(callback, TimeSpan.FromTicks(next) - Now);
+    }
 
     public void Dispose()
     {

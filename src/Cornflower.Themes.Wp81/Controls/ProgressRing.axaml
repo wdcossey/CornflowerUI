@@ -1,0 +1,109 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:cf="using:Cornflower.Controls"
+                    xmlns:wp81="using:Cornflower.Themes.Wp81">
+  <!--
+    The Windows Phone 8.1 ProgressRing: the default style of the 8.1 Update 1 runtime (progressring.json, which
+    equals the SDK's generic.xaml), re-expressed as an Avalonia ControlTheme for Cornflower's own ProgressRing. Every
+    value is the phone's resource key, by DynamicResource. docs/controls/ProgressRing/PLAN.md has the values and
+    their sources.
+
+    The template is the phone's, part for part (our names PART_, as for every control of ours):
+    - a Grid of three rows, the middle one sized to the ring;
+    - PART_BackgroundOverlay over all three, the ring's Background, hidden until the ring is active;
+    - PART_Ring in the middle row: 57.5 square (ProgressRingThemeSize) whatever the control's size, capped by
+      TemplateSettings.MaxSideLength, placed by the content alignment (Center);
+    - six canvases filling it, PART_E1R to PART_E5R and PART_SixthCircle, each turned about the ring's centre by
+      its RotateTransform, each holding a dot, PART_E1 to PART_E6: 6.5 across, 7.5 in from the canvas's top left,
+      in the Foreground (the accent), hidden until the storyboard shows it.
+
+    The states: :active shows the overlay at ProgressRingActiveBackgroundOpacity (0.8), and PhoneProgressRing runs
+    the Active storyboard (each dot's angle and opacity) frame by frame on CornflowerClock; :large shows the sixth
+    canvas. The phone's Active also sets Ring's Visibility to Visible, which it already is, so it has no setter here.
+  -->
+  <ControlTheme x:Key="{x:Type cf:ProgressRing}" TargetType="cf:ProgressRing">
+    <Setter Property="Background" Value="{DynamicResource PhoneBackgroundBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource ProgressBarIndeterminateForegroundThemeBrush}" />
+    <Setter Property="FontFamily" Value="{DynamicResource PhoneFontFamilyNormal}" />
+    <Setter Property="FontSize" Value="{DynamicResource TextStyleLargeFontSize}" />
+    <Setter Property="MinHeight" Value="{DynamicResource ProgressRingThemeSize}" />
+    <Setter Property="MinWidth" Value="{DynamicResource ProgressRingThemeSize}" />
+    <Setter Property="IsHitTestVisible" Value="False" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="VerticalAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="IsTabStop" Value="False" />
+    <Setter Property="wp81:PhoneProgressRing.IsAnimated" Value="True" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Grid RowDefinitions="*,Auto,*">
+          <Border x:Name="PART_BackgroundOverlay"
+                  Grid.RowSpan="3"
+                  Background="{TemplateBinding Background}"
+                  BorderThickness="{TemplateBinding BorderThickness}"
+                  BorderBrush="{TemplateBinding BorderBrush}" />
+          <Grid x:Name="PART_Ring"
+                Grid.Row="1"
+                Background="Transparent"
+                Width="{DynamicResource ProgressRingThemeSize}"
+                Height="{DynamicResource ProgressRingThemeSize}"
+                MaxWidth="{Binding TemplateSettings.MaxSideLength, RelativeSource={RelativeSource TemplatedParent}}"
+                MaxHeight="{Binding TemplateSettings.MaxSideLength, RelativeSource={RelativeSource TemplatedParent}}"
+                HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                FlowDirection="LeftToRight">
+            <Canvas x:Name="PART_E1R" RenderTransformOrigin="50%,50%">
+              <Canvas.RenderTransform><RotateTransform /></Canvas.RenderTransform>
+              <Ellipse x:Name="PART_E1" Classes="dot" Fill="{TemplateBinding Foreground}" />
+            </Canvas>
+            <Canvas x:Name="PART_E2R" RenderTransformOrigin="50%,50%">
+              <Canvas.RenderTransform><RotateTransform /></Canvas.RenderTransform>
+              <Ellipse x:Name="PART_E2" Classes="dot" Fill="{TemplateBinding Foreground}" />
+            </Canvas>
+            <Canvas x:Name="PART_E3R" RenderTransformOrigin="50%,50%">
+              <Canvas.RenderTransform><RotateTransform /></Canvas.RenderTransform>
+              <Ellipse x:Name="PART_E3" Classes="dot" Fill="{TemplateBinding Foreground}" />
+            </Canvas>
+            <Canvas x:Name="PART_E4R" RenderTransformOrigin="50%,50%">
+              <Canvas.RenderTransform><RotateTransform /></Canvas.RenderTransform>
+              <Ellipse x:Name="PART_E4" Classes="dot" Fill="{TemplateBinding Foreground}" />
+            </Canvas>
+            <Canvas x:Name="PART_E5R" RenderTransformOrigin="50%,50%">
+              <Canvas.RenderTransform><RotateTransform /></Canvas.RenderTransform>
+              <Ellipse x:Name="PART_E5" Classes="dot" Fill="{TemplateBinding Foreground}" />
+            </Canvas>
+            <Canvas x:Name="PART_SixthCircle" RenderTransformOrigin="50%,50%">
+              <Canvas.RenderTransform><RotateTransform /></Canvas.RenderTransform>
+              <Ellipse x:Name="PART_E6" Classes="dot" Fill="{TemplateBinding Foreground}" />
+            </Canvas>
+          </Grid>
+        </Grid>
+      </ControlTemplate>
+    </Setter>
+
+    <!-- Defaults a state changes go in styles, not on the element (docs/ARCHITECTURE.md, "Precedence"). -->
+    <Style Selector="^ /template/ Border#PART_BackgroundOverlay">
+      <Setter Property="Opacity" Value="0" />
+    </Style>
+    <Style Selector="^ /template/ Canvas#PART_SixthCircle">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <!-- The template's ProgressRingEllipseStyle: every dot. Opacity 0 until the storyboard shows it. -->
+    <Style Selector="^ /template/ Ellipse.dot">
+      <Setter Property="Width" Value="{DynamicResource ProgressRingElipseThemeSize}" />
+      <Setter Property="Height" Value="{DynamicResource ProgressRingElipseThemeSize}" />
+      <Setter Property="Margin" Value="{DynamicResource ProgressRingElipseThemeMargin}" />
+      <Setter Property="Opacity" Value="0" />
+      <!-- The phone's dots are 6.5 across, unrounded (the dump); Avalonia would round 15.6 raw pixels up to 16. -->
+      <Setter Property="UseLayoutRounding" Value="False" />
+    </Style>
+
+    <Style Selector="^:active /template/ Border#PART_BackgroundOverlay">
+      <Setter Property="Opacity" Value="{DynamicResource ProgressRingActiveBackgroundOpacity}" />
+    </Style>
+    <Style Selector="^:large /template/ Canvas#PART_SixthCircle">
+      <Setter Property="IsVisible" Value="True" />
+    </Style>
+  </ControlTheme>
+</ResourceDictionary>
