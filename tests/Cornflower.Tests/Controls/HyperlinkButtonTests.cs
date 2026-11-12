@@ -241,6 +241,22 @@ public class HyperlinkButtonTests
         Assert.Equal(Hex(DisabledInk(dark)), Hex(CommonestInk(Pixels(frame), Page(dark))));
     }
 
+    // The phone's Border binds the control's Background, BorderBrush and BorderThickness: an app's are drawn.
+    [AvaloniaFact]
+    public void The_Apps_Background_And_Border_Are_Drawn()
+    {
+        var link = new HyperlinkButton { Content = "hyperlink button", Background = Brushes.Red, BorderBrush = Brushes.Lime, BorderThickness = new Thickness(2) };
+        using var stage = new Stage(link: link);
+        var border = BorderOf(link);
+
+        Assert.Equal(Colors.Red, ColourOf(border.Background));
+        Assert.Equal(Colors.Lime, ColourOf(border.BorderBrush));
+        Assert.Equal(new Thickness(2), border.BorderThickness);
+        using var frame = stage.Capture();
+        var corner = link.TranslatePoint(new Point(0.5, 0.5), stage.Window)!.Value * Scene.ReferenceScaling;
+        Assert.Equal(Colors.Lime, Frames.PixelAt(frame, (int)corner.X, (int)corner.Y));
+    }
+
     // The phone's Disabled sets only the text's colour: an app's background stays, where a Button's goes.
     [AvaloniaFact]
     public void Disabled_Keeps_The_Apps_Background()
