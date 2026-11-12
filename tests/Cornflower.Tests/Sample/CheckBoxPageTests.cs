@@ -46,6 +46,7 @@ public class CheckBoxPageTests
         var page = new CheckBoxPage();
         using var scene = new Scene(page);
         var state = page.FindControl<TextBlock>("State")!;
+        Assert.Equal("unchecked", state.Text);           // read from the CheckBox, not typed in
 
         page.FindControl<CheckBox>("Default")!.IsChecked = true;
         Dispatcher.UIThread.RunJobs();

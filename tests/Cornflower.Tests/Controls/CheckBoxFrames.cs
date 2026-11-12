@@ -6,7 +6,6 @@ using Avalonia.Input;
 using Avalonia.Media.Imaging;
 using Avalonia.Styling;
 using Avalonia.Threading;
-using static Cornflower.Tests.Controls.CheckBoxReadings;
 
 namespace Cornflower.Tests.Controls;
 
@@ -33,18 +32,14 @@ public class CheckBoxFrames
         foreach (var state in new[] { "base", "CommonStates.Pressed", "CommonStates.Disabled" })
         {
             using var clock = new TestClock();
-            var checkBox = new CheckBox
+            using var stage = new CheckBoxTests.Stage(variant, new CheckBox
             {
                 Content = "check box", IsThreeState = isChecked is null, IsChecked = isChecked, IsEnabled = state != "CommonStates.Disabled",
-            };
-            var stage = new Grid { Children = { new Grid { Margin = Slot, Children = { checkBox } } } };
-            stage.Bind(Panel.BackgroundProperty, stage.GetResourceObservable("ApplicationPageBackgroundThemeBrush"));
-            using var scene = new Scene(stage, variant, width: StageWidth, height: StageHeight);
-            var box = checkBox.TranslatePoint(new Point(Column / 2, GridTop + Column / 2), scene.Window)!.Value;
-            if (state == "CommonStates.Pressed") scene.Window.MouseDown(box, MouseButton.Left);
+            });
+            if (state == "CommonStates.Pressed") stage.Window.MouseDown(stage.Box, MouseButton.Left);
             clock.At(160);
             Dispatcher.UIThread.RunJobs();
-            using var frame = scene.Capture();
+            using var frame = stage.Capture();
             frame.Save(Path.Combine(folder, $"{variant.ToString().ToLowerInvariant()}__CheckBox__{name}__{state}.png"), PngBitmapEncoderOptions.Default);
         }
     }

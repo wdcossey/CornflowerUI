@@ -29,8 +29,11 @@ public class CheckBoxTests
     /// <summary>Long enough for a press to settle: four or five frames.</summary>
     private const double SettleMs = 160;
 
-    /// <summary>A CheckBox on the reference app's stage: 450 × 100, the page's background, the CheckBox in a slot 19 in and 12 down.</summary>
-    private sealed class Stage : IDisposable
+    /// <summary>
+    /// A CheckBox on the reference app's stage: 450 × 100, the page's background, the CheckBox in a slot 19 in and 12 down.
+    /// <see cref="CheckBoxFrames"/> saves the comparison's frames on it too.
+    /// </summary>
+    internal sealed class Stage : IDisposable
     {
         private readonly Scene _scene;
 
@@ -324,9 +327,11 @@ public class CheckBoxTests
     // border and the text stay the foreground. Back on release, toggled.
     [AvaloniaTheory]
     [InlineData("Dark", true)]
-    [InlineData("Light", true)]
+    [InlineData("Dark", false)]
     [InlineData("Dark", null)]
+    [InlineData("Light", true)]
     [InlineData("Light", false)]
+    [InlineData("Light", null)]
     public void Pressed_Fills_The_Box_With_The_Accent(string variant, bool? isChecked)
     {
         var dark = variant == "Dark";
@@ -470,7 +475,8 @@ public class CheckBoxTests
         Assert.True(CfTilt.GetIsEnabled(checkBox));
         Assert.Same(grid, CfTilt.TargetOf(checkBox));
         Assert.Equal(checkBox.Bounds.Width, grid.Bounds.Width);
-        Assert.Equal(checkBox.Bounds.Height - Overhang.Top - Overhang.Bottom, grid.Bounds.Height, 0.5);
+        Assert.Equal(GridTop, grid.Bounds.Top, 0.001);                 // its layout slot in the untilted root, not where it is drawn
+        Assert.Equal(OurBox, grid.Bounds.Height, 0.001);
         Assert.IsType<MatrixTransform>(grid.RenderTransform);
         Assert.Null(root.RenderTransform);
         Assert.NotEqual(TiltState.Rest, CfTilt.Current(checkBox));

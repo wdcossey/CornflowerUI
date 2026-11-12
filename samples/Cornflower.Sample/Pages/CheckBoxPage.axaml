@@ -17,7 +17,7 @@
 
       <TextBlock Text="default" Theme="{DynamicResource GroupHeaderTextBlockStyle}" />
       <CheckBox x:Name="Default" Content="check box" IsCheckedChanged="OnChanged" />
-      <TextBlock x:Name="State" Text="unchecked" Theme="{DynamicResource ControlContextualInfoTextBlockStyle}" />
+      <TextBlock x:Name="State" Theme="{DynamicResource ControlContextualInfoTextBlockStyle}" />
       <CheckBox x:Name="Checked" Content="checked" IsChecked="True" />
       <CheckBox x:Name="ThreeState" Content="three-state" IsThreeState="True" IsChecked="{x:Null}" />
 
