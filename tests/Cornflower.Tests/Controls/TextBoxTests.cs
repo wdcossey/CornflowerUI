@@ -582,9 +582,14 @@ public class TextBoxTests
         Assert.Equal(1, text.SelectionStart);
         Assert.Equal(3, text.SelectionEnd);
         Assert.Equal(box.CaretIndex, text.CaretIndex);
-        box.CaretIndex = 6;
+
+        // The text both ways: what the presenter is given comes back to the box.
+        text.SetCurrentValue(TextPresenter.TextProperty, "changed");
         Dispatcher.UIThread.RunJobs();
-        Assert.Equal(6, text.CaretIndex);
+        Assert.Equal("changed", box.Text);
+        box.CaretIndex = 5;
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(5, text.CaretIndex);
     }
 
     // The Focused state is the focus look: keyboard focus draws no adorner, where Avalonia would put the control's

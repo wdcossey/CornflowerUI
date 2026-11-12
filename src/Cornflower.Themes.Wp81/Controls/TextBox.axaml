@@ -21,7 +21,7 @@
       Padding round its content. It wears a theme of its own (below), so no ScrollViewer theme keyed by type
       reaches it, and no scroll bar is drawn, as the phone's Hidden bars draw none.
     - PART_TextPresenter, the part Avalonia's TextBox looks for, is the phone's text view: its line the phone's,
-      1.33 em, the box's LineHeight, which the style binds to its FontSize through PhoneTextBoxLine, so the first baseline is the placeholder's and each line is 1.33 em below the
+      1.33 em, the box's LineHeight (inherited), which the style binds to its FontSize through PhoneTextBoxLine, so the first baseline is the placeholder's and each line is 1.33 em below the
       last, as on the phone.
     - PlaceholderTextContentPresenter shows PlaceholderText in PlaceholderForeground (TextBoxPlaceholderTextThemeBrush)
       at ContentControlFontSize whatever the box's FontSize, as the phone's sets it, in the phone's line. Shown only
@@ -130,7 +130,7 @@
                           BringIntoViewOnFocusChange="{TemplateBinding (ScrollViewer.BringIntoViewOnFocusChange)}"
                           AllowAutoHide="{TemplateBinding (ScrollViewer.AllowAutoHide)}">
               <!-- Not bound, as they reach the presenter without: CaretIndex, which Avalonia's TextBox sets on it itself,
-                   and LetterSpacing, which inherits. -->
+                   and LineHeight, LetterSpacing, TextAlignment and TextWrapping, which inherit from the box. -->
               <TextPresenter x:Name="PART_TextPresenter"
                              CaretBlinkInterval="{TemplateBinding CaretBlinkInterval}"
                              CaretBrush="{TemplateBinding CaretBrush}"
@@ -140,10 +140,7 @@
                              SelectionEnd="{TemplateBinding SelectionEnd}"
                              SelectionForegroundBrush="{TemplateBinding SelectionForegroundBrush}"
                              SelectionStart="{TemplateBinding SelectionStart}"
-                             Text="{TemplateBinding Text, Mode=TwoWay}"
-                             TextAlignment="{TemplateBinding TextAlignment}"
-                             LineHeight="{TemplateBinding LineHeight}"
-                             TextWrapping="{TemplateBinding TextWrapping}" />
+                             Text="{TemplateBinding Text, Mode=TwoWay}" />
             </ScrollViewer>
             <ContentPresenter x:Name="PlaceholderTextContentPresenter"
                               Grid.Column="1"

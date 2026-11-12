@@ -115,7 +115,7 @@ Paste flyout, and the `.clearButton` and `.revealPasswordButton` classes.
 | No header | the presenter collapsed, margin and all | | 1, its `IsVisible` bound to whether `Header` is set |
 | The placeholder | shown while empty, hidden while focused, at `ContentControlFontSize` whatever the box's size | Simple's: a `TextBlock` in the box's size | 1, a `ContentPresenter` by `:empty` and `:focus`, its line the phone's (`PhoneHeaderLine`) |
 | `SelectionHighlightColor` | the accent | `SelectionBrush` | 1, the style sets `SelectionBrush` |
-| The text's line | 1.33 em | 1.2 em | 1 and 2: the style binds the box's `LineHeight` to 1.33 × its `FontSize` (`PhoneTextBoxLine`, new and internal), and the template the presenter's to it. An app's `LineHeight` wins; `MinLines` and `MaxLines` count the phone's lines |
+| The text's line | 1.33 em | 1.2 em | 1 and 2: the style binds the box's `LineHeight` to 1.33 × its `FontSize` (`PhoneTextBoxLine`, new and internal), which the presenter inherits. An app's `LineHeight` wins; `MinLines` and `MaxLines` count the phone's lines |
 | `ContentElement`'s `MinHeight` | 34 | overwritten by the TextBox in each measure | 1, set on the `Grid` round it instead |
 | The scroll bars | `Hidden`: none drawn | the `ScrollViewer`'s theme by type, a hole today (Wp81 alone would give it no template, and the text would vanish) | 1, the part's own theme, `Wp81TextBoxScrollViewerTheme`: the content presenter inset by the padding, with the gesture recogniser, no bars |
 | The text clipped inside the padding | the `ScrollContentPresenter`'s margin is the padding | Simple's pads inside it | 1, the presenter's `Margin`, as the phone's |
