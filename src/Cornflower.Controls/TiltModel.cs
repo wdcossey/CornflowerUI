@@ -92,7 +92,7 @@ internal static class TiltModel
     /// within 0.0002; this fits them within 0.00075 (rms 0.00024), and within 0.0010 with the hold and
     /// return rounded to 182.6 and 167.0 ms, as here.
     /// </summary>
-    public static readonly (double X1, double Y1, double X2, double Y2) ReturnSpline = (0.1, 0.25, 0.75, 0.9);
+    public static readonly KeySplineCurve ReturnSpline = new(0.1, 0.25, 0.75, 0.9);
 
     /// <summary>Below this change in a frame, in degrees and view pixels, a press has settled.</summary>
     public const double Settled = 1e-4;
@@ -149,45 +149,7 @@ internal static class TiltModel
         var progress = (sinceRelease - Hold) / Return;
         if (progress <= 0) return 1;
         if (progress >= 1) return 0;
-        var (x1, y1, x2, y2) = ReturnSpline;
-        return 1 - Spline(progress, x1, y1, x2, y2);
-    }
-
-    /// <summary>
-    /// A <c>KeySpline</c>'s value at <paramref name="x"/>: the cubic Bézier from (0, 0) to (1, 1)
-    /// with control points (<paramref name="x1"/>, <paramref name="y1"/>) and (<paramref name="x2"/>,
-    /// <paramref name="y2"/>), its parameter solved from x by Newton's method kept inside a bisection
-    /// bracket, to 1e-12. The control points' x are in [0, 1], so x rises with the parameter.
-    /// </summary>
-    internal static double Spline(double x, double x1, double y1, double x2, double y2)
-    {
-        if (x <= 0) return 0;
-        if (x >= 1) return 1;
-        double lo = 0, hi = 1, s = x;
-        for (var i = 0; i < 200; i++)
-        {
-            var error = Bezier(s, x1, x2) - x;
-            if (Math.Abs(error) <= 1e-12) break;
-            if (error > 0) hi = s;
-            else lo = s;
-            var slope = BezierSlope(s, x1, x2);
-            var next = slope > 0 ? s - error / slope : double.NaN;
-            s = next > lo && next < hi ? next : (lo + hi) / 2;
-        }
-
-        return Bezier(s, y1, y2);
-    }
-
-    private static double Bezier(double s, double a, double b)
-    {
-        var r = 1 - s;
-        return 3 * a * s * r * r + 3 * b * s * s * r + s * s * s;
-    }
-
-    private static double BezierSlope(double s, double a, double b)
-    {
-        var r = 1 - s;
-        return 3 * a * r * r + 6 * (b - a) * s * r + 3 * (1 - b) * s * s;
+        return 1 - ReturnSpline.Ease(progress);
     }
 
     /// <summary>

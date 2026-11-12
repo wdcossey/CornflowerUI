@@ -21,6 +21,8 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Cornflower.Tests" />
+    <!-- The theme's timelines run on CornflowerClock, as Tilt does. -->
+    <InternalsVisibleTo Include="Cornflower.Themes.Wp81" />
   </ItemGroup>
 
 </Project>
