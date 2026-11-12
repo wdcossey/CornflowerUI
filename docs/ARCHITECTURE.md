@@ -457,6 +457,7 @@ control that needs it, and **moves into `CLAUDE.md` only once proven**.
 | `x:Name="ContentPresenter"` in a built-in's template | The part name Avalonia's control looks for, such as `PART_ContentPresenter` | Avalonia's code decides the name. Check each control's `[TemplatePart]` attributes |
 | `x:Name="Foo"` in one of our controls' templates | `PART_Foo` | As Avonic does |
 | A template part WinRT has and Avalonia's control doesn't know | Present for looks, but the control won't drive it; or a part class of ours drives it (rung 3) | A source of behaviour differences. List each in the plan |
+| Two parts that show one content, one per state (ToggleButton's `EnabledBackground` and `EnabledContent`, `DisabledBackground` and `DisabledContent`) | One part, restyled per state | Avalonia can't show one element in two presenters. Same pixels ([#93](https://github.com/wdcossey/CornflowerUI/pull/93)) |
 | `x:DeferLoadStrategy="Lazy"`, `x:Load` | No equivalent. `IsVisible="False"`, or built in code | 29 uses in 19041; not counted in 8.1. Costs start-up time; measure it |
 
 ### Visual states
@@ -466,13 +467,14 @@ in a nested style.
 
 | WinRT XAML | Avalonia | Note |
 |---|---|---|
-| `VisualState x:Name="PointerOver"` in `CommonStates` | `<Style Selector="^:pointerover /template/ ContentPresenter#PART_ContentPresenter">` | Check whether the phone shows a hover state at all. Avonic found `:pointerover` also applies during a touch |
+| `VisualState x:Name="PointerOver"` in `CommonStates` | `<Style Selector="^:pointerover /template/ ContentPresenter#PART_ContentPresenter">` | Check whether the phone shows a hover state at all. Avonic found `:pointerover` also applies during a touch; in Avalonia 12.1.4 a touch doesn't set it ([#93](https://github.com/wdcossey/CornflowerUI/pull/93)) |
 | `Pressed` | `^:pressed` | |
 | `Disabled` | `^:disabled` | |
 | `Normal` | The theme's plain setters | |
 | `ObjectAnimationUsingKeyFrames` with one `DiscreteObjectKeyFrame KeyTime="0"` | A `Setter` | An instant assignment written as an animation. 174 storyboards in 8.1, 531 in 19041; most are these |
 | `<VisualState.Setters>` | `Setter`s | None in 8.1, where setters didn't exist yet; 480 blocks in 19041 |
 | Combined states (`UncheckedNormal`, `CheckedPointerOver`, `IndeterminatePressed`) | Combined pseudoclasses: `^:checked:pointerover` | Avalonia has `:checked`, `:unchecked`, `:indeterminate` |
+| A pressed state of a checked control that sets nothing (ToggleButton's `CheckedPressed`) | Left out of the checked selector: `^:checked:not(:pressed), ^:checked[(wp81\|PhonePress.IsOff)=True]` | The checked look comes back when the finger slides off, as on the phone. `PhonePress`, internal to the theme, tells that, as `:pointerover` can't under a touch ([#93](https://github.com/wdcossey/CornflowerUI/pull/93)) |
 | ToggleSwitch: `On`, `Off`, `Dragging` | `^:checked`, `^:unchecked`, `^:dragging` | |
 | `SelectionStates`: `Selected`, `Unselected` | `^:selected` | |
 | `FocusStates`: `Focused`, `PointerFocused` | `^:focus-visible`, `^:focus` | |
@@ -510,6 +512,7 @@ The hard part. These elements name an animation and the platform supplies the mo
 | WinRT XAML | Uses in 8.1 | Uses in 19041 | Avalonia | Note |
 |---|---|---|---|---|
 | `PointerDownThemeAnimation`, `PointerUpThemeAnimation` | 18, 31 | 38, 78 | An attached behaviour, set by the template (`Tilt.IsEnabled`, #65), driving a perspective `MatrixTransform` | The tilt. Angle, depth and timing read every frame under real touches, 100 presses over four sizes ([#60](https://github.com/wdcossey/CornflowerUI/pull/60)), and modelled in [ADR 0005](decisions/0005-decisions-of-2026-11-09-and-10.md#the-tilt) |
+| `PointerDownThemeAnimation` on a part other than the template's root | | | `Tilt.IsTarget` on that part; the root around it stays untilted and takes the hits, with a transparent background | The phone's root is already untilted round that part, so no hit root is added, as Button's theme adds one round its tilted `Grid`, the phone's root. HyperlinkButton's `PART_ContentPresenter` ([#91](https://github.com/wdcossey/CornflowerUI/pull/91)), CheckBox's `Grid` ([#92](https://github.com/wdcossey/CornflowerUI/pull/92)), RadioButton's `Container` ([#94](https://github.com/wdcossey/CornflowerUI/pull/94)). A template that runs no theme animation gets no tilt: ToggleButton and RepeatButton ([#93](https://github.com/wdcossey/CornflowerUI/pull/93)), whose forced `Pressed` captures are flat. A template with a `PointerDownThemeAnimation` and no `PointerUpThemeAnimation` transition (HyperlinkButton, RadioButton) may snap back on release; `Tilt` eases back as on a Button until a probe measures one |
 | `RepositionThemeAnimation` | 9 | 5 | A transition on the part's offset | The ToggleSwitch knob |
 | `FadeInThemeAnimation`, `FadeOutThemeAnimation` | 4, 4 | 17, 14 | An opacity transition | Durations measured |
 | `EntranceThemeTransition`, `ContentThemeTransition` | — | 5, 4 | Composition implicit animations, or an `IPageTransition` | An infrastructure item |

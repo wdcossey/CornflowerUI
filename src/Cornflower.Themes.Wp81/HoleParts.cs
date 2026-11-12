@@ -9,12 +9,13 @@ using Avalonia.Styling;
 namespace Cornflower.Themes.Wp81;
 
 /// <summary>
-/// Keeps Wp81's Button, ToggleButton and RepeatButton out of templates written for the theme under Wp81. Simple's
-/// templates for CalendarItem, CalendarDatePicker, CommandBar, NavigationPage, PipsPager and the managed file dialogs
-/// hold plain Buttons with no theme of their own, ComboBox's and DrawerPage's plain ToggleButtons, and ScrollBar's and
-/// the menu ScrollViewer's plain RepeatButtons, so they would take Wp81's, keyed by type: the phone's 109 × 57.5
-/// minimum, its overhang, the accent and, for a Button, the tilt, in chrome laid out for Simple's. Such a control takes
-/// the theme under Wp81 for its own style key instead: a ToggleButton the ToggleButton theme, not the Button theme.
+/// Keeps Wp81's Button, ToggleButton, RepeatButton and CheckBox out of templates written for the theme under Wp81.
+/// Simple's templates for CalendarItem, CalendarDatePicker, CommandBar, NavigationPage, PipsPager and the managed file
+/// dialogs hold plain Buttons with no theme of their own, ComboBox's and DrawerPage's plain ToggleButtons, ScrollBar's
+/// and the menu ScrollViewer's plain RepeatButtons, and the managed file dialog's plain CheckBox, so they would take
+/// Wp81's, keyed by type: the phone's sizes (a Button's 109 × 57.5 minimum), its overhang, the accent and, for a Button
+/// or a CheckBox, the tilt, in chrome laid out for Simple's. Such a control takes the theme under Wp81 for its own style
+/// key instead: a ToggleButton the ToggleButton theme, not the Button theme.
 /// </summary>
 /// <remarks>
 /// <para><b>Which templates.</b> The templated parent's own template decides: a Button falls back when that template
@@ -29,11 +30,11 @@ namespace Cornflower.Themes.Wp81;
 /// Button in a template Wp81 sets goes no further. The templates each theme (a <see cref="Styles"/> subclass) sets
 /// are read once and kept beside it; a plain group of styles and a host's own resources, which an app can change as
 /// it runs, are read each time.</para>
-/// <para><b>On and off.</b> Only Wp81's themes set <see cref="FallBackProperty"/> (Button's, ToggleButton's and
-/// RepeatButton's): it is internal, with no accessor. It goes false when that theme leaves the control, which is what
-/// falling back does itself, so false undoes nothing; the control keeps the theme it was given. It costs only the
-/// controls whose theme sets it, and no global rule (<c>StyleBudgetTests</c>); one with no templated parent returns at
-/// once.</para>
+/// <para><b>On and off.</b> Only Wp81's themes set <see cref="FallBackProperty"/> (Button's, ToggleButton's,
+/// RepeatButton's and CheckBox's): it is internal, with no accessor. It goes false when that theme leaves the control,
+/// which is what falling back does itself, so false undoes nothing; the control keeps the theme it was given. It costs
+/// only the controls whose theme sets it, and no global rule (<c>StyleBudgetTests</c>); one with no templated parent
+/// returns at once.</para>
 /// </remarks>
 internal static class HoleParts
 {
