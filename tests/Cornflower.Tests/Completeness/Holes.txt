@@ -64,7 +64,6 @@ TableView
 TableViewCell
 TableViewColumnHeader
 TableViewRow
-TextBox
 TextSelectionHandle
 TimePicker
 TimePickerPresenter
