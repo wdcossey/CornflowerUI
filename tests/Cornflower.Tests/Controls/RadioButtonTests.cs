@@ -87,24 +87,6 @@ public class RadioButtonTests
 
     private static ThemeVariant VariantOf(string name) => name == "Dark" ? ThemeVariant.Dark : ThemeVariant.Light;
 
-    /// <summary>Whether two frames of the stage are the same, pixel for pixel.</summary>
-    private static bool SameFrame(WriteableBitmap a, WriteableBitmap b)
-    {
-        using var x = a.Lock();
-        using var y = b.Lock();
-        if (x.Size != y.Size || x.Format != y.Format) return false;
-        var row = new byte[x.Size.Width * 4];
-        var other = new byte[row.Length];
-        for (var r = 0; r < x.Size.Height; r++)
-        {
-            System.Runtime.InteropServices.Marshal.Copy(x.Address + r * x.RowBytes, row, 0, row.Length);
-            System.Runtime.InteropServices.Marshal.Copy(y.Address + r * y.RowBytes, other, 0, other.Length);
-            if (!row.AsSpan().SequenceEqual(other)) return false;
-        }
-
-        return true;
-    }
-
     private static Point In(Visual part, Visual of) => part.TranslatePoint(default, of)!.Value;
 
     /// <summary>Presses and lifts a finger at <paramref name="at"/>, settling after each.</summary>
@@ -397,7 +379,7 @@ public class RadioButtonTests
 
         Assert.False(DotOf(stage.RadioButton).IsVisible);
         using var frame = stage.Capture();
-        Assert.True(SameFrame(plain, frame), "the indeterminate RadioButton isn't drawn as the unchecked one");
+        Assert.True(Frames.SameAs(plain, frame), "the indeterminate RadioButton isn't drawn as the unchecked one");
     }
 
     // CommonStates.Pressed: the circle fills with ButtonPressedBackgroundThemeBrush, the accent, the dot over it in
@@ -504,7 +486,7 @@ public class RadioButtonTests
 
         Assert.True(stage.RadioButton.IsPointerOver);
         using var after = stage.Capture();
-        Assert.True(SameFrame(before, after), "the pointer over the RadioButton changed what is drawn");
+        Assert.True(Frames.SameAs(before, after), "the pointer over the RadioButton changed what is drawn");
     }
 
     // A tap checks it, and a second tap leaves it checked: Avalonia's RadioButton, as WinRT's, never unchecks itself.
