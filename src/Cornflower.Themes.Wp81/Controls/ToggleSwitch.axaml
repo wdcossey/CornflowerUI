@@ -11,9 +11,10 @@
     The template is the phone's, part for part: the header and the content in the first column, the switch in the
     77-wide third, 13.5 apart, a 9.5 row below. What WinRT's ToggleSwitch does in code, and Avalonia's does otherwise:
     - HeaderContentPresenter shows cf:ControlHeader.Header and HeaderTemplate (WinRT's Header and HeaderTemplate,
-      which Avalonia's ToggleSwitch lacks), in the phone's HeaderContentPresenterStyle and the template's own
-      ToggleSwitchHeaderForegroundThemeBrush, with the phone's 1.33 em line (PhoneHeaderLine), no access keys, as
-      WinRT's. Empty, its row is still half the switch's height, as the phone's is (17.9167 in its no-header capture):
+      which Avalonia's ToggleSwitch lacks), in the phone's HeaderContentPresenterStyle (Wp81HeaderContentPresenterTheme,
+      Controls/HeaderContentPresenter.axaml) and the template's own ToggleSwitchHeaderForegroundThemeBrush, with the
+      phone's 1.33 em line (PhoneHeaderLine), no access keys, as WinRT's. Empty, its row is still half the switch's
+      height, as the phone's is (17.9167 in its no-header capture):
       the switch spans both rows, and the Grid shares its height between them. Avalonia's own Content, which Avalonia's themes show above the switch, is shown in its place, in the same style, when there is
       no Header (PART_ContentPresenter).
     - PART_OffContentPresenter and PART_OnContentPresenter, Avalonia's parts, are the phone's OffContentPresenter and
@@ -62,10 +63,12 @@
                 BorderThickness="{TemplateBinding BorderThickness}">
           <Grid Background="Transparent" RowDefinitions="Auto,Auto,9.5" ColumnDefinitions="*,13.5,77">
             <ContentPresenter x:Name="HeaderContentPresenter"
+                              Theme="{DynamicResource Wp81HeaderContentPresenterTheme}"
                               Margin="{TemplateBinding Padding}"
                               Content="{TemplateBinding (cf:ControlHeader.Header)}"
                               ContentTemplate="{TemplateBinding (cf:ControlHeader.HeaderTemplate)}" />
             <ContentPresenter x:Name="PART_ContentPresenter"
+                              Theme="{DynamicResource Wp81HeaderContentPresenterTheme}"
                               Margin="{TemplateBinding Padding}"
                               IsVisible="{TemplateBinding (cf:ControlHeader.Header), Converter={x:Static ObjectConverters.IsNull}}"
                               Content="{TemplateBinding Content}"
@@ -114,13 +117,11 @@
       </ControlTemplate>
     </Setter>
 
-    <!-- The header, or Avalonia's Content in its place: HeaderContentPresenterStyle's values, the template's brush, the phone's line. -->
+    <!-- The header, or Avalonia's Content in its place: HeaderContentPresenterStyle's values and the phone's line (the
+         parts' theme), in the template's own brush, which wins over the parts' theme as the phone's template's own
+         Foreground wins over the style's. -->
     <Style Selector="^ /template/ ContentPresenter#HeaderContentPresenter, ^ /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="FontFamily" Value="{DynamicResource PhoneFontFamilyNormal}" />
-      <Setter Property="FontSize" Value="{DynamicResource TextStyleMediumFontSize}" />
-      <Setter Property="FontWeight" Value="Normal" />
       <Setter Property="Foreground" Value="{DynamicResource ToggleSwitchHeaderForegroundThemeBrush}" />
-      <Setter Property="wp81:PhoneHeaderLine.IsEnabled" Value="True" />
     </Style>
 
     <!-- OffContent and OnContent: the phone's font, set on the presenters, and its line. -->

@@ -14,8 +14,9 @@
     does instead:
     - HeaderContentPresenter shows cf:ControlHeader.Header and HeaderTemplate (WinRT's Header and HeaderTemplate,
       which Avalonia's Slider lacks), in the phone's HeaderContentPresenterStyle, with the phone's 1.33 em line
-      (PhoneHeaderLine). It doesn't recognise access keys, as WinRT's doesn't. With no Header it shows nothing and
-      takes no height; an empty string is one empty line, as an empty TextBlock is on the phone.
+      (Wp81HeaderContentPresenterTheme, Controls/HeaderContentPresenter.axaml, and PhoneHeaderLine). It doesn't
+      recognise access keys, as WinRT's doesn't. With no Header it shows nothing and takes no height; an empty string
+      is one empty line, as an empty TextBlock is on the phone.
     - SliderContainer, transparent, takes the hits across the whole area below the header, as the phone's does. Here
       PART_Track fills it, so a press anywhere in it lands on the Track's parts: Avalonia's Slider moves the thumb's
       middle to a press on either RepeatButton and follows the finger from there.
@@ -164,7 +165,7 @@
       <Setter Property="Template">
         <ControlTemplate>
           <Grid x:Name="Root" Margin="{TemplateBinding Padding}" RowDefinitions="Auto,*">
-            <ContentPresenter x:Name="HeaderContentPresenter" />
+            <ContentPresenter x:Name="HeaderContentPresenter" Theme="{DynamicResource Wp81HeaderContentPresenterTheme}" />
             <Grid x:Name="SliderContainer" Grid.Row="1" Background="Transparent">
               <Grid x:Name="HorizontalTemplate" RowDefinitions="17.5,Auto,30.5,*">
                 <Rectangle x:Name="HorizontalTrackRect"
@@ -214,7 +215,7 @@
       <Setter Property="Template">
         <ControlTemplate>
           <Grid x:Name="Root" Margin="{TemplateBinding Padding}" RowDefinitions="Auto,*">
-            <ContentPresenter x:Name="HeaderContentPresenter" />
+            <ContentPresenter x:Name="HeaderContentPresenter" Theme="{DynamicResource Wp81HeaderContentPresenterTheme}" />
             <Grid x:Name="SliderContainer" Grid.Row="1" Background="Transparent">
               <Grid x:Name="VerticalTemplate" ColumnDefinitions="13.5,Auto,13.5,*">
                 <Rectangle x:Name="VerticalTrackRect"
@@ -266,15 +267,10 @@
       </Setter>
     </Style>
 
-    <!-- The header, in either template: HeaderContentPresenterStyle's four values, and the phone's line. -->
+    <!-- The header, in either template; its look and line are HeaderContentPresenterStyle's, the part's own theme. -->
     <Style Selector="^ /template/ ContentPresenter#HeaderContentPresenter">
       <Setter Property="Content" Value="{TemplateBinding (cf:ControlHeader.Header)}" />
       <Setter Property="ContentTemplate" Value="{TemplateBinding (cf:ControlHeader.HeaderTemplate)}" />
-      <Setter Property="FontFamily" Value="{DynamicResource PhoneFontFamilyNormal}" />
-      <Setter Property="FontSize" Value="{DynamicResource TextStyleMediumFontSize}" />
-      <Setter Property="FontWeight" Value="Normal" />
-      <Setter Property="Foreground" Value="{DynamicResource PhoneMidBrush}" />
-      <Setter Property="wp81:PhoneHeaderLine.IsEnabled" Value="True" />
     </Style>
 
     <Style Selector="^ /template/ Track#PART_Track">
