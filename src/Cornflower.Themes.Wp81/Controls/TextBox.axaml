@@ -14,8 +14,9 @@
       in a sibling, not in the Border.
     - HeaderContentPresenter shows cf:ControlHeader.Header and HeaderTemplate (WinRT's Header and HeaderTemplate,
       which Avalonia's TextBox lacks), in the phone's HeaderContentPresenterStyle, 4.8 above the box, with the phone's
-      1.33 em line (PhoneHeaderLine). It doesn't recognise access keys, as WinRT's doesn't. With no Header it is
-      collapsed, margin and all, as the phone's code collapses it (run 20261112-1319-dev11: 39.1667 tall, not 44).
+      1.33 em line (Wp81HeaderContentPresenterTheme, Controls/HeaderContentPresenter.axaml, and PhoneHeaderLine). It
+      doesn't recognise access keys, as WinRT's doesn't. With no Header it is collapsed, margin and all, as the phone's
+      code collapses it (run 20261112-1319-dev11: 39.1667 tall, not 44).
     - PART_ScrollViewer is the phone's ContentElement: inside the border, at least TextControlThemeMinHeight tall (set
       on ContentRow round it, as Avalonia's TextBox sets the ScrollViewer's own MinHeight for MinLines), the box's
       Padding round its content. It wears a theme of its own (below), so no ScrollViewer theme keyed by type
@@ -105,15 +106,11 @@
                   BorderThickness="{TemplateBinding BorderThickness}" />
           <ContentPresenter x:Name="HeaderContentPresenter"
                             Grid.Row="0"
+                            Theme="{DynamicResource Wp81HeaderContentPresenterTheme}"
                             Margin="{DynamicResource TextControlHeaderMarginThemeThickness}"
                             IsVisible="{TemplateBinding (cf:ControlHeader.Header), Converter={x:Static ObjectConverters.IsNotNull}}"
                             Content="{TemplateBinding (cf:ControlHeader.Header)}"
-                            ContentTemplate="{TemplateBinding (cf:ControlHeader.HeaderTemplate)}"
-                            FontFamily="{DynamicResource PhoneFontFamilyNormal}"
-                            FontSize="{DynamicResource TextStyleMediumFontSize}"
-                            FontWeight="Normal"
-                            Foreground="{DynamicResource PhoneMidBrush}"
-                            wp81:PhoneHeaderLine.IsEnabled="True" />
+                            ContentTemplate="{TemplateBinding (cf:ControlHeader.HeaderTemplate)}" />
           <!-- ContentElement's MinHeight is here: Avalonia's TextBox sets its ScrollViewer's in every measure (MinLines). -->
           <Grid x:Name="ContentRow"
                 Grid.Row="1"
