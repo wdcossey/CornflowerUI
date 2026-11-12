@@ -105,9 +105,9 @@ As the TextBox's (#36's plan), and:
 | `PasswordChar` | `●` by default | `\0` (none) by default | 1, the key's style sets `●` |
 | `IsPasswordRevealButtonEnabled` | a property | the `revealPasswordButton` class | 1 |
 | The RevealButton | a CheckBox, "Show Password", in a third row | Simple's eye button inside the box | 1, the phone's CheckBox, `IsChecked` to `RevealPassword` |
-| Unticked when it shows or hides (`ButtonStates`) | WinRT's states set `IsChecked` False | no states | 2, `PhoneRevealButton` (new, internal to the theme): the CheckBox showing or hiding clears `RevealPassword`, so taking the class away never leaves a password shown (the first review's finding) |
-| The RevealButton takes no focus | `IsTabStop` False: never focused, so a tap leaves the box focused and its keyboard up | `IsTabStop` keeps it out of the Tab order only; a press focuses it | 1, `Focusable` False too (the first review's finding: a tap took the box's focus) |
-| Read only | a PasswordBox can't be | `IsReadOnly` | 1, no reveal button on a read-only box, as Simple's and Fluent's gate the class |
+| Unticked when it shows or hides (`ButtonStates`) | WinRT's states set `IsChecked` False | no states | 2, `PhoneRevealButton` (new, internal to the theme): when what decides the button changes (the class, `IsReadOnly`, `AcceptsReturn`) it clears `RevealPassword`, so taking the class away never leaves a password shown (the first review's finding); an app's `RevealPassword` stands through a template's loading and the box leaving and joining the tree (the second's) |
+| The RevealButton takes no focus | `IsTabStop` False: never focused, so a tap leaves focus where it was | `IsTabStop` keeps it out of the Tab order only; a press focuses it, or, if it can't be focused, its nearest focusable ancestor | 1, `Focusable` False (the first review's finding: a tap took the box's focus), so a focused box keeps it; 6, recorded: a tap focuses an unfocused box (the second's), as Avalonia's `FocusManager` walks up from a press, and stopping it would mean taking the CheckBox's press from it |
+| Read only, many lines | a PasswordBox can't be | `IsReadOnly`, `AcceptsReturn` | 1, no reveal button on a read-only or many-line box, as Simple's and Fluent's gate the class |
 | The CheckBox over the box's bottom | lifted 6.5 by `PasswordBoxCheckBoxThemeMargin`, later in the tree, so its transparent top takes a press there | the same | none: the phone's. A press in the box's bottom 6.67 ticks it, on the phone too |
 | Disabled | the parts disabled too (WinRT's `IsEnabled` reaches them; the forced capture can't show it) | the same | none: the CheckBox's own Disabled look |
 | `PointerOver` | ends Normal's 0.8 | `:pointerover`, a mouse's | 1, the box drawn whole under a pointer |
@@ -130,9 +130,10 @@ Each has a test in `tests/Cornflower.Tests/Controls/PasswordBoxTests.cs` unless 
    `The_Border_Takes_What_The_Header_And_The_Reveal_Button_Leave`.
 5. **The RevealButton** is Wp81's CheckBox, "Show Password", white (black light), not a tab stop and never focused,
    unticked; ticking it reveals the password and `RevealPassword` ticks it; a tap ticks it and leaves the box focused;
-   its foreground is the template's key; hiding it (the class gone, or read only) hides the password, and it shows
-   again unticked. `The_Reveal_Button_Is_The_Phones_CheckBox_And_Reveals_The_Password`, `A_Tap_On_Show_Password_Shows_It`,
-   `The_Reveal_Buttons_Foreground_Is_The_Templates_Key`, `Hiding_The_Reveal_Button_Hides_The_Password`.
+   its foreground is the template's key; its coming or going (the class, read only, many lines) hides the password,
+   and an app's `RevealPassword` stands otherwise. `The_Reveal_Button_Is_The_Phones_CheckBox_And_Reveals_The_Password`, `A_Tap_On_Show_Password_Shows_It`,
+   `The_Reveal_Buttons_Foreground_Is_The_Templates_Key`, `Hiding_The_Reveal_Button_Hides_The_Password`,
+   `An_Apps_RevealPassword_Stands_Until_The_Button_Comes_Or_Goes`.
 6. **Typing is masked.** `Typing_Is_Masked`.
 7. **The pixels** at rest, focused and disabled, the border ending on the phone's row with the reveal button.
    `The_Box_Is_Drawn_As_The_Phones`; **under a pointer** drawn whole. `The_Pointer_Over_It_Draws_The_Box_Whole`.
@@ -155,10 +156,13 @@ Each has a test in `tests/Cornflower.Tests/Controls/PasswordBoxTests.cs` unless 
   `IsPasswordRevealButtonEnabled`, which the class style would read instead.
 - **The text "Show Password" is a resource, `Wp81PasswordBoxRevealText`**, in the theme, so an app can translate it by
   defining the key. WinRT's comes from the system's language. To reverse: a literal on the CheckBox.
-- **The `ButtonStates`' unticking is `PhoneRevealButton`**, new and internal: the CheckBox showing or hiding clears
-  `RevealPassword`. To reverse: drop its setter; a password shown when the class goes then stays shown.
-- **No reveal button on a read-only box**, as Simple's and Fluent's gate the class (WinRT's PasswordBox can't be read
-  only). To reverse: the selector without `[IsReadOnly=False]`.
+- **The `ButtonStates`' unticking is `PhoneRevealButton`**, new and internal, on the box: when the class, `IsReadOnly`
+  or `AcceptsReturn` changes whether the button shows, it clears `RevealPassword`. To reverse: drop its setter; a
+  password shown when the class goes then stays shown.
+- **No reveal button on a read-only or many-line box**, as Simple's and Fluent's gate the class (WinRT's PasswordBox
+  is neither). To reverse: the selector without `[IsReadOnly=False][AcceptsReturn=False]`, and `PhoneRevealButton.Shows`.
+- **A tap on "Show Password" focuses an unfocused box** (a gap): Avalonia gives a press's focus to the nearest focusable
+  ancestor, and the phone's leaves focus where it was. A focused box keeps its focus and keyboard, the common case.
 - **`PointerOver` draws the box whole**, as the phone's template does, though a touch never sets `:pointerover` in
   Avalonia 12.1.4 (#93): only a mouse shows it.
 - **A disabled box disables its CheckBox**, unlike the forced `Disabled` capture, as WinRT and Avalonia both do for a
@@ -259,7 +263,7 @@ theme's: Avalonia's own names where it looks for one, the phone's otherwise.
 | [x] | `CommonStates` | `Normal` | `BorderElement.Opacity: DoubleAnimation Duration=0 To={ThemeResource TextControlBorderThemeOpacity}` | the theme's plain setters | The Border's 0.8 |
 | [x] | `CommonStates` | `PointerOver` | nothing | `^:pointerover` | Opacity 1: Normal's 0.8 ends |
 | [x] | `CommonStates` | `Focused` | `BorderElement.BorderBrush = {ThemeResource TextSelectionHighlightColorThemeBrush}`<br>`PlaceholderTextContentPresenter.Opacity: DoubleAnimation Duration=0 To=0`<br>`BorderElement.Background = {ThemeResource TextBoxFocusedBackgroundThemeBrush}` | `^:focus-visible` | `^:focus`, as the TextBox's |
-| [x] | `ButtonStates` | `ButtonVisible` | `RevealButton.Visibility = Visible`<br>`RevealButton.IsChecked = False` | `^:buttonvisible` | `^.revealPasswordButton[IsReadOnly=False]`; unticked by `PhoneRevealButton` |
+| [x] | `ButtonStates` | `ButtonVisible` | `RevealButton.Visibility = Visible`<br>`RevealButton.IsChecked = False` | `^:buttonvisible` | `^.revealPasswordButton[IsReadOnly=False][AcceptsReturn=False]`; unticked by `PhoneRevealButton` |
 | [x] | `ButtonStates` | `ButtonCollapsed` | `RevealButton.Visibility = Collapsed`<br>`RevealButton.IsChecked = False` | `^:buttoncollapsed` | Without the class; unticked the same way |
 
 ### Transitions (0)

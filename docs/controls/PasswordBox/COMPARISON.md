@@ -86,6 +86,8 @@ frames. The box's pixels are read down column 500 and along each edge, the Check
   (#31's).
 - **The text's baseline**, and so the circles, sits 0.95 DIP above the phone's (#36's).
 - **At rest in light**, 203 grey where the phone's is 204: Skia's blend.
+- **A tap on "Show Password" focuses an unfocused box**, where the phone's leaves focus where it was (Avalonia focuses a
+  press's nearest focusable ancestor). A focused box keeps its focus.
 - **Unmeasured**: a shown password (the template unticks a forced one; a probe with a real tap is owed), the caret, the
   selection and the keyboard.
 - **The text is Selawik** (ADR 0001), and **Selawik has no `●`** (U+25CF; it has `•`, U+2022): Avalonia draws the

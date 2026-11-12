@@ -202,7 +202,6 @@ public class PasswordBoxTests
         Assert.Contains(reveal.GetVisualDescendants(), v => v is Border { Name: "CheckBackground" });
         Assert.Equal(RevealText, reveal.Content);
         Assert.Equal(White, ColourOf(reveal.Foreground));
-        Assert.False(reveal.IsTabStop);
         Assert.False(reveal.Focusable);
         Assert.False(reveal.IsChecked);
         Assert.False(box.RevealPassword);
@@ -268,16 +267,48 @@ public class PasswordBoxTests
         Assert.False(reveal.IsVisible);
         Assert.False(box.RevealPassword);
 
+        // Coming back unticks it too: a password shown with the class away is hidden as the button comes.
+        box.SetCurrentValue(TextBox.RevealPasswordProperty, true);
         box.Classes.Add("revealPasswordButton");
         Dispatcher.UIThread.RunJobs();
         Assert.True(reveal.IsVisible);
         Assert.False(reveal.IsChecked);
+        Assert.False(box.RevealPassword);
 
         reveal.SetCurrentValue(Avalonia.Controls.Primitives.ToggleButton.IsCheckedProperty, true);
         box.IsReadOnly = true;
         Dispatcher.UIThread.RunJobs();
         Assert.False(reveal.IsVisible);
         Assert.False(box.RevealPassword);
+
+        box.IsReadOnly = false;
+        box.SetCurrentValue(TextBox.RevealPasswordProperty, true);
+        box.AcceptsReturn = true;                           // many lines: no button, as Simple's and Fluent's
+        Dispatcher.UIThread.RunJobs();
+        Assert.False(reveal.IsVisible);
+        Assert.False(box.RevealPassword);
+    }
+
+    // Only the button's coming or going unticks it: an app's RevealPassword stands through the template's loading, and
+    // the box leaving and joining the tree.
+    [AvaloniaFact]
+    public void An_Apps_RevealPassword_Stands_Until_The_Button_Comes_Or_Goes()
+    {
+        var box = Specimen(reveal: true);
+        box.RevealPassword = true;
+        var holder = new Border { Child = box };
+        using var stage = new TextBoxTests.Stage(box: new TextBox());
+        stage.Root.Children.Add(holder);
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(RevealOf(box).IsVisible);
+        Assert.True(box.RevealPassword);
+        Assert.True(RevealOf(box).IsChecked);
+
+        holder.Child = null;
+        Dispatcher.UIThread.RunJobs();
+        holder.Child = box;
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(box.RevealPassword);
     }
 
     // Typing is masked with the phone's circle.

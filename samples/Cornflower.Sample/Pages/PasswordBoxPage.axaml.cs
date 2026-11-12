@@ -22,6 +22,7 @@ public partial class PasswordBoxPage : UserControl
     private void ShowState()
     {
         if (State is null || Secret is null) return;
-        State.Text = (Secret.Text?.Length ?? 0).ToString(CultureInfo.InvariantCulture) + " characters";
+        var length = Secret.Text?.Length ?? 0;
+        State.Text = length.ToString(CultureInfo.InvariantCulture) + (length == 1 ? " character" : " characters");
     }
 }

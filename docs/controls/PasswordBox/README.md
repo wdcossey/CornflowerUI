@@ -29,8 +29,8 @@ line, the reveal button and the phone's pointer-over look.
 - **Masked** with `●`, WinRT's default `PasswordChar`, on one line with no return.
 - **"Show Password"**: with the `revealPasswordButton` class, Wp81's CheckBox below the box, lifted 6.5 into the box's
   row, at the left; ticking it is `RevealPassword`, which shows the password, and setting `RevealPassword` ticks it. It
-  shows whether or not there is a password, as on the phone, but not on a read-only box. A tap on it leaves the box
-  focused. When it shows or hides it is unticked, as the phone's `ButtonStates` untick it, so a password is never left
+  shows whether or not there is a password, as on the phone, but not on a read-only or many-line box. A tap on it
+  leaves a focused box focused (an unfocused one it focuses, where the phone's wouldn't). When it shows or hides it is unticked, as the phone's `ButtonStates` untick it, so a password is never left
   shown with nothing to hide it. Its text is `Wp81PasswordBoxRevealText`, "Show Password", which an app can define for
   its language.
 - **The border with the reveal button** is what the box's height leaves, as on the phone: on the reference app's stage
@@ -67,6 +67,7 @@ None new.
 - **Rounding** (ADR 0003): the box ends one raw pixel short; the CheckBox's square is one raw pixel larger (#31's).
 - **The text's baseline**, and so the circles, 0.95 DIP above the phone's (#36's).
 - **Selawik has no `●`**: the circles come from the platform's fallback font.
+- **A tap on "Show Password" focuses an unfocused box**; the phone's leaves focus where it was.
 - **Unmeasured**: a shown password, the caret, the selection and the keyboard.
 
 ## The checklist

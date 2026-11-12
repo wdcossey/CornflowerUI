@@ -53,7 +53,11 @@ public class PasswordBoxPageTests
         Assert.Equal("0 characters", state.Text);
 
         Assert.True(secret.Focus());
-        scene.Window.KeyTextInput("hunter2");
+        scene.Window.KeyTextInput("h");
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("1 character", state.Text);
+
+        scene.Window.KeyTextInput("unter2");
         Dispatcher.UIThread.RunJobs();
         Assert.Equal("7 characters", state.Text);      // read from the box, never the password
     }
