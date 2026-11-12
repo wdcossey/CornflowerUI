@@ -38,12 +38,19 @@ internal abstract class DeferredPass<TSlots> where TSlots : struct, Enum
     private bool _again;
     private TSlots _dirty;
 
-    protected DeferredPass() => _run = () =>
+    protected DeferredPass()
     {
-        var slots = _deferred;
-        _deferred = default;
-        Run(slots);
-    };
+        // Or reads the slots as an int; a slots enum of another size would throw at the first deferral, not here.
+        if (Unsafe.SizeOf<TSlots>() != sizeof(int))
+            throw new NotSupportedException($"{typeof(TSlots)} is not an enum over int.");
+
+        _run = () =>
+        {
+            var slots = _deferred;
+            _deferred = default;
+            Run(slots);
+        };
+    }
 
     /// <summary>The property the pass is setting or taking back, whose change is its own: set around each.</summary>
     public AvaloniaProperty? Setting;

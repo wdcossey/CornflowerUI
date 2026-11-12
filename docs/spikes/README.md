@@ -125,7 +125,8 @@ its bookkeeping beside the `TextBlock`, a swap to a `ControlTheme` based on a te
 `Padding` over the derived theme's (`TextBlockTests.A_Value_A_Derived_ControlTheme_Sets_Wins_Over_The_Styles` and
 `A_Theme_Setting_MaxHeight_And_BaselineToBaseline_Goes_Cleanly` go red). An attached property of its own, registered
 after the three, had kept that working only by being the value after them. `PhonePasswordKeyboard` defers in the same
-way, through the same code (`DeferredPass`), so these tests hold its deferral too.
+way, through the same code (`DeferredPass`), so these tests hold the deferral it uses; that it hands a change to it,
+rather than acting at once, no test holds (a `TextBox` has values of properties registered later).
 
 ## 7. Where the phone's line can be applied
 

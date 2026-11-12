@@ -27,7 +27,8 @@ namespace Cornflower.Themes.Wp81;
 /// priority: a theme going, a value cleared), the pass runs from the dispatcher, not inside Avalonia's unsetting of a
 /// theme's values (spike 6; no test reaches that trap through this, as a TextBox has values of properties registered
 /// later, but the order is Avalonia's to change). Both share that, and the second pass for a change made in the middle
-/// of one, in <see cref="DeferredPass{TSlots}"/>, whose deferral <c>PhoneTextLine</c>'s tests hold. A derived theme's
+/// of one, in <see cref="DeferredPass{TSlots}"/>: <c>PhoneTextLine</c>'s tests hold its deferral, but not that this
+/// hands a change to it (<see cref="DeferredPass{TSlots}.Handle"/>) rather than acting at once. A derived theme's
 /// setters are in by the time its base's turns this on, so a PIN box's <c>ContentType</c> is seen at once.</para>
 /// <para>The keyboard reads the options when the box takes focus: a <c>PasswordChar</c> set or cleared on a focused box
 /// reaches it at the next focus (a known gap).</para>
