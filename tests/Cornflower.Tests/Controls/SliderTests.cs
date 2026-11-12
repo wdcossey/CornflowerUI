@@ -313,6 +313,25 @@ public class SliderTests
         Assert.Equal(0, HeaderOf(slider).Bounds.Height);
         Assert.Equal(TrackTop - ContainerTop, In(TrackRectOf(slider), slider).Y, 0.001);
         Assert.Equal(OurUnstretchedHeight, slider.Bounds.Height, 0.001);
+
+        // An empty string is one empty line, as an empty TextBlock is on the phone (RadioButton's dump: 24.1276 at 18.14).
+        ControlHeader.SetHeader(slider, "");
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(HeaderHeight, HeaderOf(slider).Bounds.Height, 0.001);
+    }
+
+    // A WinRT header doesn't recognise access keys: an underscore is drawn, and no key is registered.
+    [AvaloniaFact]
+    public void An_Underscore_In_The_Header_Is_Drawn()
+    {
+        var slider = new Slider();
+        ControlHeader.SetHeader(slider, "fan_speed");
+        using var stage = new Stage(slider: slider);
+        var text = HeaderOf(slider).GetVisualDescendants().OfType<TextBlock>().Single();
+
+        Assert.IsNotType<AccessText>(text);
+        Assert.Equal("fan_speed", text.Text);
+        Assert.Equal(21.28, text.LineHeight, 0.01);
     }
 
     // The header's font is HeaderContentPresenterStyle's, not the Slider's: the phone's presenter sets its own.
@@ -341,6 +360,17 @@ public class SliderTests
 
         var made = Part<Border>(HeaderOf(slider), "Made");
         Assert.Equal("SLIDER", ((TextBlock)made.Child!).Text);
+        Assert.True(double.IsNaN(((TextBlock)made.Child!).LineHeight));     // the app's text keeps its own line
+
+        // A string header after a template: the phone's line again; and the template back, the line taken off the
+        // string's text.
+        ControlHeader.SetHeaderTemplate(slider, null);
+        Dispatcher.UIThread.RunJobs();
+        var text = HeaderOf(slider).GetVisualDescendants().OfType<TextBlock>().Single();
+        Assert.Equal(21.28, text.LineHeight, 0.01);
+        HeaderOf(slider).SetValue(PhoneHeaderLine.IsEnabledProperty, false);
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(double.IsNaN(text.LineHeight));
     }
 
     // A tap on the track moves the thumb's middle to the finger (WinUI's Slider::MoveThumbToPoint), on either side of
@@ -558,8 +588,9 @@ public class SliderTests
     }
 
     // The outside tick bars show by TickPlacement, as WinRT's TopLeft, BottomRight and Outside show them: 5 tall, in
-    // SliderTickmarkOutsideBackgroundThemeBrush, the horizontal ones 4.5 past each end of the track, in the rows above
-    // and below it; the vertical ones 1.5 off the track. None, the default, shows none.
+    // SliderTickmarkOutsideBackgroundThemeBrush, the horizontal ones across the track, in the rows above and below it
+    // (not the template's 4.5 past each end: PLAN.md); the vertical ones 1.5 off the track. None, the default, shows
+    // none. They take the Slider's range, frequency, Ticks and direction.
     [AvaloniaTheory]
     [InlineData(TickPlacement.None, false, false)]
     [InlineData(TickPlacement.TopLeft, true, false)]
@@ -584,25 +615,31 @@ public class SliderTests
 
         Assert.Equal(Tick(true), ColourOf(top.Fill));
         Assert.Equal(TickBarHeight, top.Bounds.Height, 0.5);
-        Assert.Equal(-4.5, In(top, slider).X, 0.5);
-        Assert.Equal(OurWidth + 9, top.Bounds.Width, 0.5);
+        Assert.Equal(0, In(top, slider).X, 0.5);
+        Assert.Equal(OurWidth, top.Bounds.Width, 0.5);
         Assert.Equal(ContainerTop + (17.5 - TickBarHeight) / 2, In(top, slider).Y, 0.5);
         Assert.Equal(10, top.TickFrequency);
         Assert.Equal(100, top.Maximum);
         Assert.Equal(ThumbOf(slider).Bounds, top.ReservedSpace);
+        Assert.False(top.IsDirectionReversed);
+        Assert.Null(top.Ticks);
+        slider.IsDirectionReversed = true;
+        slider.Ticks = [5, 15];
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(top.IsDirectionReversed);
+        Assert.Same(slider.Ticks, top.Ticks);
 
         var left = Part<TickBar>(vertical, "LeftTickBar");
         Assert.Equal(VerticalSide - 1.5 - TickBarHeight, In(left, vertical).X, 0.5);
         Assert.Equal(TickBarHeight, left.Bounds.Width, 0.5);
     }
 
-    // The ticks are drawn: TickFrequency 25 draws five, for 0, 25, 50, 75 and 100, in the tick brush. Where: the
-    // template's tick bar runs 4.5 past each end of the track, and WinUI's TickBar (TickBar_Partial.cpp) puts the first
-    // tick half a thumb in from its start and the last half a thumb from its end, so they fall at the track's ends,
-    // 0.25 in at 2.4 here, and the rest evenly between. Avalonia's TickBar does the same with the thumb as its
-    // ReservedSpace. Disabled, the brush is SliderTickMarkOutsideDisabledForegroundThemeBrush, the same colour.
+    // The ticks are drawn: TickFrequency 25 draws five, for 0, 25, 50, 75 and 100, in the tick brush, each where the
+    // thumb's middle stops for that value (Avalonia's TickBar with the thumb as its ReservedSpace). Not measured: no
+    // capture has ticks (PLAN.md). Disabled, the bars take SliderTickMarkOutsideDisabledForegroundThemeBrush, the same
+    // colour as the enabled key, so an app's value for it shows the state's setter.
     [AvaloniaFact]
-    public void The_Ticks_Are_Drawn_From_End_To_End_Of_The_Track()
+    public void The_Ticks_Are_Drawn_Where_The_Thumb_Stops()
     {
         var slider = Specimen();
         slider.TickPlacement = TickPlacement.TopLeft;
@@ -614,17 +651,22 @@ public class SliderTests
 
         var inked = Enumerable.Range(0, 1080).Where(x => Frames.PixelAt(frame, x, y) != Page(true)).ToList();
         Assert.Equal(5, inked.Where((x, i) => i == 0 || inked[i - 1] != x - 1).Count());
-        var first = -4.5 + ThumbWidth / 2;
-        var span = OurWidth + 9 - ThumbWidth;
-        foreach (var step in new[] { 0, 1, 2, 3, 4 })
+        foreach (var value in new[] { 0.0, 25, 50, 75, 100 })
         {
-            var raw = stage.At(first + step * span / 4, 0).X * 2.4;
+            slider.Value = value;
+            Dispatcher.UIThread.RunJobs();
+            var thumb = ThumbOf(slider);
+            var raw = stage.At(In(thumb, slider).X + thumb.Bounds.Width / 2, 0).X * 2.4;
             Assert.Contains(inked, x => Math.Abs(x + 0.5 - raw) <= 1.5);
         }
         // A tick is 1 wide, 2.4 raw pixels: its whole pixels are the brush, half white, on the black page.
         Assert.Contains(inked, x => Near(Color.FromRgb(0x80, 0x80, 0x80), Frames.PixelAt(frame, x, y)));
 
+        stage.Window.Resources["SliderTickMarkOutsideDisabledForegroundThemeBrush"] = Brushes.Red;
         slider.IsEnabled = false;
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(Colors.Red, ColourOf(bar.Fill));
+        slider.IsEnabled = true;
         Dispatcher.UIThread.RunJobs();
         Assert.Equal(Tick(true), ColourOf(bar.Fill));
     }

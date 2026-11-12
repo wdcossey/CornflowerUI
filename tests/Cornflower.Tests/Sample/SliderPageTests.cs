@@ -59,5 +59,9 @@ public class SliderPageTests
         volume.Value = 72.4;
         Dispatcher.UIThread.RunJobs();
         Assert.Equal("72", state.Text);
+
+        volume.Value = 72.5;                       // a half up, not to the even number
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("73", state.Text);
     }
 }

@@ -17,12 +17,12 @@ public partial class SliderPage : UserControl
     private void OnValueChanged(object? sender, RangeBaseValueChangedEventArgs e) => ShowState();
 
     /// <summary>
-    /// The first Slider's value, read from it, to the nearest whole number. The XAML sets its value during
+    /// The first Slider's value, read from it, to the nearest whole number, a half up. The XAML sets its value during
     /// <c>InitializeComponent</c>, before the fields are set, so it waits for the call after it.
     /// </summary>
     private void ShowState()
     {
         if (State is null || Volume is null) return;
-        State.Text = Math.Round(Volume.Value).ToString(CultureInfo.InvariantCulture);
+        State.Text = Math.Round(Volume.Value, MidpointRounding.AwayFromZero).ToString(CultureInfo.InvariantCulture);
     }
 }

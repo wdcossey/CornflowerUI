@@ -14,7 +14,8 @@
     does instead:
     - HeaderContentPresenter shows cf:ControlHeader.Header and HeaderTemplate (WinRT's Header and HeaderTemplate,
       which Avalonia's Slider lacks), in the phone's HeaderContentPresenterStyle, with the phone's 1.33 em line
-      (PhoneContentLine). With no header it is empty and takes no height.
+      (PhoneHeaderLine). It doesn't recognise access keys, as WinRT's doesn't. With no Header it shows nothing and
+      takes no height; an empty string is one empty line, as an empty TextBlock is on the phone.
     - SliderContainer, transparent, takes the hits across the whole area below the header, as the phone's does. Here
       PART_Track fills it, so a press anywhere in it lands on the Track's parts: Avalonia's Slider moves the thumb's
       middle to a press on either RepeatButton and follows the finger from there.
@@ -31,6 +32,11 @@
       so does this one.
     The vertical template is the same turned: the phone's columns 13.5, the track's 9 and 13.5, the decrease rect
     below the thumb, the 9 × 9 thumb, LeftTickBar and RightTickBar.
+
+    The tick bars are Avalonia's TickBar, with the thumb as their ReservedSpace, so a tick is where the thumb's middle
+    stops for its value. The phone's horizontal bars run 4.5 past each end of the track (Margin -4.5,0), for WinRT's
+    own TickBar, whose placing no capture shows; with Avalonia's that margin would put the end ticks 4.5 off the
+    thumb's middle, so it is left out (PLAN.md).
 
     The track's RepeatButtons and the Thumb set themes of their own (below), so Wp81's RepeatButton theme (#30), which
     is keyed by type, and Simple's Thumb theme never reach them.
@@ -90,11 +96,19 @@
     </Setter>
   </ControlTheme>
 
-  <!-- The phone's SliderThumbStyle, for the horizontal thumb: a 9.5 × 19 Border, 13 down. -->
-  <ControlTheme x:Key="Wp81SliderHorizontalThumbTheme" TargetType="Thumb">
+  <!-- The phone's SliderThumbStyle: its values, and the Disabled state's. Each orientation's thumb adds its template. -->
+  <ControlTheme x:Key="Wp81SliderThumbTheme" TargetType="Thumb">
     <Setter Property="BorderThickness" Value="0.8" />
     <Setter Property="BorderBrush" Value="{DynamicResource SliderThumbBorderThemeBrush}" />
     <Setter Property="Background" Value="{DynamicResource SliderThumbBackgroundThemeBrush}" />
+    <Style Selector="^:disabled">
+      <Setter Property="Background" Value="{DynamicResource SliderThumbDisabledBackgroundThemeBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource SliderThumbDisabledBorderThemeBrush}" />
+    </Style>
+  </ControlTheme>
+
+  <!-- The horizontal thumb: a 9.5 × 19 Border, 13 down. -->
+  <ControlTheme x:Key="Wp81SliderHorizontalThumbTheme" TargetType="Thumb" BasedOn="{StaticResource Wp81SliderThumbTheme}">
     <Setter Property="Template">
       <ControlTemplate>
         <Panel Background="Transparent">
@@ -108,17 +122,10 @@
         </Panel>
       </ControlTemplate>
     </Setter>
-    <Style Selector="^:disabled">
-      <Setter Property="Background" Value="{DynamicResource SliderThumbDisabledBackgroundThemeBrush}" />
-      <Setter Property="BorderBrush" Value="{DynamicResource SliderThumbDisabledBorderThemeBrush}" />
-    </Style>
   </ControlTheme>
 
-  <!-- The phone's SliderThumbStyle, for the vertical thumb: a 9 × 9 Border in the track's column. -->
-  <ControlTheme x:Key="Wp81SliderVerticalThumbTheme" TargetType="Thumb">
-    <Setter Property="BorderThickness" Value="0.8" />
-    <Setter Property="BorderBrush" Value="{DynamicResource SliderThumbBorderThemeBrush}" />
-    <Setter Property="Background" Value="{DynamicResource SliderThumbBackgroundThemeBrush}" />
+  <!-- The vertical thumb: a 9 × 9 Border in the track's column. -->
+  <ControlTheme x:Key="Wp81SliderVerticalThumbTheme" TargetType="Thumb" BasedOn="{StaticResource Wp81SliderThumbTheme}">
     <Setter Property="Template">
       <ControlTemplate>
         <Panel Background="Transparent">
@@ -132,10 +139,6 @@
         </Panel>
       </ControlTemplate>
     </Setter>
-    <Style Selector="^:disabled">
-      <Setter Property="Background" Value="{DynamicResource SliderThumbDisabledBackgroundThemeBrush}" />
-      <Setter Property="BorderBrush" Value="{DynamicResource SliderThumbDisabledBorderThemeBrush}" />
-    </Style>
   </ControlTheme>
 
   <ControlTheme x:Key="{x:Type Slider}" TargetType="Slider">
@@ -151,15 +154,7 @@
       <Setter Property="Template">
         <ControlTemplate>
           <Grid x:Name="Root" Margin="{TemplateBinding Padding}" RowDefinitions="Auto,*">
-            <ContentPresenter x:Name="HeaderContentPresenter"
-                              Content="{TemplateBinding (cf:ControlHeader.Header)}"
-                              ContentTemplate="{TemplateBinding (cf:ControlHeader.HeaderTemplate)}"
-                              FontFamily="{DynamicResource PhoneFontFamilyNormal}"
-                              FontSize="{DynamicResource TextStyleMediumFontSize}"
-                              FontWeight="Normal"
-                              Foreground="{DynamicResource PhoneMidBrush}"
-                              RecognizesAccessKey="True"
-                              wp81:PhoneContentLine.IsEnabled="True" />
+            <ContentPresenter x:Name="HeaderContentPresenter" />
             <Grid x:Name="SliderContainer" Grid.Row="1" Background="Transparent">
               <Grid x:Name="HorizontalTemplate" RowDefinitions="17.5,Auto,30.5,*">
                 <Rectangle x:Name="HorizontalTrackRect"
@@ -172,7 +167,6 @@
                          Grid.Row="0"
                          IsVisible="False"
                          Height="{DynamicResource SliderOutsideTickBarThemeHeight}"
-                         Margin="-4.5,0"
                          Placement="Top"
                          Orientation="Horizontal"
                          Fill="{DynamicResource SliderTickmarkOutsideBackgroundThemeBrush}"
@@ -181,7 +175,6 @@
                          Grid.Row="2"
                          IsVisible="False"
                          Height="{DynamicResource SliderOutsideTickBarThemeHeight}"
-                         Margin="-4.5,0"
                          Placement="Bottom"
                          Orientation="Horizontal"
                          Fill="{DynamicResource SliderTickmarkOutsideBackgroundThemeBrush}"
@@ -211,15 +204,7 @@
       <Setter Property="Template">
         <ControlTemplate>
           <Grid x:Name="Root" Margin="{TemplateBinding Padding}" RowDefinitions="Auto,*">
-            <ContentPresenter x:Name="HeaderContentPresenter"
-                              Content="{TemplateBinding (cf:ControlHeader.Header)}"
-                              ContentTemplate="{TemplateBinding (cf:ControlHeader.HeaderTemplate)}"
-                              FontFamily="{DynamicResource PhoneFontFamilyNormal}"
-                              FontSize="{DynamicResource TextStyleMediumFontSize}"
-                              FontWeight="Normal"
-                              Foreground="{DynamicResource PhoneMidBrush}"
-                              RecognizesAccessKey="True"
-                              wp81:PhoneContentLine.IsEnabled="True" />
+            <ContentPresenter x:Name="HeaderContentPresenter" />
             <Grid x:Name="SliderContainer" Grid.Row="1" Background="Transparent">
               <Grid x:Name="VerticalTemplate" ColumnDefinitions="13.5,Auto,13.5,*">
                 <Rectangle x:Name="VerticalTrackRect"
@@ -269,6 +254,17 @@
           </Grid>
         </ControlTemplate>
       </Setter>
+    </Style>
+
+    <!-- The header, in either template: HeaderContentPresenterStyle's four values, and the phone's line. -->
+    <Style Selector="^ /template/ ContentPresenter#HeaderContentPresenter">
+      <Setter Property="Content" Value="{TemplateBinding (cf:ControlHeader.Header)}" />
+      <Setter Property="ContentTemplate" Value="{TemplateBinding (cf:ControlHeader.HeaderTemplate)}" />
+      <Setter Property="FontFamily" Value="{DynamicResource PhoneFontFamilyNormal}" />
+      <Setter Property="FontSize" Value="{DynamicResource TextStyleMediumFontSize}" />
+      <Setter Property="FontWeight" Value="Normal" />
+      <Setter Property="Foreground" Value="{DynamicResource PhoneMidBrush}" />
+      <Setter Property="wp81:PhoneHeaderLine.IsEnabled" Value="True" />
     </Style>
 
     <Style Selector="^ /template/ Track#PART_Track">

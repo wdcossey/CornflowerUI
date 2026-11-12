@@ -93,11 +93,11 @@ phone's has both and collapses one. Horizontal:
 Grid "Root"                           Margin: TemplateBinding Padding; rows Auto, *
   ContentPresenter "HeaderContentPresenter"
                                       cf:ControlHeader.Header and HeaderTemplate; HeaderContentPresenterStyle's four
-                                      values; the phone's line (PhoneContentLine)
+                                      values; the phone's line (PhoneHeaderLine); no access keys
   Grid "SliderContainer"              Row 1; Background Transparent
     Grid "HorizontalTemplate"         rows 17.5, Auto, 30.5, and * for the rest
       Rectangle "HorizontalTrackRect"   Row 1; Height SliderTrackThemeHeight; as the phone's
-      TickBar "TopTickBar", "BottomTickBar"   as the phone's; shown by TickPlacement
+      TickBar "TopTickBar", "BottomTickBar"   as the phone's, but across the track only; shown by TickPlacement
       Track "PART_Track"              RowSpan 4: the whole container
         RepeatButton "PART_DecreaseButton"   Theme Wp81SliderHorizontalDecreaseTheme: transparent, with
                                       Rectangle "HorizontalDecreaseRect" 17.5 down, the track's height, in its Foreground
@@ -164,7 +164,8 @@ Measured with the theme against the captures:
 | The decrease rect | sized by WinRT's code | none; the `Track` sizes its decrease button | 1, the rect drawn by the decrease button |
 | The hit area | the whole container below the header | the two track buttons and the thumb | 1, the `Track` and its parts fill the container |
 | `Header`, `HeaderTemplate` | on the Slider | none | 2, `cf:ControlHeader.Header` and `HeaderTemplate`, attached (decided below) |
-| The header's line | Segoe WP's 1.33 em | Selawik's 1.2 em | 2, `PhoneContentLine`, internal to the theme |
+| The header's line | Segoe WP's 1.33 em | Selawik's 1.2 em | 2, `PhoneHeaderLine` (new) and `PhoneTextLine`, internal to the theme |
+| The header's access keys | none: `fan_speed` draws its underscore | a presenter that recognises them takes it as a mark | 1, the header's presenter doesn't recognise them |
 | A tap on the track | the thumb's middle to the finger, then follows it | the same | none: Avalonia's, tested under the theme |
 | A drag from the thumb | the thumb moves by the finger's travel | the thumb's middle goes to the finger on the first move | 6, recorded: at most half the thumb, 4.79 across, 4.5 up and down |
 | The value from input | to the nearest `StepFrequency`, 1 | wherever the finger is, unless `IsSnapToTickEnabled` | 6, recorded: `StepFrequency` missing (decided below) |
@@ -222,8 +223,11 @@ Each has a test in `tests/Cornflower.Tests/Controls/SliderTests.cs` unless named
    `Disabled_Sets_The_Track_And_Border_Over_An_Apps_Brushes`, `Vertical_Disabled_Dims_The_Decrease_Rect_And_The_Thumb`.
 5. **No other state**: the pointer over it, a press on the thumb and keyboard focus change no pixel.
    `The_Pointer_Over_It_And_A_Press_Change_Nothing`, `Keyboard_Focus_Draws_Nothing`.
-6. **The header**: shown in the phone's line; empty, it takes no height; its template is used.
-   `The_Header_Is_Shown_Above_The_Track`, `With_No_Header_The_Track_Is_At_The_Top`, `The_HeaderTemplate_Is_Used`.
+6. **The header**: shown in the phone's line, its own font; none, it takes no height, and an empty string one empty
+   line (as an empty `TextBlock` is on the phone: RadioButton's dump); its template is used, and what the template
+   makes keeps its own line; an underscore is drawn. `The_Header_Is_Shown_Above_The_Track`,
+   `The_Headers_Font_Is_Its_Own`, `With_No_Header_The_Track_Is_At_The_Top`, `The_HeaderTemplate_Is_Used`,
+   `An_Underscore_In_The_Header_Is_Drawn`.
 7. **A tap moves the thumb's middle to the finger**, either side of the thumb and at the ends; **anywhere below the
    header**, under the track and below its rows; not on the header.
    `A_Tap_On_The_Track_Moves_The_Thumbs_Middle_To_The_Finger`, `A_Tap_Anywhere_Below_The_Header_Moves_The_Thumb`.
@@ -236,8 +240,8 @@ Each has a test in `tests/Cornflower.Tests/Controls/SliderTests.cs` unless named
 11. **Vertical**: the template's columns, thumb and decrease rect, from the bottom; a tap in the side column moves it.
     `Vertical_It_Is_The_Phones_Vertical_Template`.
 12. **Ticks**: each `TickPlacement` shows the phone's bars, at their sizes and places, bound to the Slider's range and
-    frequency; they are drawn from end to end of the track. `TickPlacement_Shows_The_Phones_Tick_Bars`,
-    `The_Ticks_Are_Drawn_From_End_To_End_Of_The_Track`.
+    frequency, `Ticks` and direction; a tick is drawn where the thumb's middle stops for its value; disabled, the
+    state's key. `TickPlacement_Shows_The_Phones_Tick_Bars`, `The_Ticks_Are_Drawn_Where_The_Thumb_Stops`.
 13. **The parts keep the Slider's themes**, with Wp81's `RepeatButton` theme and an app's implicit ones present.
     `The_Tracks_Parts_Keep_The_Sliders_Themes`.
 14. **The colours follow the variant.** `The_Colours_Follow_A_Change_Of_Variant`.
@@ -254,10 +258,11 @@ Each has a test in `tests/Cornflower.Tests/Controls/SliderTests.cs` unless named
   without one can't be written as an 8.1 page writes it. Named for WinRT's two properties so a port is a search and
   replace (`Header=` → `cf:ControlHeader.Header=`). To reverse: rename the class (no other control uses it yet), or
   delete `ControlHeader.cs` and the template's `HeaderContentPresenter` and record `Header` as missing.
-- **The header's presenter recognises access keys**, so `PhoneContentLine` can give its text the phone's line (it
-  acts on the `AccessText` Avalonia's presenter makes). A cost the phone doesn't have: an underscore in a string header
-  marks an access key and isn't drawn. To reverse: a `PhoneContentLine` that also acts on a plain `TextBlock`, a
-  change to a shared file.
+- **The header's line is given by `PhoneHeaderLine`**, new and internal to the theme (`src/Cornflower.Themes.Wp81/
+  PhoneHeaderLine.cs`): `PhoneContentLine` for a presenter that doesn't recognise access keys, as a WinRT header
+  doesn't (the first review's finding: with access keys, `fan_speed` lost its underscore). It is a near copy of
+  `PhoneContentLine`, which is shared and so not changed here; the two could be one (proposed). To reverse: delete it
+  and set `RecognizesAccessKey` and `PhoneContentLine` on the header, taking an underscore as a mark.
 - **`StepFrequency` isn't emulated.** On the phone a value from a tap or a drag goes to the nearest whole number;
   here it is wherever the finger is (30.47, say). The theme could set `IsSnapToTickEnabled` and `TickFrequency` 1,
   but then an app's `TickFrequency="10"` for its ticks would snap the value to tens, which the phone's doesn't
@@ -267,10 +272,14 @@ Each has a test in `tests/Cornflower.Tests/Controls/SliderTests.cs` unless named
 - **A drag from the thumb keeps Avalonia's way**: the thumb's middle goes to the finger on the first move, at most
   half the thumb (4.79) from where WinRT's would be, then follows. Changing it needs a `Slider` subclass or a part
   class (rungs 3 and 4) for a few pixels. To reverse: a part class `Thumb` whose drag moves by the travel.
-- **The tick bars are the template's, drawn by Avalonia's `TickBar`**, with the thumb as its `ReservedSpace`: with
-  the template's −4.5 margins that puts the first and last ticks at the track's ends, where WinUI's `TickBar` puts
-  them (`TickBar_Partial.cpp`: half a thumb in from the bar's ends). No capture shows ticks, so their look (Avalonia's
-  are 1 wide and three quarters tall but at the ends, WinUI's one raw pixel and full height) is unmeasured.
+- **The tick bars are the template's, drawn by Avalonia's `TickBar`**, with the thumb as its `ReservedSpace`, so a
+  tick is where the thumb's middle stops for its value, **but without the template's −4.5 margins**. The phone's bars
+  run 4.5 past each end of the track for WinRT's own `TickBar`; with Avalonia's (and with WinUI 3's
+  `TickBar_Partial.cpp`, which puts the ends half a thumb in from the bar's ends) that margin would put the end ticks
+  at the track's ends, 4.5 off where the thumb stops (the first review's finding). How 8.1's `TickBar` places them no
+  capture shows, so this takes the placing that lines up with the thumb. Their look (Avalonia's 1 wide, the ends full
+  height and the rest three quarters; WinUI's one raw pixel and full height) is unmeasured. To reverse: the two
+  `Margin="-4.5,0"`.
   `Inline`, WinRT's default placement, has no Avalonia member and is recorded as missing: with no `TickFrequency` it
   draws nothing on the phone, so the default looks the same.
 - **The hit area is the whole container**, through a `Track` that fills it and a thumb as tall as it (above). No
@@ -281,7 +290,7 @@ Each has a test in `tests/Cornflower.Tests/Controls/SliderTests.cs` unless named
 
 ## Dependencies and captures
 
-- Tokens (#19), `PhoneContentLine` (#27) and `PhoneTextLine` (#26), the desktop sample (#9), Wp81's `RepeatButton`
+- Tokens (#19), `PhoneTextLine` (#26), the desktop sample (#9), Wp81's `RepeatButton`
   theme and `HoleParts` by style key (#30, PR #93): merged. All 23 resources the style reads are in `Tokens/`, but
   `HeaderContentPresenterStyle`, a `Style` whose four values the template sets on the presenter.
 - Captures used: `base` and `CommonStates.Disabled`, dark and light, run `20261108-1443-dev11`. `CommonStates.Normal`
@@ -376,7 +385,7 @@ Avalonia's control looks for: `PART_DecreaseButton`, `PART_IncreaseButton`, `PAR
 | [x] | `HorizontalTemplate` | `Grid` | none | The `:horizontal` template's `Grid`, the phone's rows and a star row |
 | [x] | `HorizontalTrackRect` | `Rectangle` | none | As the phone's, `SliderTrackThemeHeight` tall |
 | [x] | `HorizontalDecreaseRect` | `Rectangle` | none | In `PART_DecreaseButton`'s template, the button's width, 17.5 down |
-| [x] | `TopTickBar` | `TickBar` | none | Avalonia's `TickBar`, as the phone's; shown by `TopLeft` and `Outside` |
+| [x] | `TopTickBar` | `TickBar` | none | Avalonia's `TickBar`, as the phone's but across the track only (no −4.5 margins: decided above); shown by `TopLeft` and `Outside` |
 | [-] | `HorizontalInlineTickBar` | `TickBar` | none | Left out: no `Inline` in Avalonia's `TickPlacement`; the track rect's height holds the row |
 | [x] | `BottomTickBar` | `TickBar` | none | As `TopTickBar`; shown by `BottomRight` and `Outside` |
 | [x] | `HorizontalThumb` | `Thumb` | none | The `Track`'s `Thumb`, 9.5 wide, the container's height, drawing the phone's 9.5 × 19 border 13 down |

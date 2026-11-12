@@ -37,8 +37,8 @@ down, and all of it takes the finger. Stretched taller, as in the reference app,
   from the bottom, a 9 × 9 thumb.
 - **Reversed** (`IsDirectionReversed`): the value's part from the other end.
 - **Ticks** (`TickPlacement` `TopLeft`, `BottomRight` or `Outside`, with `TickFrequency` or `Ticks`): the phone's
-  5-tall bars, above and below (left and right), in `SliderTickmarkOutsideBackgroundThemeBrush`, from end to end of
-  the track.
+  5-tall bars, above and below (left and right), in `SliderTickmarkOutsideBackgroundThemeBrush`, each tick where the
+  thumb's middle stops for its value.
 - **Keys**: Avalonia's: the arrows by `SmallChange`, Page Up and Down by `LargeChange`, Home and End.
 - **Dark and light**: every brush follows the theme variant; the value's part follows the app's accent
   (`SystemColorControlAccentColor`), or the Slider's own `Foreground`; the track its `Background`.
@@ -68,7 +68,7 @@ vertical names likewise. A style that reaches into the template uses these names
 
 Rung 1 (theme) for the setters, the states, both templates, the hit area across the container and the cleared focus
 adorner; rung 2 for `Header` and `HeaderTemplate` (`ControlHeader`, attached) and the header's line
-(`PhoneContentLine`, internal to the theme); rung 6 (recorded) for a drag from the thumb, `StepFrequency` and the
+(`PhoneHeaderLine`, internal to the theme); rung 6 (recorded) for a drag from the thumb, `StepFrequency` and the
 ticks' look. No type is substituted.
 
 ## Extensions
@@ -85,8 +85,8 @@ theme shows them.
 - **`StepFrequency`**, `SnapsTo` and `IntermediateValue` are missing: a tap gives any value, the phone's the nearest
   whole number. `IsSnapToTickEnabled="True" TickFrequency="1"` gives the phone's steps.
 - **`Inline` ticks** are missing (no Avalonia member); with no `TickFrequency` the phone draws none, so the default
-  looks the same. **The ticks' look** is Avalonia's `TickBar`'s, unmeasured.
-- **An underscore in a string header** is an access key mark, not drawn.
+  looks the same. **The ticks** are Avalonia's `TickBar`'s, each where the thumb stops,
+  without the template's −4.5 margins: unmeasured.
 - **The text is Selawik**, its baseline 0.025 em above the phone's (ADR 0003).
 - **Unmeasured**: the vertical Slider, ticks, no header, and all input are from the template and WinUI's source.
 - **Owed**: the device run on the Pixel 8, those captures, and a probe of a tap and a drag.
