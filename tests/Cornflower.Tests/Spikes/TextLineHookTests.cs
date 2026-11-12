@@ -3,14 +3,15 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Templates;
 using Avalonia.Data;
+using Avalonia.Data.Converters;
 using Avalonia.Diagnostics;
 using Avalonia.Headless.XUnit;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.TextFormatting;
 using Avalonia.Styling;
-using Avalonia.Threading;
 
 namespace Cornflower.Tests.Spikes;
 
@@ -20,11 +21,13 @@ namespace Cornflower.Tests.Spikes;
 /// written as <c>Padding</c>, <c>LineHeight</c> and <c>LetterSpacing</c> from property-changed handlers (#81)?
 /// </summary>
 /// <remarks>
-/// What Avalonia 12.1.4 does: not from outside the <c>TextBlock</c>. Its own measure, arrange and render read the
-/// three properties, and only a subclass can change what they read; the <c>AccessText</c> a <c>ContentPresenter</c>
-/// makes of data is always Avalonia's own type; the only layout events are raised after the pass; a coercion function
-/// can't tell a value set to the default from no value; and a binding of one's own can't be written, while one
-/// observable made into a binding gives every target the same value. docs/spikes, 7, has what each means for the options.
+/// What Avalonia 12.1.4 does, on plain Avalonia (no theme): only a subclass can override what a <c>TextBlock</c>'s layout
+/// reads; a presenter makes its text from the tree's data templates first, its own before an ancestor's; the layout events
+/// come after a pass, though a parent's measure can set a child's values in the same pass; a coercion sees the priority
+/// before the value comes in, and every priority reset in a reevaluation, while a later re-coercion sees the real one;
+/// a coerced default stays in the store; and the only per-target bindings are Avalonia's own. docs/spikes, 7, has what
+/// each means for the options. The coercion probes are on properties of their own, so <c>TextBlock</c>'s metadata in
+/// the test process isn't changed.
 /// </remarks>
 [Collection(SpikeCollection.Name)]
 public class TextLineHookTests
@@ -35,12 +38,11 @@ public class TextLineHookTests
 
     // ── A subclass (options 1 and 3) ─────────────────────────────────────────────────────────
 
-    // TextBlock reads Padding in MeasureOverride, ArrangeOverride and RenderCore, and LineHeight and LetterSpacing in
-    // CreateTextLayout. Another assembly can override the first two, CreateTextLayout and RenderTextLayout, but not
-    // RenderCore (private protected) or Render (sealed); and TextLayout's height and drawing aren't virtual, so a
-    // layout can't carry the first baseline's offset itself.
+    // Another assembly can override MeasureOverride, ArrangeOverride, CreateTextLayout and RenderTextLayout, but not
+    // RenderCore (private protected) or Render (sealed); and TextLayout's height and drawing aren't virtual, so a layout
+    // can't carry the first baseline's offset itself.
     [AvaloniaFact]
-    public void Only_A_Subclass_Reaches_What_A_TextBlocks_Layout_Reads()
+    public void Only_A_Subclass_Can_Override_What_A_TextBlocks_Layout_Reads()
     {
         foreach (var name in new[] { "CreateTextLayout", "MeasureOverride", "ArrangeOverride", "RenderTextLayout" })
         {
@@ -61,8 +63,7 @@ public class TextLineHookTests
     [AvaloniaFact]
     public void A_Subclass_Building_Its_Own_Layout_Has_No_Way_To_The_Run_Cache_Or_The_Inlines_Test()
     {
-        var cache = typeof(TextBlock).GetField("_textRunCache", Instance)!;
-        Assert.True(cache.IsPrivate);
+        Assert.True(typeof(TextBlock).GetField("_textRunCache", Instance)!.IsPrivate);
         Assert.True(typeof(TextBlock).GetProperty("HasComplexContent", Instance)!.GetMethod!.IsAssembly);
         Assert.True(Method(typeof(TextBlock), "EnsureTextRuns").IsFamilyAndAssembly);
     }
@@ -85,44 +86,64 @@ public class TextLineHookTests
         }
     }
 
-    // What a subclass applies in its layout is drawn, but the properties don't show it, and they are what the type
-    // ramp's tests and an app read: LetterSpacing is still 0.
+    // What a subclass puts in its layout is what it draws (RenderTextLayout draws TextLayout): ten characters are
+    // 10 × 2 DIP wider, with no property set.
     [AvaloniaFact]
-    public void A_Subclasss_Own_Spacing_Is_Drawn_But_LetterSpacing_Doesnt_Show_It()
+    public void A_Subclasss_Own_Spacing_Is_In_The_Layout_It_Draws()
     {
         var plain = new TextBlock { Text = "HHHHHHHHHH" };
         var spaced = new SpacedTextBlock { Text = "HHHHHHHHHH" };
-        using var scene = new Scene(new StackPanel { Children = { plain, spaced } });
+        using var window = new SpikeWindow(new StackPanel { Children = { plain, spaced } });
 
-        Assert.Equal(10 * SpacedTextBlock.Spacing, spaced.DesiredSize.Width - plain.DesiredSize.Width, 3);
-        Assert.Equal(0, spaced.LetterSpacing);
+        Assert.Equal(10 * SpacedTextBlock.Spacing,
+            spaced.TextLayout.WidthIncludingTrailingWhitespace - plain.TextLayout.WidthIncludingTrailingWhitespace, 3);
     }
 
-    // The text a presenter makes of data is Avalonia's own AccessText: CreateChild is private, so neither a TextBlock
-    // subclass nor a presenter subclass chooses it. PhoneContentLine's text can't be a subclass.
-    [AvaloniaFact]
-    public void A_Presenter_Makes_Avalonias_Own_AccessText()
-    {
-        var presenter = new ContentPresenter { RecognizesAccessKey = true, Content = "_Text" };
-        using var scene = new Scene(presenter);
+    /// <summary>The text a theme's own data template would make.</summary>
+    private sealed class ThemedText : AccessText;
 
-        Assert.Equal(typeof(AccessText), presenter.Child!.GetType());
-        var create = typeof(ContentPresenter).GetMethods(Instance).Single(m => m.Name == "CreateChild");
-        Assert.True(create.IsPrivate);
+    private static Control TextOf(object content, bool accessKeys, Action<ContentPresenter, Border>? templates = null)
+    {
+        var presenter = new ContentPresenter { RecognizesAccessKey = accessKeys };
+        var host = new Border { Child = presenter };
+        templates?.Invoke(presenter, host);
+        using var window = new SpikeWindow(host);
+        presenter.Content = content;
+        Spike.Settle();
+        return presenter.Child!;
+    }
+
+    // A presenter makes its text from the tree's data templates first, its own before an ancestor's, and only with none
+    // falls back to Avalonia's: an AccessText when it recognises access keys, a TextBlock when not. So a theme's own
+    // template on its presenter would make the theme's own text, but would beat an app's template for the same data.
+    [AvaloniaFact]
+    public void A_Presenter_Makes_Its_Text_From_The_Trees_Data_Templates_First()
+    {
+        Assert.Equal(typeof(AccessText), TextOf("_Text", accessKeys: true).GetType());
+        Assert.Equal(typeof(TextBlock), TextOf("Text", accessKeys: false).GetType());
+
+        var themed = new FuncDataTemplate<string>((text, _) => new ThemedText { Text = text });
+        var apps = new FuncDataTemplate<string>((text, _) => new TextBlock { Text = text, Tag = "app" });
+        Assert.Equal(typeof(ThemedText), TextOf("_Text", true, (_, host) => host.DataTemplates.Add(themed)).GetType());
+        Assert.Equal(typeof(ThemedText), TextOf("_Text", true, (presenter, host) =>
+        {
+            presenter.DataTemplates.Add(themed);
+            host.DataTemplates.Add(apps);
+        }).GetType());
     }
 
     // ── A layout hook (option 2) ─────────────────────────────────────────────────────────────
 
-    // The layout events Layoutable declares are raised after a pass, so there is nothing to hook before a TextBlock is
-    // measured, and a value set in LayoutUpdated lays it out again.
+    // The layout events Layoutable declares are raised after a pass, so an attached behaviour has nothing to hook before
+    // a TextBlock is measured, and a value set in LayoutUpdated lays it out again.
     [AvaloniaFact]
-    public void The_Only_Layout_Events_Come_After_The_Pass_And_A_Value_Set_There_Lays_Out_Again()
+    public void The_Layout_Events_Come_After_The_Pass_And_A_Value_Set_There_Lays_Out_Again()
     {
         Assert.Equal(["EffectiveViewportChanged", "LayoutUpdated"],
             typeof(Layoutable).GetEvents(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(e => e.Name).Order());
 
         var block = new TextBlock { Text = "x" };
-        using var scene = new Scene(block);
+        using var window = new SpikeWindow(block);
         var passes = 0;
         var heights = new List<double>();
         block.LayoutUpdated += (_, _) =>
@@ -134,47 +155,151 @@ public class TextLineHookTests
         };
 
         block.FontSize = 20;
-        Dispatcher.UIThread.RunJobs();
+        Spike.Settle();
 
         Assert.Equal(2, passes);
         Assert.Equal(10, heights[1] - heights[0], 1);
     }
 
+    /// <summary>A part around a template's text that sets its line before measuring it (option 2b).</summary>
+    private sealed class LineDecorator : Decorator
+    {
+        protected override Size MeasureOverride(Size availableSize)
+        {
+            if (Child is TextBlock text && text.Padding != new Thickness(0, 10, 0, 0))
+                text.SetValue(TextBlock.PaddingProperty, new Thickness(0, 10, 0, 0), BindingPriority.Style);
+            return base.MeasureOverride(availableSize);
+        }
+    }
+
+    // A parent's own measure can set its child's values in the same pass: a part the theme's template places around its
+    // text could apply the line in layout. It is still a value written to the child, and only text inside a template of
+    // the theme's has such a parent.
+    [AvaloniaFact]
+    public void A_Parents_Measure_Can_Set_Its_Childs_Values_In_The_Same_Pass()
+    {
+        var plain = new TextBlock { Text = "x" };
+        var lined = new TextBlock { Text = "x" };
+        using var window = new SpikeWindow(new StackPanel { Children = { plain, new LineDecorator { Child = lined } } });
+        var passes = 0;
+        lined.LayoutUpdated += (_, _) => passes++;
+
+        lined.FontSize = plain.FontSize = 20;
+        Spike.Settle();
+
+        Assert.Equal(1, passes);
+        Assert.Equal(10, lined.DesiredSize.Height - plain.DesiredSize.Height, 1);
+    }
+
     // ── Coercion (option 4) ──────────────────────────────────────────────────────────────────
 
-    /// <summary>A property with a coercion function that gives a value of its own where it finds none set.</summary>
+    /// <summary>
+    /// Properties with a coercion function that, while <see cref="Applies"/>, gives a value of its own where it finds none
+    /// set, as <c>PhoneTextLine</c> would through <c>TextBlock</c>'s metadata.
+    /// </summary>
     private sealed class Coerced : Border
     {
         public const double Own = 5;
 
         public static readonly StyledProperty<double> SpacingProperty =
-            AvaloniaProperty.Register<Coerced, double>("Spacing", coerce: Coerce);
+            AvaloniaProperty.Register<Coerced, double>("Spacing", coerce: CoerceSpacing);
+
+        public static readonly StyledProperty<double> LineProperty =
+            AvaloniaProperty.Register<Coerced, double>("Line", inherits: true, coerce: CoerceLine);
+
+        public bool Applies { get; set; } = true;
 
         public List<(double Value, BindingPriority Priority)> Seen { get; } = [];
 
-        private static double Coerce(AvaloniaObject target, double value)
+        private static double CoerceSpacing(AvaloniaObject target, double value)
         {
             var probe = (Coerced)target;
             var priority = probe.GetDiagnostic(SpacingProperty).Priority;
             probe.Seen.Add((value, priority));
-            return priority is BindingPriority.Unset or BindingPriority.Inherited ? Own : value;
+            return probe.Applies && priority is BindingPriority.Unset or BindingPriority.Inherited ? Own : value;
+        }
+
+        private static double CoerceLine(AvaloniaObject target, double value)
+        {
+            var probe = (Coerced)target;
+            return probe.Applies && probe.GetDiagnostic(LineProperty).Priority is BindingPriority.Unset or BindingPriority.Inherited ? Own : value;
         }
     }
 
-    // While a value comes in, the store still reports the priority before it: the first value a theme sets is seen as
-    // none. And by its value alone, a value set to the default (here 0, as a ControlTheme based on a text style sets
-    // LetterSpacing to 0 to take the phone's spacing off) can't be told from none. Either way the theme's value is lost.
+    // While a value comes in, the store still reports the priority before it, so the first value a theme sets is seen as
+    // none and loses. A coercion asked for again once the value is in sees its priority and keeps it.
     [AvaloniaFact]
-    public void A_Coercion_Cant_Tell_A_Value_Set_From_None()
+    public void A_Coercion_Sees_The_Priority_Before_The_Value_And_A_Later_One_Sees_It_After()
     {
         var theme = new ControlTheme(typeof(Coerced));
-        theme.Setters.Add(new Setter(Coerced.SpacingProperty, 0.0));
+        theme.Setters.Add(new Setter(Coerced.SpacingProperty, 1.0));
         var probe = new Coerced { Theme = theme };
-        using var scene = new Scene(probe);
+        using var window = new SpikeWindow(probe);
 
-        Assert.Contains((0.0, BindingPriority.Unset), probe.Seen);
+        Assert.Equal((1.0, BindingPriority.Unset), probe.Seen[0]);
+        Assert.Equal(Coerced.Own, probe.GetValue(Coerced.SpacingProperty));
+
+        probe.CoerceValue(Coerced.SpacingProperty);
+
+        Assert.Equal((1.0, BindingPriority.Style), probe.Seen[^1]);
+        Assert.Equal(1, probe.GetValue(Coerced.SpacingProperty));
+    }
+
+    // When styles are applied again (here, an app's Style added to the window), the store resets every priority before it
+    // works the values out, so each coercion sees none set. Where the coercion's answer is the value already there, no
+    // change is raised: no handler hears that the app's value came, so nothing asks for the coercion again.
+    [AvaloniaFact]
+    public void In_A_Reevaluation_Every_Coercion_Is_Blind_And_An_Unchanged_Answer_Raises_Nothing()
+    {
+        var probe = new Coerced();
+        using var window = new SpikeWindow(probe);
+        probe.CoerceValue(Coerced.SpacingProperty);
+        Assert.Equal(Coerced.Own, probe.GetValue(Coerced.SpacingProperty));
+        var changes = 0;
+        probe.PropertyChanged += (_, e) => changes += e.Property == Coerced.SpacingProperty ? 1 : 0;
+
+        var apps = new Style(x => x.OfType<Coerced>());
+        apps.Setters.Add(new Setter(Coerced.SpacingProperty, 1.0));
+        window.Window.Styles.Add(apps);
+        Spike.Settle();
+
+        Assert.Equal((1.0, BindingPriority.Unset), probe.Seen[^1]);
         Assert.Equal(BindingPriority.Style, probe.GetDiagnostic(Coerced.SpacingProperty).Priority);
         Assert.Equal(Coerced.Own, probe.GetValue(Coerced.SpacingProperty));
+        Assert.Equal(0, changes);
+
+        probe.CoerceValue(Coerced.SpacingProperty);
+        Assert.Equal(1, probe.GetValue(Coerced.SpacingProperty));
+    }
+
+    // A coerced default is a value in the store: when the coercion gives the default back it stays, IsSet, and ClearValue
+    // doesn't take it out. On an inherited property it keeps the value it was made with: the parent's next value isn't
+    // inherited.
+    [AvaloniaFact]
+    public void A_Coerced_Default_Stays_In_The_Store_And_Stops_Inheritance()
+    {
+        var child = new Coerced();
+        var parent = new Coerced { Applies = false, Child = child };
+        using var window = new SpikeWindow(parent);
+
+        child.CoerceValue(Coerced.SpacingProperty);
+        Assert.True(child.IsSet(Coerced.SpacingProperty));
+        child.Applies = false;
+        child.CoerceValue(Coerced.SpacingProperty);
+        child.ClearValue(Coerced.SpacingProperty);
+        Assert.Equal(0, child.GetValue(Coerced.SpacingProperty));
+        Assert.True(child.IsSet(Coerced.SpacingProperty));
+
+        parent.SetValue(Coerced.LineProperty, 7.0);
+        child.Applies = true;
+        child.CoerceValue(Coerced.LineProperty);
+        Assert.Equal(Coerced.Own, child.GetValue(Coerced.LineProperty));
+        child.Applies = false;
+        child.CoerceValue(Coerced.LineProperty);
+        Assert.Equal(7, child.GetValue(Coerced.LineProperty));
+
+        parent.SetValue(Coerced.LineProperty, 9.0);
+        Assert.Equal(7, child.GetValue(Coerced.LineProperty));
     }
 
     // ── A binding in each style (option 4) ───────────────────────────────────────────────────
@@ -188,7 +313,7 @@ public class TextLineHookTests
         {
             _observers.Add(observer);
             observer.OnNext(value);
-            return new Unsubscriber(() => _observers.Remove(observer));
+            return new Spike.Undo(() => _observers.Remove(observer));
         }
 
         public void Push(double next)
@@ -196,11 +321,6 @@ public class TextLineHookTests
             value = next;
             foreach (var observer in _observers.ToList())
                 observer.OnNext(next);
-        }
-
-        private sealed class Unsubscriber(Action undo) : IDisposable
-        {
-            public void Dispose() => undo();
         }
     }
 
@@ -216,10 +336,43 @@ public class TextLineHookTests
         theme.Setters.Add(new Setter(TextBlock.LetterSpacingProperty, source.ToBinding()));
         var small = new TextBlock { Text = "x", FontSize = 10, Theme = theme };
         var large = new TextBlock { Text = "x", FontSize = 40, Theme = theme };
-        using var scene = new Scene(new StackPanel { Children = { small, large } });
+        using var window = new SpikeWindow(new StackPanel { Children = { small, large } });
 
         source.Push(4);
         Assert.Equal(4, small.LetterSpacing);
         Assert.Equal(4, large.LetterSpacing);
+    }
+
+    // A binding to the TextBlock itself, with a converter, is per target, but it is worked out once: a later FontSize
+    // isn't followed. One with a path follows that one property only, so anything else it needs is the converter's
+    // parameter, fixed in the style, not a DynamicResource an extension pack can change.
+    [AvaloniaFact]
+    public void A_Binding_To_Itself_Is_Per_Target_But_Doesnt_Follow_Its_Font()
+    {
+        var fromSelf = new ControlTheme(typeof(TextBlock));
+        fromSelf.Setters.Add(new Setter(TextBlock.LetterSpacingProperty, new ReflectionBinding
+        {
+            RelativeSource = new RelativeSource(RelativeSourceMode.Self),
+            Converter = new FuncValueConverter<TextBlock, double>(b => -3 * b!.FontSize / 1000),
+        }));
+        var fromSize = new ControlTheme(typeof(TextBlock));
+        fromSize.Setters.Add(new Setter(TextBlock.LetterSpacingProperty, new ReflectionBinding(nameof(TextBlock.FontSize))
+        {
+            RelativeSource = new RelativeSource(RelativeSourceMode.Self),
+            Converter = new FuncValueConverter<double, double, double>((size, spacing) => spacing * size / 1000),
+            ConverterParameter = -3.0,
+        }));
+        var small = new TextBlock { Text = "x", FontSize = 10, Theme = fromSelf };
+        var large = new TextBlock { Text = "x", FontSize = 40, Theme = fromSelf };
+        var sized = new TextBlock { Text = "x", FontSize = 10, Theme = fromSize };
+        using var window = new SpikeWindow(new StackPanel { Children = { small, large, sized } });
+        Assert.Equal(-0.03, small.LetterSpacing, 9);
+        Assert.Equal(-0.12, large.LetterSpacing, 9);
+
+        small.FontSize = sized.FontSize = 20;
+        Spike.Settle();
+
+        Assert.Equal(-0.03, small.LetterSpacing, 9);
+        Assert.Equal(-0.06, sized.LetterSpacing, 9);
     }
 }
