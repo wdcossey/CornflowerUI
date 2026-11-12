@@ -1,0 +1,189 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:cf="using:Cornflower.Controls"
+                    xmlns:wp81="using:Cornflower.Themes.Wp81">
+  <!--
+    The Windows Phone 8.1 TextBox: the default style of the 8.1 Update 1 runtime (textbox.json, which equals the SDK's
+    generic.xaml), re-expressed as an Avalonia ControlTheme. Every value is the phone's resource key, by
+    DynamicResource, so it follows the theme variant and an app can override it by its key.
+    docs/controls/TextBox/PLAN.md has the values and their sources.
+
+    The template is the phone's, part for part:
+    - BorderElement draws the box: TextBoxBackgroundThemeBrush in TextBoxBorderThemeBrush, 2.5 wide, at 0.8 at rest
+      (the Normal state's TextControlBorderThemeOpacity), so the page shows through it. The text is not dimmed: it is
+      in a sibling, not in the Border.
+    - HeaderContentPresenter shows cf:ControlHeader.Header and HeaderTemplate (WinRT's Header and HeaderTemplate,
+      which Avalonia's TextBox lacks), in the phone's HeaderContentPresenterStyle, 4.8 above the box, with the phone's
+      1.33 em line (PhoneHeaderLine). It doesn't recognise access keys, as WinRT's doesn't. With no Header it is
+      collapsed, margin and all, as the phone's code collapses it (run 20261112-1319-dev11: 39.1667 tall, not 44).
+    - PART_ScrollViewer is the phone's ContentElement: inside the border, at least TextControlThemeMinHeight tall (set
+      on ContentRow round it, as Avalonia's TextBox sets the ScrollViewer's own MinHeight for MinLines), the box's
+      Padding round its content. It wears a theme of its own (below), so no ScrollViewer theme keyed by type
+      reaches it, and no scroll bar is drawn, as the phone's Hidden bars draw none.
+    - PART_TextPresenter, the part Avalonia's TextBox looks for, is the phone's text view: its line the phone's,
+      1.33 em, the box's LineHeight, which the style binds to its FontSize through PhoneTextBoxLine, so the first baseline is the placeholder's and each line is 1.33 em below the
+      last, as on the phone.
+    - PlaceholderTextContentPresenter shows PlaceholderText in PlaceholderForeground (TextBoxPlaceholderTextThemeBrush)
+      at ContentControlFontSize whatever the box's FontSize, as the phone's sets it, in the phone's line. Shown only
+      while the box is empty (:empty), as the phone's code collapses it.
+    - InnerLeftContent and InnerRightContent, Avalonia's, which the phone's has no part for, sit inside the border
+      either side of the text, as in Simple's template.
+
+    The visual states: Focused (:focus) draws the box in TextBoxFocusedBackgroundThemeBrush with the accent
+    (TextSelectionHighlightColorThemeBrush) round it, at full opacity, and hides the placeholder; Disabled (:disabled)
+    draws no background, TextBoxDisabledBorderThemeBrush round it, at full opacity, and dims the text, the placeholder
+    and the header. The phone's TextBox has no PointerOver state, so :pointerover has no style. FocusAdorner is
+    cleared: the Focused state is the focus look.
+
+    A TextBox in the template of a control Wp81 doesn't theme yet takes the theme under Wp81's (HoleParts).
+  -->
+
+  <!-- ContentElement: the phone's TextBox ScrollViewer, its content presenter inset by the Padding, as the phone's
+       ScrollContentPresenter is (Margin, not Padding: what scrolls is clipped inside it). No scroll bars. -->
+  <ControlTheme x:Key="Wp81TextBoxScrollViewerTheme" TargetType="ScrollViewer">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <ScrollContentPresenter x:Name="PART_ContentPresenter"
+                                Margin="{TemplateBinding Padding}"
+                                Background="{TemplateBinding Background}"
+                                ScrollViewer.IsScrollInertiaEnabled="{TemplateBinding IsScrollInertiaEnabled}">
+          <ScrollContentPresenter.GestureRecognizers>
+            <ScrollGestureRecognizer CanHorizontallyScroll="{Binding CanHorizontallyScroll, ElementName=PART_ContentPresenter}"
+                                     CanVerticallyScroll="{Binding CanVerticallyScroll, ElementName=PART_ContentPresenter}"
+                                     IsScrollInertiaEnabled="{Binding (ScrollViewer.IsScrollInertiaEnabled), ElementName=PART_ContentPresenter}"
+                                     Offset="{Binding Offset, ElementName=PART_ContentPresenter}"
+                                     Viewport="{Binding Viewport, ElementName=PART_ContentPresenter}"
+                                     Extent="{Binding Extent, ElementName=PART_ContentPresenter}" />
+          </ScrollContentPresenter.GestureRecognizers>
+        </ScrollContentPresenter>
+      </ControlTemplate>
+    </Setter>
+  </ControlTheme>
+
+  <ControlTheme x:Key="{x:Type TextBox}" TargetType="TextBox">
+    <Setter Property="MinWidth" Value="{DynamicResource TextControlThemeMinWidth}" />
+    <Setter Property="MinHeight" Value="{DynamicResource TextControlThemeMinHeight}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextBoxForegroundThemeBrush}" />
+    <!-- WinRT's SelectionHighlightColor. -->
+    <Setter Property="SelectionBrush" Value="{DynamicResource TextSelectionHighlightColorThemeBrush}" />
+    <Setter Property="Background" Value="{DynamicResource TextBoxBackgroundThemeBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource TextBoxBorderThemeBrush}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource TextControlBorderThemeThickness}" />
+    <Setter Property="FontFamily" Value="{DynamicResource PhoneFontFamilyNormal}" />
+    <Setter Property="FontSize" Value="{DynamicResource ContentControlFontSize}" />
+    <Setter Property="TextWrapping" Value="NoWrap" />
+    <!-- The phone's line, 1.33 em of the FontSize, which WinRT's text view draws and Avalonia's doesn't (PhoneTextBoxLine). -->
+    <Setter Property="LineHeight" Value="{Binding FontSize, RelativeSource={RelativeSource Self}, Converter={x:Static wp81:PhoneTextBoxLine.Converter}}" />
+    <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Hidden" />
+    <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Hidden" />
+    <Setter Property="ScrollViewer.IsDeferredScrollingEnabled" Value="False" />
+    <Setter Property="Padding" Value="{DynamicResource TextControlThemePadding}" />
+    <Setter Property="Margin" Value="{DynamicResource TextControlMarginThemeThickness}" />
+    <Setter Property="VerticalAlignment" Value="Top" />
+    <!-- The placeholder's Foreground, which the phone's template sets on its part. -->
+    <Setter Property="PlaceholderForeground" Value="{DynamicResource TextBoxPlaceholderTextThemeBrush}" />
+    <Setter Property="FocusAdorner" Value="{x:Null}" />
+    <!-- In the template of a control Wp81 doesn't theme yet, the theme under Wp81's TextBox instead (HoleParts). -->
+    <Setter Property="wp81:HoleParts.FallBack" Value="True" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <!-- RequiresFullOpacityHandling: the Border's 0.8 is drawn as the phone's is, on the Border as one layer, not on its
+             background and its border each, where they overlap (0.96 there). -->
+        <Grid Background="Transparent" RowDefinitions="Auto,*" RenderOptions.RequiresFullOpacityHandling="True">
+          <Border x:Name="BorderElement"
+                  Grid.Row="1"
+                  Opacity="{DynamicResource TextControlBorderThemeOpacity}"
+                  Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}" />
+          <ContentPresenter x:Name="HeaderContentPresenter"
+                            Grid.Row="0"
+                            Margin="{DynamicResource TextControlHeaderMarginThemeThickness}"
+                            IsVisible="{TemplateBinding (cf:ControlHeader.Header), Converter={x:Static ObjectConverters.IsNotNull}}"
+                            Content="{TemplateBinding (cf:ControlHeader.Header)}"
+                            ContentTemplate="{TemplateBinding (cf:ControlHeader.HeaderTemplate)}"
+                            FontFamily="{DynamicResource PhoneFontFamilyNormal}"
+                            FontSize="{DynamicResource TextStyleMediumFontSize}"
+                            FontWeight="Normal"
+                            Foreground="{DynamicResource PhoneMidBrush}"
+                            wp81:PhoneHeaderLine.IsEnabled="True" />
+          <!-- ContentElement's MinHeight is here: Avalonia's TextBox sets its ScrollViewer's in every measure (MinLines). -->
+          <Grid x:Name="ContentRow"
+                Grid.Row="1"
+                Margin="{TemplateBinding BorderThickness}"
+                MinHeight="{DynamicResource TextControlThemeMinHeight}"
+                ColumnDefinitions="Auto,*,Auto">
+            <ContentPresenter x:Name="InnerLeftContentPresenter" Content="{TemplateBinding InnerLeftContent}" />
+            <ScrollViewer x:Name="PART_ScrollViewer"
+                          Grid.Column="1"
+                          Theme="{StaticResource Wp81TextBoxScrollViewerTheme}"
+                          Padding="{TemplateBinding Padding}"
+                          HorizontalScrollBarVisibility="{TemplateBinding (ScrollViewer.HorizontalScrollBarVisibility)}"
+                          VerticalScrollBarVisibility="{TemplateBinding (ScrollViewer.VerticalScrollBarVisibility)}"
+                          IsDeferredScrollingEnabled="{TemplateBinding (ScrollViewer.IsDeferredScrollingEnabled)}"
+                          IsScrollChainingEnabled="{TemplateBinding (ScrollViewer.IsScrollChainingEnabled)}"
+                          BringIntoViewOnFocusChange="{TemplateBinding (ScrollViewer.BringIntoViewOnFocusChange)}"
+                          AllowAutoHide="{TemplateBinding (ScrollViewer.AllowAutoHide)}">
+              <TextPresenter x:Name="PART_TextPresenter"
+                             CaretBlinkInterval="{TemplateBinding CaretBlinkInterval}"
+                             CaretBrush="{TemplateBinding CaretBrush}"
+                             CaretIndex="{TemplateBinding CaretIndex}"
+                             LetterSpacing="{TemplateBinding LetterSpacing}"
+                             PasswordChar="{TemplateBinding PasswordChar}"
+                             RevealPassword="{TemplateBinding RevealPassword}"
+                             SelectionBrush="{TemplateBinding SelectionBrush}"
+                             SelectionEnd="{TemplateBinding SelectionEnd}"
+                             SelectionForegroundBrush="{TemplateBinding SelectionForegroundBrush}"
+                             SelectionStart="{TemplateBinding SelectionStart}"
+                             Text="{TemplateBinding Text, Mode=TwoWay}"
+                             TextAlignment="{TemplateBinding TextAlignment}"
+                             LineHeight="{TemplateBinding LineHeight}"
+                             TextWrapping="{TemplateBinding TextWrapping}" />
+            </ScrollViewer>
+            <ContentPresenter x:Name="PlaceholderTextContentPresenter"
+                              Grid.Column="1"
+                              IsHitTestVisible="False"
+                              Padding="{TemplateBinding Padding}"
+                              Content="{TemplateBinding PlaceholderText}"
+                              Foreground="{TemplateBinding PlaceholderForeground}"
+                              FontSize="{DynamicResource ContentControlFontSize}"
+                              wp81:PhoneHeaderLine.IsEnabled="True" />
+            <ContentPresenter x:Name="InnerRightContentPresenter" Grid.Column="2" Content="{TemplateBinding InnerRightContent}" />
+          </Grid>
+        </Grid>
+      </ControlTemplate>
+    </Setter>
+
+    <!-- The placeholder only while the box is empty. -->
+    <Style Selector="^:not(:empty) /template/ ContentPresenter#PlaceholderTextContentPresenter">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+
+    <!-- Focused. -->
+    <Style Selector="^:focus /template/ Border#BorderElement">
+      <Setter Property="Opacity" Value="1" />
+      <Setter Property="BorderBrush" Value="{DynamicResource TextSelectionHighlightColorThemeBrush}" />
+      <Setter Property="Background" Value="{DynamicResource TextBoxFocusedBackgroundThemeBrush}" />
+    </Style>
+    <Style Selector="^:focus /template/ ContentPresenter#PlaceholderTextContentPresenter">
+      <Setter Property="Opacity" Value="0" />
+    </Style>
+
+    <!-- Disabled. -->
+    <Style Selector="^:disabled /template/ Border#BorderElement">
+      <Setter Property="Opacity" Value="1" />
+      <Setter Property="Background" Value="{DynamicResource TextBoxDisabledBackgroundThemeBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource TextBoxDisabledBorderThemeBrush}" />
+    </Style>
+    <Style Selector="^:disabled /template/ ScrollViewer#PART_ScrollViewer">
+      <Setter Property="Foreground" Value="{DynamicResource TextBoxDisabledForegroundThemeBrush}" />
+    </Style>
+    <Style Selector="^:disabled /template/ ContentPresenter#PlaceholderTextContentPresenter">
+      <Setter Property="Foreground" Value="{DynamicResource TextBoxDisabledForegroundThemeBrush}" />
+    </Style>
+    <Style Selector="^:disabled /template/ ContentPresenter#HeaderContentPresenter">
+      <Setter Property="Foreground" Value="{DynamicResource TextBoxDisabledHeaderForegroundThemeBrush}" />
+    </Style>
+  </ControlTheme>
+</ResourceDictionary>

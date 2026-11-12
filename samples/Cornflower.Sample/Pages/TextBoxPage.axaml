@@ -1,0 +1,45 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:cf="using:Cornflower.Controls"
+             xmlns:sample="using:Cornflower.Sample"
+             x:Class="Cornflower.Sample.Pages.TextBoxPage"
+             Background="{DynamicResource ApplicationPageBackgroundThemeBrush}"
+             Foreground="{DynamicResource PhoneForegroundBrush}"
+             FontFamily="{DynamicResource PhoneFontFamilyNormal}"
+             FontSize="{DynamicResource TextStyleLargeFontSize}">
+  <!--
+    The 8.1 TextBox, as an 8.1 page writes one: no style, no size, the header by cf:ControlHeader.Header (WinRT's
+    Header), WinRT's PlaceholderText. Tap one to type: it turns white with the accent round it. The section headings
+    are the type ramp's.
+  -->
+  <ScrollViewer>
+    <StackPanel Margin="19,12,19,24">
+      <sample:SamplePageHeader x:Name="Header" />
+
+      <TextBlock Text="default" Theme="{DynamicResource GroupHeaderTextBlockStyle}" />
+      <TextBox x:Name="YourName" cf:ControlHeader.Header="name" PlaceholderText="type your name" TextChanged="OnTextChanged" />
+      <TextBlock x:Name="State" Theme="{DynamicResource ControlContextualInfoTextBlockStyle}" />
+
+      <TextBlock Text="with text, no header" Theme="{DynamicResource GroupHeaderTextBlockStyle}" Margin="0,12,0,0" />
+      <TextBox x:Name="Filled" Text="Agjy 0123" />
+
+      <TextBlock Text="several lines" Theme="{DynamicResource GroupHeaderTextBlockStyle}" Margin="0,12,0,0" />
+      <TextBox x:Name="Lines" cf:ControlHeader.Header="message" TextWrapping="Wrap" AcceptsReturn="True"
+               Text="A TextBox that wraps its text and takes a new line from the keyboard grows a line at a time." />
+
+      <TextBlock Text="disabled" Theme="{DynamicResource GroupHeaderTextBlockStyle}" Margin="0,12,0,0" />
+      <TextBox x:Name="Disabled" cf:ControlHeader.Header="disabled" Text="Agjy 0123" IsEnabled="False" />
+      <TextBox x:Name="DisabledEmpty" PlaceholderText="placeholder" IsEnabled="False" />
+
+      <ThemeVariantScope RequestedThemeVariant="Light" Margin="-19,12,-19,0">
+        <Border Background="{DynamicResource ApplicationPageBackgroundThemeBrush}" Padding="19,6,19,12">
+          <StackPanel>
+            <TextBlock Text="light" Theme="{DynamicResource GroupHeaderTextBlockStyle}" />
+            <TextBox x:Name="Light" cf:ControlHeader.Header="text box" PlaceholderText="placeholder" />
+            <TextBox x:Name="LightDisabled" cf:ControlHeader.Header="disabled" Text="Agjy 0123" IsEnabled="False" />
+          </StackPanel>
+        </Border>
+      </ThemeVariantScope>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

@@ -9,19 +9,21 @@ using Avalonia.Styling;
 namespace Cornflower.Themes.Wp81;
 
 /// <summary>
-/// Keeps Wp81's Button, ToggleButton, RepeatButton and CheckBox out of templates written for the theme under Wp81.
-/// Simple's templates for CalendarItem, CalendarDatePicker, CommandBar, NavigationPage, PipsPager and the managed file
+/// Keeps Wp81's Button, ToggleButton, RepeatButton, CheckBox and TextBox out of templates written for the theme under
+/// Wp81. Simple's templates for CalendarItem, CalendarDatePicker, CommandBar, NavigationPage, PipsPager and the managed file
 /// dialogs hold plain Buttons with no theme of their own, ComboBox's and DrawerPage's plain ToggleButtons, ScrollBar's
-/// and the menu ScrollViewer's plain RepeatButtons, and the managed file dialog's plain CheckBox, so they would take
+/// and the menu ScrollViewer's plain RepeatButtons, the managed file dialog's plain CheckBox, and the plain TextBoxes of
+/// AutoCompleteBox, CalendarDatePicker, ComboBox, the managed file dialog and NumericUpDown, so they would take
 /// Wp81's, keyed by type: the phone's sizes (a Button's 109 × 57.5 minimum), its overhang, the accent and, for a Button
-/// or a CheckBox, the tilt, in chrome laid out for Simple's. Such a control takes the theme under Wp81 for its own style
-/// key instead: a ToggleButton the ToggleButton theme, not the Button theme.
+/// or a CheckBox, the tilt, in chrome laid out for Simple's; for a TextBox, the phone's black text and white box over
+/// the brushes those templates pass it. Such a control takes the theme under Wp81 for its own style key instead: a
+/// ToggleButton the ToggleButton theme, not the Button theme.
 /// </summary>
 /// <remarks>
-/// <para><b>Which templates.</b> The templated parent's own template decides: a Button falls back when that template
+/// <para><b>Which templates.</b> The templated parent's own template decides: a control falls back when that template
 /// is one a <c>ControlTheme</c> under Wp81 sets (in its setters or its nested styles) and none of Wp81's does. So it
 /// is the theme the parent wears that counts, not its type: an app's subclass with a theme of its own, an app's theme
-/// for a control Wp81 doesn't theme, and a control Wp81 themes all keep Wp81's Button in their templates, and a
+/// for a control Wp81 doesn't theme, and a control Wp81 themes all keep Wp81's Button (or TextBox) in their templates, and a
 /// control given a theme from under Wp81 explicitly falls back. A new template (a new theme, or the theme stack
 /// changing at run time) makes new parts, which are checked as they are styled.</para>
 /// <para><b>Under Wp81</b> is Avalonia's lookup order: the styles before <see cref="Wp81Theme"/> in the
@@ -31,48 +33,48 @@ namespace Cornflower.Themes.Wp81;
 /// are read once and kept beside it; a plain group of styles and a host's own resources, which an app can change as
 /// it runs, are read each time.</para>
 /// <para><b>On and off.</b> Only Wp81's themes set <see cref="FallBackProperty"/> (Button's, ToggleButton's,
-/// RepeatButton's and CheckBox's): it is internal, with no accessor. It goes false when that theme leaves the control,
-/// which is what falling back does itself, so false undoes nothing; the control keeps the theme it was given. It costs
-/// only the controls whose theme sets it, and no global rule (<c>StyleBudgetTests</c>); one with no templated parent
-/// returns at once.</para>
+/// RepeatButton's, CheckBox's and TextBox's): it is internal, with no accessor. It goes false when that theme leaves
+/// the control, which is what falling back does itself, so false undoes nothing; the control keeps the theme it was
+/// given. It costs only the controls whose theme sets it, and no global rule (<c>StyleBudgetTests</c>); one with no
+/// templated parent returns at once.</para>
 /// </remarks>
 internal static class HoleParts
 {
     /// <summary>
-    /// Set by Wp81's themes for a Button and its subclasses: whether the control is in a template written for the
-    /// theme under Wp81.
+    /// Set by Wp81's themes for a Button and its subclasses, and a TextBox: whether the control is in a template written
+    /// for the theme under Wp81.
     /// </summary>
     public static readonly AttachedProperty<bool> FallBackProperty =
-        AvaloniaProperty.RegisterAttached<Button, bool>("FallBack", typeof(HoleParts));
+        AvaloniaProperty.RegisterAttached<TemplatedControl, bool>("FallBack", typeof(HoleParts));
 
     /// <summary>Each theme's templates, read once, kept beside the theme.</summary>
     private static readonly ConditionalWeakTable<object, HashSet<object>> Templates = new();
 
     static HoleParts()
     {
-        FallBackProperty.Changed.AddClassHandler<Button>((button, e) =>
+        FallBackProperty.Changed.AddClassHandler<TemplatedControl>((control, e) =>
         {
-            if (e.GetNewValue<bool>()) Check(button);
+            if (e.GetNewValue<bool>()) Check(control);
         });
     }
 
-    private static void Check(Button button)
+    private static void Check(TemplatedControl control)
     {
-        if (button.TemplatedParent is not TemplatedControl { Template: { } template } || button.IsSet(StyledElement.ThemeProperty))
+        if (control.TemplatedParent is not TemplatedControl { Template: { } template } || control.IsSet(StyledElement.ThemeProperty))
             return;
 
-        var (wp81, below) = Under(button);
+        var (wp81, below) = Under(control);
         if (wp81 is null || TemplatesOf(wp81).Contains(template))
             return;
 
-        var variant = button.ActualThemeVariant;
+        var variant = control.ActualThemeVariant;
         foreach (var node in below)
         {
             if (!TemplatesOf(node).Contains(template))
                 continue;
 
-            if (ThemeFor(button.StyleKey, below, variant) is { } fallback)
-                button.Theme = fallback;
+            if (ThemeFor(control.StyleKey, below, variant) is { } fallback)
+                control.Theme = fallback;
             return;
         }
     }
