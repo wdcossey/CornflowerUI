@@ -28,4 +28,28 @@ internal static class Frames
 
         return rgba ? Color.FromArgb(b3, b0, b1, b2) : Color.FromArgb(b3, b2, b1, b0);
     }
+
+    /// <summary>
+    /// Whether two frames are the same pixels, byte for byte: the same size, the same order, and every pixel's
+    /// value as stored. Only the pixels are compared, not any padding at the end of a row.
+    /// </summary>
+    public static bool SameAs(WriteableBitmap a, WriteableBitmap b)
+    {
+        using var x = a.Lock();
+        using var y = b.Lock();
+        if (x.Format != PixelFormat.Rgba8888 && x.Format != PixelFormat.Bgra8888)
+            throw new NotSupportedException($"A frame in {x.Format} isn't compared.");
+        if (x.Size != y.Size || x.Format != y.Format) return false;
+
+        var row = new byte[x.Size.Width * 4];
+        var other = new byte[row.Length];
+        for (var r = 0; r < x.Size.Height; r++)
+        {
+            Marshal.Copy(x.Address + r * x.RowBytes, row, 0, row.Length);
+            Marshal.Copy(y.Address + r * y.RowBytes, other, 0, other.Length);
+            if (!row.AsSpan().SequenceEqual(other)) return false;
+        }
+
+        return true;
+    }
 }

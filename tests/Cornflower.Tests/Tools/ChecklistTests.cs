@@ -53,6 +53,7 @@ public class ChecklistTests
                           </VisualState.Setters>
                         </VisualState>
                         <VisualState x:Name="MouseOver" />
+                        <VisualState x:Name="Focused" />
                         <VisualStateGroup.Transitions>
                           <VisualTransition From="Pressed" To="Normal" GeneratedDuration="0:0:0.2">
                             <Storyboard>
@@ -205,7 +206,7 @@ public class ChecklistTests
     {
         var style = TemplateReader.Read(Generic, "Button")!;
 
-        Assert.Equal(["Normal", "Pressed", "CheckedPointerOver", "MouseOver"], style.States.Select(s => s.Name));
+        Assert.Equal(["Normal", "Pressed", "CheckedPointerOver", "MouseOver", "Focused"], style.States.Select(s => s.Name));
         Assert.Empty(style.States[0].Changes);
         Assert.Equal(
             ["PointerDownThemeAnimation on Grid", "Border.Background = {ThemeResource PressedBrush}", "Grid.Opacity: DoubleAnimation To=0.5 Duration=0:0:0.1", "Grid.Visibility = Visibility Collapsed"],
@@ -282,6 +283,14 @@ public class ChecklistTests
     public void A_State_Maps_By_The_Draft_Rules(string state, string? selector) =>
         Assert.Equal(selector, new AvaloniaSide("Button").State(state));
 
+    // A tap focuses a text box on the phone, so its CommonStates Focused is :focus (#101); FocusStates' stays keyboard focus.
+    [Theory]
+    [InlineData("CommonStates", ":focus")]
+    [InlineData("FocusStates", ":focus-visible")]
+    [InlineData("", ":focus-visible")]
+    public void Focused_Maps_By_Its_Group(string group, string selector) =>
+        Assert.Equal(selector, new AvaloniaSide("TextBox").State("Focused", group));
+
     [Fact]
     public void A_State_Of_A_New_Control_Is_A_Pseudoclass_Named_After_It()
     {
@@ -314,6 +323,7 @@ public class ChecklistTests
         Assert.Contains("| [ ] | `Padding` | `{StaticResource ButtonPadding}` | `TemplatedControl.Padding` |  |", markdown);
         Assert.Contains("| [ ] | `ContentPresenter` | `ContentPresenter` | `PART_ContentPresenter` |  |", markdown);
         Assert.Contains("| `CommonStates` | `Normal` | nothing | the theme's plain setters |  |", markdown);
+        Assert.Contains("| `CommonStates` | `Focused` | nothing | `^:focus` |  |", markdown);
         Assert.Contains("`^:checked:pointerover` (:checked not raised by Avalonia's `Button`)", markdown);
         Assert.Contains("| `CommonStates` | `MouseOver` | nothing | no rule |  |", markdown);
         Assert.Contains("| [ ] | `CommonStates` | `Pressed` → `Normal` | `0:0:0.2` | `PointerUpThemeAnimation on Grid`<br>`FadeOutThemeAnimation on Border` |  |", markdown);
