@@ -119,7 +119,7 @@ Paste flyout, and the `.clearButton` and `.revealPasswordButton` classes.
 | `ContentElement`'s `MinHeight` | 34 | overwritten by the TextBox in each measure | 1, set on the `Grid` round it instead |
 | The scroll bars | `Hidden`: none drawn | the `ScrollViewer`'s theme by type, a hole today (Wp81 alone would give it no template, and the text would vanish) | 1, the part's own theme, `Wp81TextBoxScrollViewerTheme`: the content presenter inset by the padding, with the gesture recogniser, no bars |
 | The text clipped inside the padding | the `ScrollContentPresenter`'s margin is the padding | Simple's pads inside it | 1, the presenter's `Margin`, as the phone's |
-| The box at 0.8 | the Border as one layer | Skia applies a visual's opacity to its background and its border each: 245 grey where they overlap | 1, `RenderOptions.RequiresFullOpacityHandling` on the template's root, as ToggleButton's (#93) |
+| The box at 0.8 | the Border as one layer | Skia applies a visual's opacity to its background and its border each: 245 grey where they overlap | 1, the Border's `BackgroundSizing` `InnerBorderEdge`, so they don't overlap and no layer is needed (the second review's finding; the first build used `RenderOptions.RequiresFullOpacityHandling`, as ToggleButton's) |
 | Focus | `Focused`, for any focus, a tap's too | `:focus` | 1, `:focus`, not `:focus-visible` |
 | Pointer over | no state | `:pointerover` | 1, no style |
 | `ScrollMode` | `Auto` | no member; scrolls where the content is larger | none |
@@ -188,7 +188,7 @@ Each has a test in `tests/Cornflower.Tests/Controls/TextBoxTests.cs` unless name
 6. **The line**: two wrapped lines 54.1667, the box 86.6667; 1.33 em of any `FontSize`; an app's `LineHeight` wins;
    `MaxLines` counts the phone's lines. `Wrapped_Text_Takes_The_Phones_Lines`,
    `The_Line_Follows_The_FontSize_And_An_Apps_LineHeight_Wins`, `MaxLines_Counts_The_Phones_Lines`.
-7. **At rest**: 204 grey on every edge and inside, the page outside, as one layer. `At_Rest_The_Box_Is_Drawn_At_Eight_Tenths`.
+7. **At rest**: 204 grey on every edge and inside, the page outside, with no overlap. `At_Rest_The_Box_Is_Drawn_At_Eight_Tenths`.
 8. **Focused**: the accent, 6 raw pixels, round white, at full opacity; the placeholder hidden; back at rest when focus
    goes. `Focused_Is_The_Accent_Round_White`.
 9. **Disabled**: the border alone (115 or 191 grey), no background, the text, placeholder and header dimmed.
@@ -345,10 +345,10 @@ Avalonia's control looks for: `PART_TextPresenter`, `PART_ScrollViewer`.
 
 | ✓ | Part | Element | Avalonia | Action |
 |---|---|---|---|---|
-| [x] | `BorderElement` | `Border` | none | The same, at 0.8 at rest, as one layer |
+| [x] | `BorderElement` | `Border` | none | The same, at 0.8 at rest, its background inside its border (`InnerBorderEdge`) |
 | [x] | `HeaderContentPresenter` | `ContentPresenter` | none | The same, from `ControlHeader`, collapsed with no header |
 | [x] | `ContentElement` | `ScrollViewer` | none | `PART_ScrollViewer`, Avalonia's name, in its own theme; its `MinHeight` on the `Grid` round it; `PART_TextPresenter` in it |
-| [x] | `PlaceholderTextContentPresenter` | `ContentControl` | none | A `ContentPresenter` of that name (decided) |
+| [x] | `PlaceholderTextContentPresenter` | `ContentControl` | none | A `ContentPresenter` of that name (decided), its content at the top left as a WinRT `ContentControl` places it |
 
 ### Visual states (3)
 

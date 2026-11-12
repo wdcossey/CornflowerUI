@@ -24,7 +24,8 @@
       1.33 em, the box's LineHeight (inherited), which the style binds to its FontSize through PhoneTextBoxLine, so the first baseline is the placeholder's and each line is 1.33 em below the
       last, as on the phone.
     - PlaceholderTextContentPresenter shows PlaceholderText in PlaceholderForeground (TextBoxPlaceholderTextThemeBrush)
-      at ContentControlFontSize whatever the box's FontSize, as the phone's sets it, in the phone's line. Shown only
+      at ContentControlFontSize whatever the box's FontSize, as the phone's sets it, in the phone's line, at the top
+      left, as a WinRT ContentControl places its content (the dump's TextBlock is its text's size). Shown only
       while the box is empty (:empty), as the phone's code collapses it.
     - InnerLeftContent and InnerRightContent, Avalonia's, which the phone's has no part for, sit inside the border
       either side of the text, as in Simple's template.
@@ -89,11 +90,13 @@
     <Setter Property="wp81:HoleParts.FallBack" Value="True" />
     <Setter Property="Template">
       <ControlTemplate>
-        <!-- RequiresFullOpacityHandling: the Border's 0.8 is drawn as the phone's is, on the Border as one layer, not on its
-             background and its border each, where they overlap (0.96 there). -->
-        <Grid Background="Transparent" RowDefinitions="Auto,*" RenderOptions.RequiresFullOpacityHandling="True">
+        <Grid Background="Transparent" RowDefinitions="Auto,*">
+          <!-- BackgroundSizing InnerBorderEdge: Skia applies the Border's 0.8 to its background and its border each, so
+               the background stops at the border's inner edge, where the two would overlap (0.96 there), and the box is
+               drawn as the phone's one layer is, without a layer of its own. -->
           <Border x:Name="BorderElement"
                   Grid.Row="1"
+                  BackgroundSizing="InnerBorderEdge"
                   Opacity="{DynamicResource TextControlBorderThemeOpacity}"
                   Background="{TemplateBinding Background}"
                   BorderBrush="{TemplateBinding BorderBrush}"
@@ -143,6 +146,8 @@
                               Grid.Column="1"
                               IsHitTestVisible="False"
                               Padding="{TemplateBinding Padding}"
+                              HorizontalContentAlignment="Left"
+                              VerticalContentAlignment="Top"
                               Content="{TemplateBinding PlaceholderText}"
                               Foreground="{TemplateBinding PlaceholderForeground}"
                               FontSize="{DynamicResource ContentControlFontSize}"

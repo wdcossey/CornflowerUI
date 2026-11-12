@@ -83,6 +83,12 @@ public class TextBoxHolePartsTests
         Assert.Same(ThemeOf(simple, typeof(TextBox)), box.Theme);
         Assert.NotEqual(TextBoxReadings.Black, ((ISolidColorBrush)box.Foreground!).Color);
         Assert.DoesNotContain(box.GetVisualDescendants(), v => v is Control { Name: "BorderElement" });
+
+        // None of Wp81's values stays behind when its theme goes: no 9.5 margins, 34 minimum or phone's line.
+        Assert.NotEqual(TextBoxReadings.Margin, box.Margin);
+        Assert.NotEqual(TextBoxReadings.MinHeight, box.MinHeight);
+        Assert.NotEqual(TextBoxReadings.MinWidth, box.MinWidth);
+        Assert.True(double.IsNaN(box.LineHeight), $"the line {box.LineHeight} stayed");
     }
 
     // An app's own templated control isn't a hole: a TextBox in its template is the phone's.

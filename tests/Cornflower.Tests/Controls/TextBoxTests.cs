@@ -198,6 +198,7 @@ public class TextBoxTests
         Assert.Equal(InStage.X, In(box, stage.Root).X, 0.001);
         Assert.Equal(InStage.Y, In(box, stage.Root).Y, 0.001);
         Assert.Equal(OurWidth, box.Bounds.Width, 0.001);
+        Assert.Equal(PhoneWidth - 1 / Scene.ReferenceScaling, box.Bounds.Width, 0.001);     // one raw pixel short
         Assert.Equal(Height, box.Bounds.Height, 0.001);
         Assert.Equal(HeaderHeight, HeaderOf(box).Bounds.Height, 0.001);
         Assert.Equal(BorderTop, In(BorderOf(box), box).Y, 0.001);
@@ -430,6 +431,9 @@ public class TextBoxTests
         Assert.Equal(PlaceholderColour(dark), ColourOf(placeholder.Foreground));
         Assert.Equal(FontSize, text.FontSize);
         Assert.Equal(PhoneTextLine.FontLine * FontSize, text.LineHeight, 0.0001);
+        // At the top left, its text's size, as a WinRT ContentControl places it (the dump's: 104.8867 × 26.9467 in Segoe WP).
+        Assert.Equal(Math.Ceiling(PlaceholderLine * Scene.ReferenceScaling) / Scene.ReferenceScaling, text.Bounds.Height, 0.001);
+        Assert.InRange(text.Bounds.Width, 80, 130);
         Assert.Equal(TextAt.X, In(text, box).X, 0.001);
         Assert.Equal(TextAt.Y, In(text, box).Y, 0.001);
 
