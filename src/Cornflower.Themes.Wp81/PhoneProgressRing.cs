@@ -5,6 +5,8 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Shapes;
 using Avalonia.Data;
 using Avalonia.Media;
+using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Cornflower.Controls;
 using static Cornflower.Themes.Wp81.PhoneKeyframeTrack;
 
@@ -27,7 +29,7 @@ namespace Cornflower.Themes.Wp81;
 /// <para>
 /// It runs from the moment the ring is active, attached to a window and has its template, at the storyboard's start,
 /// as the phone's <c>VisualStateManager.GoToState</c> starts it; it stops, and gives the dots back their own values,
-/// when any of those ends. The emulator's own clock runs about 4% fast against real time (B6, run
+/// when any of those ends. While the ring isn't visible it asks for no frames, and looks again four times a second. The emulator's own clock runs about 4% fast against real time (B6, run
 /// <c>20261111-2316-dev11</c>), so the phone's ring is timed by its keyframes, not by the emulator's 4.13 s.
 /// </para>
 /// </remarks>
@@ -57,7 +59,7 @@ internal static class PhoneProgressRing
         [Seconds(0), Seconds(0.433), Seconds(1.2), Seconds(1.617), Seconds(2.017), Seconds(2.783), Seconds(3.217)];
 
     /// <summary>The angle keys' <c>KeySpline</c>s, the same for every dot; null where the key has none (a straight line).</summary>
-    internal static readonly Spline?[] AngleSplines =
+    internal static readonly KeySplineCurve?[] AngleSplines =
     [
         new(0.13, 0.21, 0.1, 0.7),
         new(0.02, 0.33, 0.38, 0.77),
@@ -91,18 +93,34 @@ internal static class PhoneProgressRing
 
     private static readonly ConditionalWeakTable<ProgressRing, Runner> Runners = new();
 
+    /// <summary>How often a hidden ring looks again whether it is shown: no frame is asked for while nothing is drawn.</summary>
+    internal static readonly TimeSpan HiddenCheck = TimeSpan.FromMilliseconds(250);
+
     static PhoneProgressRing()
     {
         IsAnimatedProperty.Changed.AddClassHandler<ProgressRing>((ring, e) =>
         {
+            if (Runners.TryGetValue(ring, out var old))
+            {
+                // This can come inside a theme's unset pass, where taking other values away is unsafe (CLAUDE.md,
+                // PhoneTextLine): stop listening now, and give the dots their own values back once the pass is over.
+                Runners.Remove(ring);
+                old.Unsubscribe();
+                Dispatcher.UIThread.Post(old.Stop);
+            }
+
             if (e.GetNewValue<bool>())
             {
-                Runners.GetValue(ring, r => new Runner(r)).Attach();
+                var runner = new Runner(ring);
+                Runners.Add(ring, runner);
+                runner.Attach();
             }
-            else if (Runners.TryGetValue(ring, out var runner))
+        });
+        ProgressRing.IsActiveProperty.Changed.AddClassHandler<ProgressRing>((ring, _) =>
+        {
+            if (Runners.TryGetValue(ring, out var runner))
             {
-                runner.Detach();
-                Runners.Remove(ring);
+                runner.Update();
             }
         });
     }
@@ -121,6 +139,7 @@ internal static class PhoneProgressRing
     {
         private readonly Ellipse?[] _dots = new Ellipse?[6];
         private readonly RotateTransform?[] _rotations = new RotateTransform?[6];
+        private readonly double[] _ownAngles = new double[6];
         private readonly IDisposable?[] _shown = new IDisposable?[6];
         private readonly double?[] _opacity = new double?[6];
         private IDisposable? _pending;
@@ -133,30 +152,36 @@ internal static class PhoneProgressRing
             ring.TemplateApplied += OnTemplateApplied;
             ring.AttachedToVisualTree += OnAttached;
             ring.DetachedFromVisualTree += OnDetached;
-            ring.PropertyChanged += OnPropertyChanged;
-            _attached = TopLevel.GetTopLevel(ring) is not null;
+            _attached = ring.IsAttachedToVisualTree();
+            // The template may already be applied: a theme that turns this on after it (one replacing another) gets
+            // no TemplateApplied for it.
+            FindParts(name => ring.GetVisualDescendants().OfType<Control>().FirstOrDefault(c => c.Name == name));
             Update();
         }
 
-        public void Detach()
+        public void Unsubscribe()
         {
             ring.TemplateApplied -= OnTemplateApplied;
             ring.AttachedToVisualTree -= OnAttached;
             ring.DetachedFromVisualTree -= OnDetached;
-            ring.PropertyChanged -= OnPropertyChanged;
-            Stop();
         }
 
         private void OnTemplateApplied(object? sender, TemplateAppliedEventArgs e)
         {
             Stop();
+            FindParts(name => e.NameScope.Find<Control>(name));
+            Update();
+        }
+
+        /// <summary>The dots and their canvases' transforms, and each transform's own angle, to give back.</summary>
+        private void FindParts(Func<string, Control?> find)
+        {
             for (var i = 0; i < 6; i++)
             {
-                _dots[i] = e.NameScope.Find<Ellipse>(DotNames[i]);
-                _rotations[i] = e.NameScope.Find<Control>(CanvasNames[i])?.RenderTransform as RotateTransform;
+                _dots[i] = find(DotNames[i]) as Ellipse;
+                _rotations[i] = find(CanvasNames[i])?.RenderTransform as RotateTransform;
+                _ownAngles[i] = _rotations[i]?.Angle ?? 0;
             }
-
-            Update();
         }
 
         private void OnAttached(object? sender, VisualTreeAttachmentEventArgs e)
@@ -171,16 +196,8 @@ internal static class PhoneProgressRing
             Update();
         }
 
-        private void OnPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
-        {
-            if (e.Property == ProgressRing.IsActiveProperty)
-            {
-                Update();
-            }
-        }
-
         /// <summary>Starts or stops the storyboard as the ring's state says.</summary>
-        private void Update()
+        public void Update()
         {
             var run = ring.IsActive && _attached && _dots.Any(d => d is not null);
             if (run && !_running)
@@ -195,7 +212,10 @@ internal static class PhoneProgressRing
             }
         }
 
-        /// <summary>One frame: every dot at the storyboard's time now, then the next frame.</summary>
+        /// <summary>
+        /// One frame: every dot at the storyboard's time now, then the next frame. Hidden (the ring or a parent not
+        /// visible), the storyboard's time runs on but nothing is set, and it looks again after <see cref="HiddenCheck"/>.
+        /// </summary>
         private void Step()
         {
             _pending = null;
@@ -204,12 +224,18 @@ internal static class PhoneProgressRing
                 return;
             }
 
+            if (!ring.IsEffectivelyVisible)
+            {
+                _pending = CornflowerClock.Schedule(Step, HiddenCheck);
+                return;
+            }
+
             var time = StoryboardTime(CornflowerClock.Now - _start);
             for (var i = 0; i < 6; i++)
             {
                 if (_rotations[i] is { } rotation)
                 {
-                    rotation.Angle = Angles[i].ValueAt(time) ?? 0;
+                    rotation.Angle = Angles[i].ValueAt(time) ?? _ownAngles[i];
                 }
 
                 Show(i, Opacities[i].ValueAt(time));
@@ -233,7 +259,8 @@ internal static class PhoneProgressRing
                 : null;
         }
 
-        private void Stop()
+        /// <summary>Stops the frames and gives every dot its own opacity and angle back.</summary>
+        public void Stop()
         {
             _running = false;
             _pending?.Dispose();
@@ -243,7 +270,7 @@ internal static class PhoneProgressRing
                 Show(i, null);
                 if (_rotations[i] is { } rotation)
                 {
-                    rotation.Angle = 0;
+                    rotation.Angle = _ownAngles[i];
                 }
             }
         }

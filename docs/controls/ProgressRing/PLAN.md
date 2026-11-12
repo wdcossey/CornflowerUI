@@ -177,6 +177,11 @@ any repeat, has no value from the storyboard: opacity 0 from the style, so it is
 | While active, every frame shows the storyboard at that time, repeating every 4.305 s | the storyboard; B6 for the length | `While_Active_Each_Frame_Shows_The_Storyboard_At_That_Time` |
 | Inactive, the dots get their own values back and no frame is pending; active again starts at 0 | `GoToState` starts a state's storyboard from its start | `Going_Inactive_Stops_It_And_Going_Active_Starts_It_Again` |
 | Out of the window it stops; back in, it starts at 0 | as above, on load | `Leaving_The_Window_Stops_It` |
+| Hidden, it asks for no frames; shown again, the dots are where the storyboard's time puts them | the phone's storyboard runs on while collapsed; drawing nothing costs nothing | `Hidden_It_Asks_For_No_Frames` |
+| Turned on after the template is applied, it still finds the dots | a theme replacing another | `Turned_On_After_The_Template_It_Still_Runs` |
+| A dot not begun, and every dot once stopped, shows its transform's own angle | WinRT: before its begin time a track has no value | `A_Dots_Own_Angle_Is_Given_Back` |
+| Another theme taking over: it stops after the theme's pass, asks for no frames, and gives the values back | the old theme's unset pass | `Another_Theme_Taking_Over_Stops_It` |
+| The content alignment places `Ring` across; down, the template's `Auto` row keeps it centred | the template's rows and bindings | `The_Content_Alignment_Places_The_Ring_Across` |
 | Drawn: the first dot alone at the start, in the accent; the page elsewhere | the storyboard; the captures' colours | `At_The_Start_The_First_Dot_Alone_Is_Drawn` (dark, light) |
 
 **The size threshold is the control's**, not the theme's: the phone's control decides `SizeStates` in its own code, as
@@ -196,12 +201,25 @@ tests' manual render timer.
 
 - `PhoneKeyframeTrack` (internal to Wp81) is one `DoubleAnimationUsingKeyFrames` evaluated as WinRT does: nothing before
   its begin time, discrete keys as steps, spline keys through their `KeySpline`, the last value held after. Times are
-  ticks, so a key time compares exactly. Its `KeySpline` solves the Bézier to 1e-12: Avalonia's
-  `KeySpline.GetSplineProgress` approximates, up to 0.0006 off the curve, which is 0.09° on these keys.
+  ticks, so a key time compares exactly.
+- `KeySplineCurve` (internal to `Cornflower.Controls`, beside `CornflowerClock`) solves a `KeySpline`'s Bézier to 1e-12:
+  Avalonia's `KeySpline.GetSplineProgress` approximates, up to 0.0006 off the curve, which is 0.09° on these keys. The
+  tilt's return (#87) eases through the same one.
 - `PhoneProgressRing` (internal to Wp81), turned on by the theme's setter, runs the twelve tracks while the ring is
-  active, in a window and templated, from the storyboard's start; it sets each dot's angle on its canvas's
-  `RotateTransform` and its opacity at animation priority when it changes, and gives them back when it stops.
-- `Cornflower.Controls` gives the theme its clock (`InternalsVisibleTo`), as `Tilt` uses it.
+  active, in a window and templated, from the storyboard's start. It sets each dot's angle on its canvas's
+  `RotateTransform`, and its opacity at animation priority when it changes. When it stops it gives both back: the
+  opacity's value is removed, and the angle goes back to the transform's own, read when the parts were found (a dot not
+  begun shows it too). It finds the parts when the template is applied, or at once if it is turned on after. While the
+  ring isn't effectively visible it asks for no frames, and looks again every 250 ms. Turned off (a theme without it
+  taking over), it stops listening at once and gives the values back after the dispatcher's pass, as `PhoneTextLine` does,
+  since the change can come inside the old theme's unset pass.
+- `Cornflower.Controls` gives the theme its clock and the curve (`InternalsVisibleTo`), as `Tilt`'s theme uses `Tilt`.
+  This is the one shared file the PR touches (rule 7): a single line, once, for every storyboard a theme runs. The
+  alternative, a public timeline API, would make the mechanism a promise to apps.
+
+**Where the keyframes live.** The tracks and their values are the theme's, as every visual value is; the engine that
+evaluates them (`PhoneKeyframeTrack`) is WinRT's semantics, and sits beside them in Wp81 until a second storyboard, or a
+second era, needs it. Then it moves beside `CornflowerClock`.
 
 The control has no animation and no visual opinion: an app's own theme can draw it any way.
 

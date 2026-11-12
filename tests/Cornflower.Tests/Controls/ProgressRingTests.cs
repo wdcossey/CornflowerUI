@@ -1,10 +1,15 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Shapes;
+using Avalonia.Controls.Templates;
+using Avalonia.Data;
+using Avalonia.Diagnostics;
 using Avalonia.Headless.XUnit;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Styling;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Cornflower.Controls;
 using Cornflower.Themes.Wp81;
@@ -245,7 +250,7 @@ public class ProgressRingTests
     {
         foreach (var s in Splines.OfType<double[]>())
         {
-            var spline = new PhoneKeyframeTrack.Spline(s[0], s[1], s[2], s[3]);
+            var spline = new KeySplineCurve(s[0], s[1], s[2], s[3]);
             for (var x = 0.0; x <= 1.0; x += 0.01)
             {
                 Assert.Equal(Bezier(s[0], s[1], s[2], s[3], x), spline.Ease(x), 1e-9);
@@ -429,6 +434,120 @@ public class ProgressRingTests
         var other = Angles[3][0] * Math.PI / 180;
         var page = Pixel(frame, centre.X - 18 * Math.Cos(other) + 18 * Math.Sin(other), centre.Y - 18 * Math.Sin(other) - 18 * Math.Cos(other));
         Assert.Equal(Background(variant == "Dark"), page);
+    }
+
+    // The content alignment places Ring as the phone's template binds it. Across, Left and Right put it at the
+    // edges. Down, the template puts it in an Auto row between two star rows, so the row is Ring's height and centred
+    // whatever the alignment, on the phone as here.
+    [AvaloniaFact]
+    public void The_Content_Alignment_Places_The_Ring_Across()
+    {
+        var ring = new ProgressRing { HorizontalContentAlignment = HorizontalAlignment.Left, VerticalContentAlignment = VerticalAlignment.Top };
+        using var stage = new Stage(ring: ring);
+        var part = Part<Grid>(ring, "PART_Ring");
+        var down = (ring.Bounds.Height - RingBounds.Height) / 2;
+        var raw = 1 / Scene.ReferenceScaling;
+
+        var at = part.TranslatePoint(default, ring)!.Value;
+        Assert.Equal(0, at.X, 0.001);
+        Assert.InRange(at.Y, down - raw, down + raw);
+
+        ring.HorizontalContentAlignment = HorizontalAlignment.Right;
+        ring.VerticalContentAlignment = VerticalAlignment.Bottom;
+        stage.Layout();
+        at = part.TranslatePoint(default, ring)!.Value;
+        Assert.Equal(ring.Bounds.Width - RingBounds.Width, at.X, 0.001);
+        Assert.InRange(at.Y, down - raw, down + raw);
+    }
+
+    // The storyboard turned on after the template is applied (a theme replacing another) still finds the dots.
+    [AvaloniaFact]
+    public void Turned_On_After_The_Template_It_Still_Runs()
+    {
+        using var clock = new TestClock();
+        var ring = new ProgressRing { IsActive = true };
+        PhoneProgressRing.SetIsAnimated(ring, false);
+        using var stage = new Stage(ring: ring);
+        Assert.Equal(0, Dot(ring, 0).Opacity);
+
+        ring.ClearValue(PhoneProgressRing.IsAnimatedProperty);
+        Assert.Equal(1, Dot(ring, 0).Opacity);
+        Assert.Equal(Angles[0][0], Rotation(ring, 0).Angle, 1e-9);
+    }
+
+    // A dot not begun yet, and every dot once stopped, show the template's own angle, not 0.
+    [AvaloniaFact]
+    public void A_Dots_Own_Angle_Is_Given_Back()
+    {
+        using var clock = new TestClock();
+        using var stage = new Stage();
+        var ring = stage.Ring;
+        ring.IsActive = false;
+        ring.ApplyTemplate();
+        // As a template would set it: the runner reads each transform's own angle when it finds the parts.
+        PhoneProgressRing.SetIsAnimated(ring, false);
+        Dispatcher.UIThread.RunJobs();
+        Rotation(ring, 1).Angle = 30;
+        ring.ClearValue(PhoneProgressRing.IsAnimatedProperty);
+
+        ring.IsActive = true;
+        Assert.Equal(30, Rotation(ring, 1).Angle);              // dot 2 begins at 0.167 s
+        clock.At(12 * FrameMs);
+        Assert.NotEqual(30, Rotation(ring, 1).Angle);
+        ring.IsActive = false;
+        Assert.Equal(30, Rotation(ring, 1).Angle);
+    }
+
+    // Hidden, it asks for no frame and sets nothing; the storyboard's time runs on, and shown again the dots are where
+    // that time puts them within a check.
+    [AvaloniaFact]
+    public void Hidden_It_Asks_For_No_Frames()
+    {
+        using var clock = new TestClock();
+        var ring = new ProgressRing { IsActive = true };
+        var holder = new Grid { Children = { ring } };
+        using var scene = new Scene(holder);
+        clock.At(10 * FrameMs);
+        var angle = Rotation(ring, 0).Angle;
+
+        holder.IsVisible = false;
+        clock.At(10 * FrameMs + 1000);
+        Assert.Equal(angle, Rotation(ring, 0).Angle);
+        Assert.Equal(1, clock.Pending);                          // the check, not a frame
+
+        // Shown, the next check finds it and frames start again: by a check and a frame later, the dot is where
+        // a time in the last frame puts it.
+        holder.IsVisible = true;
+        var shown = 10 * FrameMs + 1000 + PhoneProgressRing.HiddenCheck.TotalMilliseconds + FrameMs;
+        clock.At(shown);
+        var nearest = Enumerable.Range(0, (int)FrameMs + 1)
+            .Select(back => Math.Abs(AngleAt(0, PhoneProgressRing.StoryboardTime(TimeSpan.FromMilliseconds(shown - back)).TotalSeconds)!.Value - Rotation(ring, 0).Angle))
+            .Min();
+        Assert.True(nearest < 0.05, $"the dot is {nearest}\u00b0 from any time in the last frame");
+    }
+
+    // A theme without the storyboard taking over: the old one stops after the theme's pass, and asks for no frames.
+    [AvaloniaFact]
+    public void Another_Theme_Taking_Over_Stops_It()
+    {
+        using var clock = new TestClock();
+        using var stage = new Stage();
+        var ring = stage.Ring;
+        ring.IsActive = true;
+        clock.At(5 * FrameMs);
+        var dot = Dot(ring, 0);
+        Assert.Equal(1, dot.Opacity);
+
+        ring.Theme = new ControlTheme(typeof(ProgressRing))
+        {
+            Setters = { new Setter(TemplatedControl.TemplateProperty, new FuncControlTemplate((_, _) => new Panel())) },
+        };
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.False(PhoneProgressRing.GetIsAnimated(ring));
+        Assert.Equal(0, clock.Pending);
+        // The storyboard's value is given back: what's left is the old dot's own, not one set at animation priority.
+        Assert.NotEqual(BindingPriority.Animation, dot.GetDiagnostic(Visual.OpacityProperty).Priority);
     }
 
     private static Color Pixel(Avalonia.Media.Imaging.WriteableBitmap frame, double x, double y) =>

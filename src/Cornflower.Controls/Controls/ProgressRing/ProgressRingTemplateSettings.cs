@@ -58,7 +58,7 @@ public sealed class ProgressRingTemplateSettings : AvaloniaObject
     /// <summary>Sets every value from the ring's laid-out size.</summary>
     internal void Update(Size size)
     {
-        var side = Math.Max(0, Math.Min(size.Width, size.Height));
+        var side = Math.Min(size.Width, size.Height);
         MaxSideLength = side;
         EllipseDiameter = side / 10;
         EllipseOffset = new Thickness(0, side * 0.4, 0, 0);
