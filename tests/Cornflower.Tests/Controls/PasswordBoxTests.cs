@@ -159,6 +159,7 @@ public class PasswordBoxTests
         Assert.Equal(ContentTop, In(ContentRowOf(box), box).Y, 0.001);
         Assert.Equal(ContentHeight, ContentRowOf(box).Bounds.Height, 0.001);
         Assert.Equal(0, In(reveal, box).X, 0.001);
+        Assert.InRange(reveal.Bounds.Width, 160, 200);                        // its own width, at the left: 168.3333
         Assert.Equal(RevealTop, In(reveal, box).Y, 0.001);
         Assert.Equal(RevealButtonHeight, reveal.Bounds.Height, 0.001);
         Assert.Equal(RevealMargin, reveal.Margin);
@@ -343,15 +344,19 @@ public class PasswordBoxTests
     public void The_Boxs_Text_Values_Stay_In_The_Text()
     {
         var box = Specimen(password: null, placeholder: Placeholder, reveal: true);
+        box.InnerRightContent = new TextBlock { Name = "RightText", Text = "x" };
         box.TextAlignment = TextAlignment.Center;
+        box.TextWrapping = TextWrapping.Wrap;
         box.LetterSpacing = 3;
         using var stage = new TextBoxTests.Stage(box: box);
+        Assert.True(double.IsNaN(Part<TextBlock>(box, "RightText").LineHeight), "the box's line reached the inner content");
 
         var texts = new[]
         {
             HeaderOf(box).GetVisualDescendants().OfType<TextBlock>().Single(),
             PlaceholderOf(box).GetVisualDescendants().OfType<TextBlock>().Single(),
             RevealOf(box).GetVisualDescendants().OfType<TextBlock>().Single(),
+            Part<TextBlock>(box, "RightText"),
         };
         foreach (var text in texts)
         {
