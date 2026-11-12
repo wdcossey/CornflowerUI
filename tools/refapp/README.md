@@ -556,6 +556,20 @@ ratio of about 1.015. So:
 - **A duration from a recording** is timed by the VM's clock, not the emulator's. Whether the two agree
   isn't checked yet.
 
+**Which clock each duration below is on** (2026-11-12, gap register B9 to B12). For a stopwatch duration,
+[`tools/motion`](../motion/README.md)'s `clock.py` reads the run's frames by the stopwatch, and the factor that takes
+the run's durations to animation time: 15.625 ms over the frames' mean spacing, to about 1%.
+
+| Duration | Clock | In animation time |
+|---|---|---|
+| The ToggleSwitch knob's `KeySpline` over 370 ms; the MenuFlyout's 380 and 120 ms; the inline ComboBox items' 4 frames; the turnstile's 430 and 391 ms, its 71 ms time constant and 300 ms to within 1°; the slide's 350 ms in and about 190 ms out; the Continuum back's 340 ms; the tilt's 182.6 ms hold and 167.0 ms return | frames: distinct values one a 15.625 ms step, or frames counted | as given (the ComboBox items' 4 frames, 62.5 ms) |
+| `ToggleStates` changing about 380 ms after a slide starts (374 to 391 ms) | the stopwatch | about 390 to 405 ms (× 1.044 on `20261110-0733-dev10`, × 1.035 on `20261109-2128-dev11`, each from 50 or so consecutive frames) |
+| The ToggleSwitch's tap limit, about 1,020 ms held | the stopwatch, between touch events | left as read: not an animation, and whether the phone times a tap on animation time isn't known |
+| The ProgressRing's 4.132 s cycle, a dot hiding 3.090 s after it shows, the dots 150 to 167 ms apart | the stopwatch | 4.31 s, 3.23 s and 157 to 174 ms (× 1.044 on `20261110-0829-dev11`): the keyframes' 4.305 s, 3.22 s and 0.167 s |
+| The ProgressRing clock's own numbers (`Completed` 3,856.5 ms after `Begin()` and the like) | the stopwatch, and said so | the storyboard's own time is read beside them |
+| The tilt press's first frame, 30 to 40 ms after the press | the stopwatch | about 31 to 42 ms (× 1.044 on `20261109-2307-dev11`); a press is a jump, so there is no duration to build |
+| The popups' times (the table below); a top Flyout gone about 100 ms, and a ContentDialog 125 ms, after `Hide()`; the inline ComboBox opening about 140 ms after the call; the Continuum's fade (one or two recorded frames), black (at most 94 to 125 ms) and growth (281 to 312 ms) | the recording, timed by the VM's clock, and paired with the app's log by a fixed lag | **open**: whether the VM's clock runs with the emulator's stopwatch or with its animation time isn't known. If with the stopwatch, these are about 4% short of animation time on these runs, under the ±25 ms they are quoted to |
+
 **A PlaneProjection's camera** (`-Probe projections`, `20261110-0756-dev11`): a full-window panel given
 known projections (`RotationY` ±10°, ±30°, ±60° about `CenterOfRotationX` 0, 0.5 and −0.25, and
 `GlobalOffsetZ` ±100) fits a pinhole 999 view px in front of the screen, looking at the element's
@@ -565,7 +579,8 @@ brings the right side nearer. The page transitions below are solved with it.
 ### ToggleSwitch: the knob's slide
 
 The slide is the template's `RepositionThemeAnimation`: `KnobTranslateTransform.X` jumps to 56.5 at
-once, and `ToggleStates` reaches `On` or `Off` about 380 ms later, when the slide is over (all of
+once, and `ToggleStates` reaches `On` or `Off` about 380 ms later by the stopwatch (about 390 to 405 ms of
+animation time), when the slide is over (all of
 #58's runs, and on the 720p profile). From the recording (`20261110-0819-dev11`, 20 slides, the
 switch set from code): the knob travels 56.56 view px, the same way in both directions, through the
 same positions every time.
@@ -589,14 +604,15 @@ Three numbers for the travel, each something else:
 The 21 distinct positions, one per 15.625 ms step, fit the `KeySpline` 0.1,0.9 0.2,1 over
 370 ms, the first frame one step in, within 0.001 of the measured travel, 56.56 (0.06 px); an
 exponential ease-out (k 6 to 8) fits ten times worse, the power ease-outs twenty.
-370 ms and a step or two is the 380 ms to the state change.
+370 ms and a step or two (386 to 401 ms) is the state change's 390 to 405 ms of animation time.
 
 ### Flyouts, pickers and the dialog
 
 `20261110-0819-dev11` (`-Probe motion -Record`): each opened from code four times, held 1.2 s, and
 closed with `Hide()` (the ComboBoxes with `IsDropDownOpen`). The app's values show none of it, except
 the MenuFlyout's template. Times are from the first frame that changed until the screen is 50%, 90%
-and 99% of the way to its final look (mean absolute difference), the median of four runs, ±25 ms;
+and 99% of the way to its final look (mean absolute difference), the median of four runs, ±25 ms, by the
+recording's clock (above);
 "top to bottom" gives when the top and the bottom 100 px band are half done.
 
 | Popup | Opening | ms | Closing | ms |
@@ -604,7 +620,7 @@ and 99% of the way to its final look (mean absolute difference), the median of f
 | Flyout, top | swings down from its top edge (its bottom edge at 46, 55, 69, then 77 of 78 px) | 50 / 100 / 142 | gone in one frame, about 100 ms after `Hide()` | 0 |
 | Flyout, full | sweeps in top to bottom (74 to 208) | 141 / 208 / 208 | sweeps out top to bottom (117 to 275) | 200 / 291 / 334 |
 | MenuFlyout | the template's storyboard (below) | 483 / 516 / 516 | the menu goes in one frame; the full-window layer under it about 300 ms later | 0 / 0 / 317 |
-| ListPickerFlyout | the header, then each item, swing in one after another, then the background fills downwards (75 to 367) | 209 / 325 / 367 | top to bottom (100 to 375) | 242 / 375 / 425 |
+| ListPickerFlyout | the header, then each item, swing in one after another, then the background fills downwards (75 to 367) | 209 / 325 / 367 | top to bottom (100 to 375) | 242 / 375 / 425 at the lag typed in, 29.15 s; 284 / 392 / 434 at the knob's own, 29.158 s (`popups.py`): an 8 ms shift moves this row, so it is less certain than ±25 ms |
 | DatePickerFlyout | the three columns and header (83 to 200); the last 1%, the app bar, by 400 | 117 / 200 / 400 | 117 to 325 | 150 / 242 / 358 |
 | TimePickerFlyout | as the date picker (100 to 183; 408) | 125 / 183 / 408 | 125 to 333 | 167 / 234 / 358 |
 | ComboBox, 6 items (the full-screen picker) | as the ListPickerFlyout (109 to 342) | 200 / 333 / 342 | top to bottom (116 to 408) | 291 / 408 / 458 |
@@ -637,11 +653,16 @@ is solved for the page's rotation with the camera above.
   about 300 ms.
 - **`SlideNavigationTransitionInfo`**: forward, the new page rises from below, first seen 200 px down;
   its offset falls by 0.765 a step (58 ms): an `ExponentialEase` (exponent 6, ease-out) from 200 px
-  over 350 ms, starting on the first frame shown, fits the 16 distinct offsets within 0.05 px. Back, the page going out slides down, faster each step (×1.4 to 1.46, an ease-in)
-  for about 220 ms, to about 140 to 200 px, and then the page under it shows at once.
-- **`ContinuumNavigationTransitionInfo`**: forward, the old page fades out in two frames (about 60 ms),
-  the screen stays black for 60 to 100 ms, then the new page grows about the screen's centre from a
-  scale of 0.94 to 1 in about 280 ms. Back, the page going out slides down as in the slide's back,
+  over 350 ms, starting on the first frame shown, fits the 16 distinct offsets within 0.05 px. Back, the page going
+  out slides down, faster each step (×1.43, an ease-in) for about 190 ms, and then the page under it shows at
+  once; the last offset seen is 65 to 137 px. *Corrected 2026-11-12* (`slide.py`): the eased fit to the offsets of
+  2 px or more ends 12 steps, 188 ms, after the first; "about 220 ms" came from offsets picked by hand on
+  2026-11-10, and "140 to 200 px" isn't reproduced.
+- **`ContinuumNavigationTransitionInfo`**: forward, the old page fades out in one or two recorded frames,
+  the screen stays black for at most 94 to 125 ms, then the new page grows about the screen's centre from a
+  scale of 0.94 to 0.96 at its first frame to 1 in 281 to 312 ms. These are times on the recording, its frames
+  about 31 ms apart here. *Corrected 2026-11-12* (`slide.py`): the black is from the first black frame to the
+  first of the new page, so an upper bound; 2026-11-10's 60 to 100 ms isn't reproduced. Back, the page going out slides down as in the slide's back,
   then the page under it fades in: what is left of its opacity falls by about 0.84 a step, over
   about 340 ms.
 
@@ -650,16 +671,18 @@ is solved for the page's rotation with the camera above.
 The suite's forced `Active` state captures no dots: they show only while the storyboard runs. Read
 every frame instead (`20261110-0829-dev11`, `-Probe ring`, 6 s, with a recording): a ring at its
 default size, 57.5 view px, shows five dots, and one 120 px wide shows six. Each dot's `Canvas`
-rotates and its `Ellipse` hides and shows as the template's storyboard says, the dots 150 to 167 ms
-apart (the template's `BeginTime`s are 0.167 s apart). One cycle takes 4.13 s by the app's clock
-(nine cycles), and a dot hides 3.10 s into it. The template's keyframes give 4.31 s (the last dot's
+rotates and its `Ellipse` hides and shows as the template's storyboard says, the dots 150 to 165 ms
+apart in the first cycle (the template's `BeginTime`s are 0.167 s apart). One cycle takes 4.13 s by the app's
+clock (nine cycles), and a dot hides 3.09 s after it shows again (*corrected 2026-11-12*: 3.10 s was
+published, `ring.py` reads 3.090). The template's keyframes give 4.31 s (the last dot's
 `BeginTime` and its 3.47 s) and 3.22 s: the same shape, 4% faster. **That is the emulator's clock**
 (below), as far as the cycle goes: at that run's frame rate, 4.305 s and 3.22 s of animation time come
 to 4.13 s and 3.09 s on the stopwatch, which [`tools/motion`](../motion/README.md)'s `ring.py` reads as
 4.132 s and 3.090 s. The dots' spacing, 0.167 s of animation time, would be about 160 ms on the
 stopwatch; `ring.py` reads 164 ms (the median), 150 to 165 ms in the first cycle and 129 to 167 ms over
 all nine, so within a frame or two of it but not explained to the millisecond: no probe has read a dot's
-own clock. The keyframes are what to build.
+own clock. At the run's factor, 1.044 (`clock.py`), those are 171 ms, and 157 to 172 and 135 to 174 ms, of
+animation time; each is read on a frame, so to ±15 ms. The keyframes are what to build.
 
 ### ProgressRing: the size threshold and the clock
 

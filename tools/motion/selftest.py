@@ -290,6 +290,21 @@ def scripts_on_partial_logs():
         assert code == 0 and 'OuterBorder ScaleX: 1 rises' in out and '24.3 steps' in out, out
 
 
+@check
+def clock_factor():
+    # Frames 15.0 ms apart, two readings a frame (0.5 ms apart, one frame), and a 240 ms stretch with nothing logged:
+    # 15.625 / 15.0 = 1.042, the stretch left out.
+    import tempfile
+    with tempfile.TemporaryDirectory() as run:
+        with open(os.path.join(run, 'probe.txt'), 'w', encoding='utf-8') as f:
+            t = 100.0
+            for k in range(200):
+                t += 240 if k == 100 else 15.0
+                f.write('%.1f\tvalue\ta %d\n%.1f\ttree\tb %d\n' % (t, k, t + 0.5, k))
+        code, out = run_script('clock.py', run)
+    assert code == 0 and '200 frames logged, 198 consecutive gaps' in out and 'stopwatch 1.042' in out, out
+
+
 for fn in checks:
     fn()
     print('ok  %s' % fn.__name__)
