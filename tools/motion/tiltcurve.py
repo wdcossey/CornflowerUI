@@ -48,10 +48,6 @@ def g(d):
     return G * d * (1 + 0.08 * abs(d))
 
 
-def rms(v):
-    return math.sqrt(sum(x * x for x in v) / len(v))
-
-
 res, allr, zres = collections.defaultdict(list), [], []
 for b, ix, iy, rx, ry, gz in presses:
     w, h = sizes[b]
@@ -61,13 +57,13 @@ for b, ix, iy, rx, ry, gz in presses:
     allr += [rx - ex, ry - ey]
     zres.append(gz + 25 * (1 - (abs(rx) + abs(ry)) / RAD))
 print('presses %d%s' % (len(presses), ', and %d left out: no tilt logged, or no layout for the button' % skipped if skipped else ''))
-print('angles: rms %.3f deg, worst %.3f' % (rms(allr), max(abs(x) for x in allr)))
+print('angles: rms %.3f deg, worst %.3f' % (ml.rms(allr), max(abs(x) for x in allr)))
 cent = []
 for b in sorted(res):
     xs, ys = [a for a, _ in res[b]], [c for _, c in res[b]]
     mx, my = sum(xs) / len(xs), sum(ys) / len(ys)
     cent += [x - mx for x in xs] + [y - my for y in ys]
     print('  %s: mean residual RotationX %.3f RotationY %.3f; rms after it %.3f %.3f' % (
-        b, mx, my, rms([x - mx for x in xs]), rms([y - my for y in ys])))
-print('angles with each button\'s mean residual taken out: rms %.3f deg' % rms(cent))
-print('depth: worst residual %.4f px, rms %.4f px' % (max(abs(z) for z in zres), rms(zres)))
+        b, mx, my, ml.rms([x - mx for x in xs]), ml.rms([y - my for y in ys])))
+print('angles with each button\'s mean residual taken out: rms %.3f deg' % ml.rms(cent))
+print('depth: worst residual %.4f px, rms %.4f px' % (max(abs(z) for z in zres), ml.rms(zres)))

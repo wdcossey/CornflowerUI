@@ -159,7 +159,7 @@ public class TiltModelTests
         {
             var at = TimeSpan.FromMilliseconds((TiltReadings.ReleaseFirstFrame - 1 + i) * 15.625);
             var left = TiltModel.ReturnFactor(at);
-            Assert.True(Math.Abs(left - TiltReadings.ReleaseFractions[i]) <= 0.001,
+            Assert.True(Math.Abs(left - TiltReadings.ReleaseFractions[i]) <= 0.0011,           // the worst, 0.0010
                 $"frame {TiltReadings.ReleaseFirstFrame + i}: {left:F5} left, read {TiltReadings.ReleaseFractions[i]}");
         }
     }

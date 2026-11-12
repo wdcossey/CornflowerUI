@@ -75,16 +75,14 @@ def fraction(v, held):
     return sum(a * b for a, b in zip(v, held)) / sum(b * b for b in held)
 
 
-def rms(v):
-    return math.sqrt(sum(x * x for x in v) / len(v))
-
-
 every = []  # (release ms, [(frame number from the first change, ms, fraction)]) for every press of every run
 for run in runs:
     got, left = presses(run)
     gaps = [b[0] - a[0] for _, _, r in got for a, b in zip(r, r[1:])]
-    if not gaps:
+    if not got:
         raise SystemExit('%s: no press with a tilt held and its return logged' % run)
+    if not gaps:
+        raise SystemExit('%s: no press logged two or more frames of its return, so the frames\' spacing is unknown' % run)
     spacing = ml.median(gaps)
     for released, held, ret in got:
         t0 = ret[0][0]
@@ -93,106 +91,107 @@ for run in runs:
         os.path.basename(os.path.normpath(run)), len(got), ', %d left out' % left if left else '', spacing,
         sum(gaps) / len(gaps)))
 
-# The return, frame by frame.
+# The return, frame by frame, each frame by its number from the first change.
 length = max(f[-1][0] for _, f in every)
 first = [ml.median([fr for _, f in every for j, _, fr in f if j == k] or [0.0]) for k in range(1, length + 1)]
 odd = [i for i, (_, f) in enumerate(every) if any(abs(fr - first[j - 1]) > 0.002 for j, _, fr in f)]
 kept = [p for i, p in enumerate(every) if i not in odd]
-fracs, spread = [], []
+if not kept:
+    raise SystemExit('no press left: every one is more than 0.002 off the median at some frame')
+frames = []  # (frame number from the first change, the median fraction, the spread), the frames some press read
 for k in range(1, length + 1):
     col = [fr for _, f in kept for j, _, fr in f if j == k]
     if col:
-        fracs.append(ml.median(col))
-        spread.append(max(col) - min(col))
-while fracs and fracs[-1] == 0 and len(fracs) > 1 and fracs[-2] == 0:
-    fracs.pop()
-    spread.pop()
+        frames.append((k, ml.median(col), max(col) - min(col)))
+while len(frames) > 1 and frames[-1][1] == 0 and frames[-2][1] == 0:
+    frames.pop()
 print('\n%d presses; %d left out of the medians, off the median by more than 0.002 at a frame%s' % (
     len(every), len(odd), ''.join('\n  release at %.1f ms: frames %s' % (every[i][0], ' '.join(
         '%d:%.4f' % (j, fr) for j, _, fr in every[i][1])) for i in odd)))
 print('The return, frame by frame from the first change (the median, and the spread over the presses):')
-for k, (v, s) in enumerate(zip(fracs, spread), 1):
+for k, v, s in frames:
     print('  %2d  %.4f  %.4f' % (k, v, s))
+missing = sorted(set(range(1, frames[-1][0] + 1)) - {k for k, _, _ in frames})
+if missing:
+    print('  no press read frame%s %s' % ('s' if len(missing) > 1 else '', ', '.join(map(str, missing))))
 
 # Which frame after the release the first change is on.
-ns = []
+ns, single = [], 0
 for released, f in kept:
     j1, t1, _ = f[0]
     jn, tn, _ = f[-1]
+    if jn == j1:  # one frame logged after the release: no spacing of its own
+        single += 1
+        continue
     ns.append((t1 - released) / ((tn - t1) / (jn - j1)))
+if not ns:
+    raise SystemExit('no press logged two or more frames of its return, so none has a frame spacing of its own')
 ns.sort()
-m = round(ml.median(ns) + 0.5)
+m = math.ceil(ml.median(ns))
 inside = sum(m - 1 < n <= m for n in ns)
-print('\nRelease to the first change, over each press\'s own frame spacing: %.2f to %.2f frames (median %.2f; %d of %d '
-      'within %d to %d, the 5%% to 95%% %.2f to %.2f). So the first change is frame %d after the release, and the last '
-      'before rest frame %d' % (ns[0], ns[-1], ml.median(ns), inside, len(ns), m - 1, m, ns[len(ns) // 20],
-                                  ns[-1 - len(ns) // 20], m, m + len(fracs) - 2))
+print("\nRelease to the first change, over each press's own frame spacing%s: %.2f to %.2f frames (median %.2f; %d "
+      'of %d within %d to %d, the 5%% to 95%% %.2f to %.2f). So the first change is frame %d after the release, and the '
+      'last before rest frame %d' % (
+          ' (%d with one frame left out)' % single if single else '', ns[0], ns[-1], ml.median(ns), inside, len(ns),
+          m - 1, m, ns[len(ns) // 20], ns[-1 - len(ns) // 20], m, m + frames[-1][0] - 2))
 
-# In animation time: frame k after the release at (k - 1) TICK.
-taus = [(m - 1 + k) * TICK for k in range(len(fracs))]
-
-
-def model(e, hold, ret, tau):
-    u = (tau - hold) / ret
-    return 1.0 if u <= 0 else 0.0 if u >= 1 else 1 - e(u)
+# In animation time: frame k after the release at (k - 1) TICK, so frame number j from the first change at
+# (m - 2 + j) TICK. As ticks from the first change, j - 1; the curve's start a phase before it, so the hold is
+# (m - 1 - phase) TICK.
+ks = [k - 1 for k, _, _ in frames]
+fracs = [v for _, v, _ in frames]
 
 
 def sine(u):
     return math.sin(u * math.pi / 2)
 
 
-def residuals(e, hold, ret, ts=taus, fs=fracs):
-    return [model(e, hold, ret, t) - f for t, f in zip(ts, fs)]
+def hold(phase):
+    return (m - 1 - phase) * TICK
 
 
-def fit_hold_return(e, ts, fs, hold0, ret0):
-    """The hold and return minimising the rms, from a grid then Nelder-Mead."""
-    best = min(((rms(residuals(e, h, r, ts, fs)), h, r) for h in range(int(hold0) - 40, int(hold0) + 41, 2)
-                for r in range(int(ret0) - 60, int(ret0) + 61, 2)), key=lambda x: x[0])
-    v, (h, r) = ml.minimize(lambda x: rms(residuals(e, x[0], x[1], ts, fs)), [best[1], best[2]], [1.0, 1.0], 400)
-    return v, h, r
+def worst(f, d, ph):
+    return max(abs(x) for x in ml.fraction_residuals(fracs, f, d, ph, ks))
 
 
-v, h, r = fit_hold_return(sine, taus, fracs, 180, 200)
-worst = max(abs(x) for x in residuals(sine, h, r))
-print('\nIn animation time, frame k after the release at (k - 1) x %.3f ms, so frame %d at %.3f ms. The hold\'s frames '
-      'are not logged: they are counted above by the stopwatch, and this takes the first frame after the release as '
-      'the release animation\'s time 0, as the first frame logged after the ProgressRing\'s Active storyboard began '
-      'read storyboard time 0 (20261111-2316-dev11)' % (TICK, m, taus[0]))
-print('  sine ease-out: hold %.1f ms, return %.1f ms; rms %.4f of the full value, worst %.4f' % (h, r, v, worst))
+v, r, ph = ml.fit_fraction(fracs, sine, range(120, 301, 2), [i / 10 for i in range(11)], ks, refine=True)
+print("\nIn animation time, frame k after the release at (k - 1) x %.3f ms, so frame %d at %.3f ms. The hold's frames "
+      "are not logged: they are counted above by the stopwatch, and this takes the first frame after the release as "
+      "the release animation's time 0, as the first frame logged after the ProgressRing's Active storyboard began "
+      "read storyboard time 0 (20261111-2316-dev11)" % (TICK, m, (m - 1) * TICK))
+print('  sine ease-out: hold %.1f ms, return %.1f ms; rms %.4f of the full value, worst %.4f' % (
+    hold(ph), r, v, worst(sine, r, ph)))
 
 
 def spline_rms(x):
-    x1, y1, x2, y2, hold, ret = x
-    if not (all(0 <= c <= 1 for c in (x1, y1, x2, y2)) and ret > 10):  # a KeySpline's control points are in [0, 1]
+    x1, y1, x2, y2, d, phase = x
+    if not (all(0 <= c <= 1 for c in (x1, y1, x2, y2)) and d > 10):  # a KeySpline's control points are in [0, 1]
         return 1e9
-    return rms(residuals(ml.key_spline(x1, y1, x2, y2), hold, ret))
+    return ml.rms(ml.fraction_residuals(fracs, ml.key_spline(x1, y1, x2, y2), d, phase, ks))
 
 
 fits = []
-for start in ([0.39, 0.575, 0.565, 1, h, r], [0.25, 0.25, 0.75, 0.75, h, r - 30], [0.1, 0.3, 0.8, 0.9, h + 5, r - 35]):
-    _, x = ml.minimize(spline_rms, start, [0.1, 0.1, 0.1, 0.1, 5, 10], 3000)
-    fits.append(ml.minimize(spline_rms, x, [0.02, 0.02, 0.02, 0.02, 1, 2], 3000))
-v, (x1, y1, x2, y2, sh, sr) = min(fits, key=lambda f: f[0])
+for start in ([0.39, 0.575, 0.565, 1, r, ph], [0.25, 0.25, 0.75, 0.75, r - 30, ph], [0.1, 0.3, 0.8, 0.9, r - 35, ph]):
+    _, x = ml.minimize(spline_rms, start, [0.1, 0.1, 0.1, 0.1, 10, 0.3])
+    fits.append(ml.minimize(spline_rms, x, [0.02, 0.02, 0.02, 0.02, 2, 0.06]))
+v, (x1, y1, x2, y2, sr, sph) = min(fits, key=lambda f: f[0])
 close = [f for f in fits if f[0] < 2 * v]
-agree = max(abs(a - b) for f in close for a, b in zip(f[1][4:], (sh, sr)))
-worst = max(abs(q) for q in residuals(ml.key_spline(x1, y1, x2, y2), sh, sr))
+agree = max(max(abs(f[1][4] - sr), abs(hold(f[1][5]) - hold(sph))) for f in close)
 print('  KeySpline %.3f,%.3f %.3f,%.3f: hold %.1f ms, return %.1f ms; rms %.5f, worst %.5f (%d of %d starts within '
-      'twice that rms, their holds and returns within %.1f ms)' % (x1, y1, x2, y2, sh, sr, v, worst, len(close),
-                                                                  len(fits), agree))
+      'twice that rms, their holds and returns within %.1f ms)' % (
+          x1, y1, x2, y2, hold(sph), sr, v, worst(ml.key_spline(x1, y1, x2, y2), sr, sph), len(close), len(fits), agree))
 ROUND = (0.1, 0.25, 0.75, 0.9)
 e = ml.key_spline(*ROUND)
-v, (rh, rr) = ml.minimize(lambda x: rms(residuals(e, x[0], x[1])), [sh, sr], [0.5, 0.5], 600)
-worst = max(abs(q) for q in residuals(e, rh, rr))
+v, rr, rph = ml.fit_fraction(fracs, e, range(150, 186), [i / 10 for i in range(11)], ks, refine=True)
 print('  KeySpline %g,%g %g,%g, its control points fixed: hold %.1f ms, return %.1f ms; rms %.5f, worst %.5f' % (
-    ROUND + (rh, rr, v, worst)))
+    ROUND + (hold(rph), rr, v, worst(e, rr, rph))))
 print('  (the logged values are rounded to 0.001, about 0.0001 of a full tilt.) If time 0 were the second frame after '
       'the release, each hold would be %.3f ms shorter: %.1f ms for the KeySpline with its control points fixed' % (
-          TICK, rh - TICK))
+          TICK, hold(rph) - TICK))
 
-# #60's fit: the sine against the stopwatch, every frame of every kept press.
-ts = [t - rel for rel, f in kept for _, t, _ in f]
+# #60's fit: the sine against the stopwatch, every frame of every kept press, in ticks from the release.
+ts = [(t - rel) / TICK for rel, f in kept for _, t, _ in f]
 fs = [fr for _, f in kept for _, _, fr in f]
-v, h, r = fit_hold_return(sine, ts, fs, 180, 195)
+v, r, ph = ml.fit_fraction(fs, sine, range(150, 251, 2), [-h / TICK for h in range(150, 211, 2)], ts, refine=True)
 print('\nBy the stopwatch, as #60 fitted it: sine ease-out, hold %.1f ms, return %.1f ms; rms %.4f over %d frames' % (
-    h, r, v, len(ts)))
+    -ph * TICK, r, v, len(ts)))

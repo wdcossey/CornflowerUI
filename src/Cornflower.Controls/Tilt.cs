@@ -18,8 +18,8 @@ namespace Cornflower.Controls;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Measured on Windows Phone 8.1 (#60): the rule, the eye and the timing are in
-/// <see cref="TiltModel"/>. A press jumps to the tilt for its point, which settles over the next
+/// Measured on Windows Phone 8.1 (#60, modelled in #65; the timing re-read in frames,
+/// <c>tools/motion/tiltrelease.py</c>): the rule, the eye and the timing are in <see cref="TiltModel"/>. A press jumps to the tilt for its point, which settles over the next
 /// frames as the phone's does; a move follows the finger; a release, a lost capture or the finger
 /// leaving the control holds the tilt for 182.6 ms, then eases it back over 167 ms. A finger that
 /// comes back onto the control before it lets go tilts it again, as the toolkit's TiltEffect does.
@@ -350,10 +350,14 @@ public static class Tilt
             _held = State;
             _released = CornflowerClock.Now;
             Cancel();
-            _pending = CornflowerClock.Schedule(Return, TiltModel.Hold);
+            _pending = CornflowerClock.RequestFrame(_control, Return);
         }
 
-        /// <summary>One frame of the return: the held tilt, eased back by the time since the release.</summary>
+        /// <summary>
+        /// One frame of the release: the held tilt, eased back by the time since the release. Frames run
+        /// from the release, through the hold, as the phone's release animation does from its begin, so
+        /// the return's frames fall where the hold's left off.
+        /// </summary>
         private void Return()
         {
             _pending = null;
@@ -362,6 +366,12 @@ public static class Tilt
             {
                 if (_phase == Phase.Paused) Clear();
                 else ToRest();
+                return;
+            }
+
+            if (factor >= 1)                                                    // the hold: nothing moves
+            {
+                _pending = CornflowerClock.RequestFrame(_control, Return);
                 return;
             }
 

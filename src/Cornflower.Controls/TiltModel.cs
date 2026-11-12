@@ -89,7 +89,8 @@ internal static class TiltModel
     /// <summary>
     /// The return's easing, a <c>KeySpline</c> 0.1,0.25 0.75,0.9: the fraction of the tilt gone
     /// at a fraction of <see cref="Return"/>. Every release reads the same fraction at each frame,
-    /// within 0.0002; this fits them within 0.00075 (rms 0.00024).
+    /// within 0.0002; this fits them within 0.00075 (rms 0.00024), and within 0.0010 with the hold and
+    /// return rounded to 182.6 and 167.0 ms, as here.
     /// </summary>
     public static readonly (double X1, double Y1, double X2, double Y2) ReturnSpline = (0.1, 0.25, 0.75, 0.9);
 
