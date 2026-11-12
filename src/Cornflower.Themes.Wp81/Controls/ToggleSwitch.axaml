@@ -63,7 +63,6 @@
           <Grid Background="Transparent" RowDefinitions="Auto,Auto,9.5" ColumnDefinitions="*,13.5,77">
             <ContentPresenter x:Name="HeaderContentPresenter"
                               Margin="{TemplateBinding Padding}"
-
                               Content="{TemplateBinding (cf:ControlHeader.Header)}"
                               ContentTemplate="{TemplateBinding (cf:ControlHeader.HeaderTemplate)}" />
             <ContentPresenter x:Name="PART_ContentPresenter"
