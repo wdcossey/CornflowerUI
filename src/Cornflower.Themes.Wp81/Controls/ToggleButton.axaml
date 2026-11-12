@@ -1,0 +1,106 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:wp81="using:Cornflower.Themes.Wp81">
+  <!--
+    The Windows Phone 8.1 ToggleButton: the default style of the 8.1 Update 1 runtime (togglebutton.json, which
+    equals the SDK's generic.xaml), re-expressed as an Avalonia ControlTheme for the plain ToggleButton. Avalonia
+    finds a ControlTheme by the control's style key, its own type, so CheckBox, RadioButton, ToggleSwitch and the
+    other subclasses don't take this one. Every value is the phone's resource key, by DynamicResource.
+    docs/controls/ToggleButton/PLAN.md has the values and their sources.
+
+    The phone's style has the Button's twelve setters. Its template is an unnamed Grid with a transparent background
+    holding two Borders inside PhoneTouchTargetOverhang, each with a ContentPresenter of the content:
+    EnabledBackground and EnabledContent, drawn but when disabled, and DisabledBackground and DisabledContent,
+    collapsed but when disabled. Avalonia can't show one element in two presenters, so ours has one Border and one
+    presenter, and Disabled sets on them what the phone's DisabledBackground and DisabledContent draw, which lie in
+    the same place with the same thickness. The Checked state's setters on the disabled parts are never seen on the
+    phone (they are collapsed while Checked is the state), so they have nothing to set here.
+
+    The states, one group on the phone, by Avalonia's pseudo-classes:
+    - Normal, PointerOver, Pressed, and the three Indeterminate states but IndeterminateDisabled: nothing. A press
+      on an unchecked ToggleButton changes nothing drawn, and an indeterminate one looks unchecked.
+    - Checked and CheckedPointerOver: the accent behind the text in PhoneButtonBasePressedForegroundBrush.
+    - CheckedPressed: nothing, so a checked ToggleButton looks unchecked while it is pressed. When the finger slides
+      off it, the phone goes back to Checked (run 20261112-0755-dev11): so the accent is drawn while checked and not
+      pressed, or pressed with the pointer off it.
+    - Disabled and IndeterminateDisabled: the border and the text in PhoneBaseLowColor, the background transparent.
+    - CheckedDisabled: the checked look at 0.4 opacity, border, background and text together.
+    No theme animation runs, so there is no tilt, and there are no focus states, so FocusAdorner is cleared.
+  -->
+  <ControlTheme x:Key="{x:Type ToggleButton}" TargetType="ToggleButton">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource PhoneForegroundBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource PhoneForegroundBrush}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource PhoneBorderThickness}" />
+    <Setter Property="FontFamily" Value="{DynamicResource PhoneFontFamilyNormal}" />
+    <Setter Property="FontWeight" Value="{DynamicResource PhoneButtonFontWeight}" />
+    <Setter Property="FontSize" Value="{DynamicResource TextStyleLargeFontSize}" />
+    <Setter Property="Padding" Value="{DynamicResource PhoneButtonContentPadding}" />
+    <Setter Property="MinHeight" Value="{DynamicResource PhoneButtonMinHeight}" />
+    <Setter Property="MinWidth" Value="{DynamicResource PhoneButtonMinWidth}" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <!-- Not set by the phone's style: WinRT's own defaults, which Avalonia's are not. -->
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="FocusAdorner" Value="{x:Null}" />
+    <!-- In the template of a control Wp81 doesn't theme yet (ComboBox, DrawerPage), the theme under Wp81's ToggleButton instead. -->
+    <Setter Property="wp81:HoleParts.FallBack" Value="True" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <!--
+          RequiresFullOpacityHandling: the Border's opacity, 0.4 when checked and disabled, is drawn as the phone's is, on
+          the Border and its content together as one layer, not on each thing it draws. Skia reads it from the parent.
+        -->
+        <Panel Background="Transparent" RenderOptions.RequiresFullOpacityHandling="True">
+          <Border x:Name="EnabledBackground"
+                  Margin="{DynamicResource PhoneTouchTargetOverhang}"
+                  Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}">
+            <ContentPresenter x:Name="PART_ContentPresenter"
+                              Margin="{TemplateBinding Padding}"
+                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                              Content="{TemplateBinding Content}"
+                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                              RecognizesAccessKey="True"
+                              wp81:PhoneContentLine.IsEnabled="True" />
+          </Border>
+        </Panel>
+      </ControlTemplate>
+    </Setter>
+
+    <!-- Checked and CheckedPointerOver; and CheckedPressed left, the finger slid off. -->
+    <Style Selector="^:checked:not(:pressed), ^:checked:not(:pointerover)">
+      <Style Selector="^ /template/ Border#EnabledBackground">
+        <Setter Property="Background" Value="{DynamicResource PhoneAccentBrush}" />
+      </Style>
+      <Style Selector="^ /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Foreground" Value="{DynamicResource PhoneButtonBasePressedForegroundBrush}" />
+      </Style>
+    </Style>
+
+    <!-- Disabled and IndeterminateDisabled: what the phone's DisabledBackground and DisabledContent draw. -->
+    <Style Selector="^:disabled:not(:checked)">
+      <Style Selector="^ /template/ Border#EnabledBackground">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{DynamicResource ButtonDisabledBorderThemeBrush}" />
+      </Style>
+      <Style Selector="^ /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Foreground" Value="{DynamicResource ButtonDisabledForegroundThemeBrush}" />
+      </Style>
+    </Style>
+
+    <!-- CheckedDisabled: the checked look, the Border and what it holds at 0.4 together. -->
+    <Style Selector="^:checked:disabled">
+      <Style Selector="^ /template/ Border#EnabledBackground">
+        <Setter Property="Background" Value="{DynamicResource PhoneAccentBrush}" />
+        <Setter Property="Opacity" Value="0.4" />
+      </Style>
+      <Style Selector="^ /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Foreground" Value="{DynamicResource PhoneButtonBasePressedForegroundBrush}" />
+      </Style>
+    </Style>
+  </ControlTheme>
+</ResourceDictionary>

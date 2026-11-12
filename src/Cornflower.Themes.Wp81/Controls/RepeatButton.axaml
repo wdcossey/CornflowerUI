@@ -1,0 +1,84 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:wp81="using:Cornflower.Themes.Wp81">
+  <!--
+    The Windows Phone 8.1 RepeatButton: the default style of the 8.1 Update 1 runtime (repeatbutton.json, which
+    equals the SDK's generic.xaml), re-expressed as an Avalonia ControlTheme. Every value is the phone's resource
+    key, by DynamicResource. docs/controls/RepeatButton/PLAN.md has the values and their sources.
+
+    The phone's style has the Button's twelve setters and a template of three parts: an unnamed Grid with a
+    transparent background, a Border named Border inside PhoneTouchTargetOverhang, and a ContentPresenter. Its
+    states are Button's colours without the tilt: Pressed fills the Border with the accent and draws the text over
+    it, Disabled dims the border and the text, PointerOver changes nothing. It runs no theme animation, so there is
+    no tilt (the forced Pressed capture is flat, where Button's is tilted), and no focus states, so FocusAdorner is
+    cleared.
+
+    The phone's own values for what the style doesn't set, read through the API in the emulator (run
+    20261112-0755-dev11): ClickMode Press, Delay 500 and Interval 33, where Avalonia's RepeatButton has Release, 300
+    and 100. So a press clicks at once, the first repeat is half a second later, and one every 33 ms after that.
+    PhoneRepeat stops the repeats while the finger is off the button, as the phone's do.
+  -->
+  <ControlTheme x:Key="{x:Type RepeatButton}" TargetType="RepeatButton">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource PhoneForegroundBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource PhoneForegroundBrush}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource PhoneBorderThickness}" />
+    <Setter Property="FontFamily" Value="{DynamicResource PhoneFontFamilyNormal}" />
+    <Setter Property="FontWeight" Value="{DynamicResource PhoneButtonFontWeight}" />
+    <Setter Property="FontSize" Value="{DynamicResource TextStyleLargeFontSize}" />
+    <Setter Property="Padding" Value="{DynamicResource PhoneButtonContentPadding}" />
+    <Setter Property="MinHeight" Value="{DynamicResource PhoneButtonMinHeight}" />
+    <Setter Property="MinWidth" Value="{DynamicResource PhoneButtonMinWidth}" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <!-- Not set by the phone's style: WinRT's own defaults, which Avalonia's are not. -->
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="ClickMode" Value="Press" />
+    <Setter Property="Delay" Value="500" />
+    <Setter Property="Interval" Value="33" />
+    <Setter Property="FocusAdorner" Value="{x:Null}" />
+    <Setter Property="wp81:PhoneRepeat.IsEnabled" Value="True" />
+    <!-- In the template of a control Wp81 doesn't theme yet (ScrollBar), the theme under Wp81's RepeatButton instead. -->
+    <Setter Property="wp81:HoleParts.FallBack" Value="True" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Panel Background="Transparent">
+          <Border x:Name="Border"
+                  Margin="{DynamicResource PhoneTouchTargetOverhang}"
+                  Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}">
+            <ContentPresenter x:Name="PART_ContentPresenter"
+                              Margin="{TemplateBinding Padding}"
+                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                              Content="{TemplateBinding Content}"
+                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                              RecognizesAccessKey="True"
+                              wp81:PhoneContentLine.IsEnabled="True" />
+          </Border>
+        </Panel>
+      </ControlTemplate>
+    </Setter>
+
+    <Style Selector="^:pressed">
+      <Style Selector="^ /template/ Border#Border">
+        <Setter Property="Background" Value="{DynamicResource ButtonPressedBackgroundThemeBrush}" />
+      </Style>
+      <Style Selector="^ /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Foreground" Value="{DynamicResource ButtonPressedForegroundThemeBrush}" />
+      </Style>
+    </Style>
+
+    <Style Selector="^:disabled">
+      <Style Selector="^ /template/ Border#Border">
+        <Setter Property="Background" Value="{DynamicResource ButtonDisabledBackgroundThemeBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource ButtonDisabledBorderThemeBrush}" />
+      </Style>
+      <Style Selector="^ /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Foreground" Value="{DynamicResource ButtonDisabledForegroundThemeBrush}" />
+      </Style>
+    </Style>
+  </ControlTheme>
+</ResourceDictionary>
