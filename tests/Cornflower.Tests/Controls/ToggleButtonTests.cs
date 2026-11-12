@@ -360,6 +360,65 @@ public class ToggleButtonTests
         ButtonFamily.AssertBorder(frame, CheckedDisabledBorderInk(dark), ButtonReadings.Page(dark), CheckedDisabledFillInk(dark), tolerance: 1);
     }
 
+    // Disabled mid-press (a busy Command, say), a checked one is CheckedDisabled: Avalonia's Button lets go of the press
+    // when it is disabled, so the accent is there at 0.4.
+    [AvaloniaFact]
+    public void Disabled_Mid_Press_It_Is_Checked_And_Disabled()
+    {
+        using var stage = new ButtonStage<ToggleButton>(Toggle(isChecked: true));
+        var toggle = stage.Button;
+        stage.Window.MouseDown(stage.Centre, MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(ButtonReadings.Transparent, Fill(toggle));
+
+        toggle.IsEnabled = false;
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(Accent, Fill(toggle));
+        Assert.Equal(CheckedDisabledOpacity, BorderOf(toggle).Opacity);
+        stage.Window.MouseUp(stage.Centre, MouseButton.Left);
+    }
+
+    // A right click, or another press, while Space holds a checked one changes nothing: it stays CheckedPressed when the
+    // mouse then leaves.
+    [AvaloniaFact]
+    public void A_Right_Click_While_Space_Holds_It_Is_Not_Followed()
+    {
+        using var stage = new ButtonStage<ToggleButton>(Toggle(isChecked: true));
+        var toggle = stage.Button;
+        toggle.Focus();
+        stage.Window.KeyPressQwerty(PhysicalKey.Space, RawInputModifiers.None);
+        stage.Window.MouseDown(stage.Centre, MouseButton.Right);
+        stage.Window.MouseMove(stage.At(toggle.Bounds.Width / 2, toggle.Bounds.Height + 30));
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.True(toggle.IsPressed);
+        Assert.Equal(ButtonReadings.Transparent, Fill(toggle));
+        stage.Window.MouseUp(stage.Centre, MouseButton.Right);
+        stage.Window.KeyReleaseQwerty(PhysicalKey.Space, RawInputModifiers.None);
+    }
+
+    // A press in a popup the ToggleButton holds is routed through it, but isn't in its tree, and here lands below it: not
+    // followed, so the press stays CheckedPressed rather than judged off.
+    [AvaloniaFact]
+    public void A_Press_In_A_Popup_It_Holds_Is_Not_Followed()
+    {
+        var inside = new Border { Width = 100, Height = 100, Background = Brushes.Red };
+        var popup = new Popup { Child = inside, Placement = PlacementMode.Bottom };
+        var toggle = new ToggleButton { IsChecked = true, Content = new Panel { Children = { new TextBlock { Text = "toggle" }, popup } } };
+        using var stage = new ButtonStage<ToggleButton>(toggle);
+        popup.IsOpen = true;
+        Dispatcher.UIThread.RunJobs();
+        var popupTop = TopLevel.GetTopLevel(inside)!;                                    // headless: the window's overlay layer
+        Assert.False(toggle.IsVisualAncestorOf(inside));
+
+        popupTop.MouseDown(inside.TranslatePoint(new Point(50, 50), popupTop)!.Value, MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.True(toggle.IsPressed);
+        Assert.Equal(ButtonReadings.Transparent, Fill(toggle));
+        popupTop.MouseUp(inside.TranslatePoint(new Point(50, 50), popupTop)!.Value, MouseButton.Left);
+    }
+
     // Indeterminate and its PointerOver and Pressed set nothing: the unchecked look. IndeterminateDisabled is Disabled's.
     [AvaloniaFact]
     public void Indeterminate_Looks_Unchecked_And_Disabled_Looks_Disabled()

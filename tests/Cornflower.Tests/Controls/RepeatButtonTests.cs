@@ -289,6 +289,29 @@ public class RepeatButtonTests
         stage.Window.TouchEnd(finger, stage.Centre);
     }
 
+    // The first finger's press is the one followed: a second finger pressing and sliding off takes nothing over.
+    [AvaloniaFact]
+    public void A_Second_Finger_Takes_Nothing_Over()
+    {
+        using var stage = new ButtonStage<RepeatButton>(Repeat());
+        var button = stage.Button;
+        var clicks = 0;
+        button.Click += (_, _) => clicks++;
+        var off = stage.At(button.Bounds.Width / 2, button.Bounds.Height + 30);
+
+        var first = stage.Window.TouchBegin(stage.Centre);
+        RunFor(10_000, () => clicks >= 2);
+        var second = stage.Window.TouchBegin(stage.At(20, 30));
+        stage.Window.TouchMove(second, off);
+        Dispatcher.UIThread.RunJobs();
+        var before = clicks;
+        RunFor(10_000, () => clicks > before);
+
+        Assert.True(clicks > before, "the second finger, off, stopped the first's repeats");
+        stage.Window.TouchEnd(second, off);
+        stage.Window.TouchEnd(first, stage.Centre);
+    }
+
     // A press slid off and lifted there leaves nothing behind: the next tap clicks at its press.
     [AvaloniaFact]
     public void After_A_Lift_Off_It_The_Next_Tap_Clicks()

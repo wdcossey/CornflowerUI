@@ -26,7 +26,9 @@ namespace Cornflower.Themes.Wp81;
 /// class handler runs before the app's handlers, and a handled Click doesn't run the button's
 /// <see cref="Button.Command"/>. The timer keeps running, as the phone's does, so the next tick after the finger comes
 /// back clicks. A Click from a control in the button's content goes on.</para>
-/// <para>It costs a pressed control a hit test per move, and no global rule.</para>
+/// <para>It costs a pressed control a hit test per move, and no global rule. A held-back repeat is a Click marked
+/// handled: a handler added with <c>handledEventsToo</c> still sees it, and a Flyout on the button still opens and
+/// closes with it, as Avalonia's Button does that before it raises Click.</para>
 /// </remarks>
 internal static class PhonePress
 {
@@ -62,36 +64,54 @@ internal static class PhonePress
 
     public static void SetIsEnabled(Button button, bool value) => button.SetValue(IsEnabledProperty, value);
 
-    public static bool GetIsOff(Button button) => button.GetValue(IsOffProperty);
-
+    /// <summary>
+    /// Follows the press that made the button pressed: a left press (a touch, a pen tip, the mouse's left button)
+    /// inside the button's own tree, not one in a popup it owns, which is another tree, and only the first: a second
+    /// finger, or a press while Space holds it, takes nothing over.
+    /// </summary>
     private static void OnPressed(Button button, PointerPressedEventArgs e)
     {
-        if (button.IsPressed && button.GetValue(IsEnabledProperty) && TopLevel.GetTopLevel(button) is { } top)
-            Follow(button, new Press(e.Pointer, e.GetPosition(top)));
+        if (!button.IsPressed || !button.GetValue(IsEnabledProperty) || button.IsSet(PressProperty) ||
+            !e.GetCurrentPoint(button).Properties.IsLeftButtonPressed ||
+            e.Source is not Visual source || (source != button && !button.IsVisualAncestorOf(source)) ||
+            TopLevel.GetTopLevel(button) is not { } top)
+            return;
+
+        var press = new Press(e.Pointer) { At = e.GetPosition(top) };
+        button.SetValue(PressProperty, press);
+        Judge(button, press, top);
     }
 
     private static void OnMoved(Button button, PointerEventArgs e)
     {
-        if (button.GetValue(PressProperty) is { } press && press.Pointer == e.Pointer && TopLevel.GetTopLevel(button) is { } top)
-            Follow(button, press with { At = e.GetPosition(top) });
+        if (button.GetValue(PressProperty) is not { } press || press.Pointer != e.Pointer || TopLevel.GetTopLevel(button) is not { } top)
+            return;
+
+        press.At = e.GetPosition(top);
+        Judge(button, press, top);
     }
 
     private static void OnRepeat(RepeatButton button, RoutedEventArgs e)
     {
         // Only the button's own Click: one from a control in its content goes on, wherever this one's pointer is.
-        if (e.Source == button && button.IsPressed && button.GetValue(PressProperty) is { } press && Follow(button, press))
+        if (e.Source == button && button.IsPressed && button.GetValue(PressProperty) is { } press &&
+            TopLevel.GetTopLevel(button) is { } top && Judge(button, press, top))
             e.Handled = true;
     }
 
-    /// <summary>Keeps <paramref name="press"/> and says whether its pointer is off the button: true if it is.</summary>
-    private static bool Follow(Button button, Press press)
+    /// <summary>Sets whether <paramref name="press"/>'s pointer is off the button, and says it: true if it is.</summary>
+    private static bool Judge(Button button, Press press, TopLevel top)
     {
-        button.SetValue(PressProperty, press);
-        var off = TopLevel.GetTopLevel(button) is { } top && top.TranslatePoint(press.At, button) is { } at && !button.GetVisualsAt(at).Any();
+        var off = top.TranslatePoint(press.At, button) is { } at && !button.GetVisualsAt(at).Any();
         button.SetValue(IsOffProperty, off);
         return off;
     }
 
-    /// <summary>A pointer pressing a button, and where it was last seen in the top level.</summary>
-    private sealed record Press(IPointer Pointer, Point At);
+    /// <summary>A pointer pressing a button, and where it was last seen in the top level: one per press, kept up to date.</summary>
+    private sealed class Press(IPointer pointer)
+    {
+        public IPointer Pointer { get; } = pointer;
+
+        public Point At { get; set; }
+    }
 }

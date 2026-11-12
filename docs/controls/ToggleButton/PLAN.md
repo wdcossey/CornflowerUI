@@ -150,7 +150,10 @@ No type is substituted. Rung 1 and 2 only.
 `PhonePress` (`src/Cornflower.Themes.Wp81/PhonePress.cs`, internal, new in this PR, shared with RepeatButton) follows
 the pointer that pressed the control, from the press to the release, and sets `IsOff` while that pointer is off it: no
 part of the control under it, as Avalonia's Button decides a release doesn't click. Only that pointer counts. With no
-pointer press (Space), nothing is off. The ToggleButton theme turns it on and reads `IsOff` in its checked selector.
+pointer press (Space), nothing is off. It follows only the press that made the control pressed: a left press, in the
+control's own tree (not a popup it holds), and the first (a second finger takes nothing over). The ToggleButton theme
+turns it on and reads `IsOff` in its checked selector. A finger held still while the control moves away is judged at
+its next move (a RepeatButton's repeats are judged at each Click).
 
 ### HoleParts, by style key
 
@@ -177,12 +180,15 @@ Each has a test in `tests/Cornflower.Tests/Controls/ToggleButtonTests.cs` unless
 3. **Unchecked**: the border where the PNGs draw it, the page inside. `Unchecked_The_Border_Is_Drawn_Where_The_Phone_Draws_It`.
 4. **Checked**: the accent inside, the text over it, the border unchanged; the app's accent. `Checked_Fills_With_The_Accent_And_Draws_The_Text_Over_It`, `Checked_Follows_The_Apps_Accent`.
 5. **Pressed and CheckedPressed show the unchecked look, and the release toggles.** `A_Press_Shows_The_Unchecked_Look_And_The_Release_Toggles`.
-6. **Sliding off a pressed checked one shows it checked; the lift off it keeps it**, by mouse and by touch; a held Space shows the unchecked look. `Sliding_Off_A_Pressed_Checked_One_Shows_It_Checked_And_The_Lift_Off_It_Keeps_It`, `Under_A_Finger_Checked_Looks_Unchecked_Until_It_Slides_Off`, `Held_Space_On_A_Checked_One_Shows_The_Unchecked_Look`.
+6. **Sliding off a pressed checked one shows it checked; the lift off it keeps it**, by mouse and by touch; a held Space shows the unchecked look. `Sliding_Off_A_Pressed_Checked_One_Shows_It_Checked_And_The_Lift_Off_It_Keeps_It`, `Under_A_Finger_Checked_Looks_Unchecked_Until_It_Slides_Off`, `Held_Space_On_A_Checked_One_Shows_The_Unchecked_Look`; only the press that made it pressed is followed: not a right
+   click while Space holds it, nor a press in a popup it holds, `A_Right_Click_While_Space_Holds_It_Is_Not_Followed`,
+   `A_Press_In_A_Popup_It_Holds_Is_Not_Followed`.
 7. **The pointer over it changes nothing**, checked or not. `The_Pointer_Over_It_Changes_Nothing`.
 8. **Disabled** dims the border and the text, transparent inside whatever the app set (`#FF737373`, `#FFBFBFBF`).
    `Disabled_Dims_The_Border_And_The_Text_As_The_Phone_Does`.
 9. **CheckedDisabled** is the checked look at 0.4 as one layer: the PNGs' border and fill within a step.
-   `Checked_And_Disabled_Is_The_Checked_Look_At_Four_Tenths`.
+   `Checked_And_Disabled_Is_The_Checked_Look_At_Four_Tenths`; disabled mid-press too (Avalonia's Button lets the press go),
+   `Disabled_Mid_Press_It_Is_Checked_And_Disabled`.
 10. **Indeterminate looks unchecked; IndeterminateDisabled looks disabled.** `Indeterminate_Looks_Unchecked_And_Disabled_Looks_Disabled`.
 11. **The colours follow the variant.** `The_Colours_Follow_A_Change_Of_Variant`.
 12. **No tilt.** `A_Press_Doesnt_Tilt`.

@@ -134,7 +134,8 @@ Each has a test in `tests/Cornflower.Tests/Controls/RepeatButtonTests.cs` unless
     `Without_PhonePress_Avalonias_Repeats_Go_On_Off_The_Button`; a button that moves from a still finger stops,
     `A_Button_That_Moves_From_A_Still_Finger_Stops_Repeating`; another pointer over it changes nothing,
     `Another_Pointer_Over_It_Doesnt_Bring_The_Repeats_Back`; a lift off it leaves nothing behind,
-    `After_A_Lift_Off_It_The_Next_Tap_Clicks`; a click from its content goes on, `A_Click_From_Its_Content_Isnt_Held_Back`.
+    `After_A_Lift_Off_It_The_Next_Tap_Clicks`; a second finger takes nothing over, `A_Second_Finger_Takes_Nothing_Over`;
+    a click from its content goes on, `A_Click_From_Its_Content_Isnt_Held_Back`.
 12. **The keyboard's clicks aren't held back.** `Space_Clicks_Whatever_The_Pointer_Did_Before`.
 13. **RepeatButtons in templates written for the theme under Wp81 keep that theme's**, and without `PhonePress`: a
     ScrollBar's, every hole's (`Completeness/HoleTogglePartsTests.cs`).
