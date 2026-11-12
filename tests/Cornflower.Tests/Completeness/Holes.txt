@@ -68,7 +68,6 @@ TextBox
 TextSelectionHandle
 TimePicker
 TimePickerPresenter
-ToggleSwitch
 ToolTip
 TransitioningContentControl
 TreeView

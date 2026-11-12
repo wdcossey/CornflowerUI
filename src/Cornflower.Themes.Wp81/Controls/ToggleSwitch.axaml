@@ -1,0 +1,172 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:cf="using:Cornflower.Controls"
+                    xmlns:wp81="using:Cornflower.Themes.Wp81">
+  <!--
+    The Windows Phone 8.1 ToggleSwitch: the default style of the 8.1 Update 1 runtime (toggleswitch.json, which equals
+    the SDK's generic.xaml), re-expressed as an Avalonia ControlTheme. Every value is the phone's resource key, by
+    DynamicResource, so it follows the theme variant and an app can override it by its key.
+    docs/controls/ToggleSwitch/PLAN.md has the values and their sources.
+
+    The template is the phone's, part for part: the header and the content in the first column, the switch in the
+    77-wide third, 13.5 apart, a 9.5 row below. What WinRT's ToggleSwitch does in code, and Avalonia's does otherwise:
+    - HeaderContentPresenter shows cf:ControlHeader.Header and HeaderTemplate (WinRT's Header and HeaderTemplate,
+      which Avalonia's ToggleSwitch lacks), in the phone's HeaderContentPresenterStyle and the template's own
+      ToggleSwitchHeaderForegroundThemeBrush, with the phone's 1.33 em line (PhoneHeaderLine), no access keys, as
+      WinRT's. Empty, its row is still half the switch's height, as the phone's is (17.9167 in its no-header capture):
+      the switch spans both rows, and the Grid shares its height between them. Avalonia's own Content, which Avalonia's themes show above the switch, is shown in its place, in the same style, when there is
+      no Header (PART_ContentPresenter).
+    - PART_OffContentPresenter and PART_OnContentPresenter, Avalonia's parts, are the phone's OffContentPresenter and
+      OnContentPresenter: hidden and not hit, but the one :unchecked or :checked shows (the phone's ContentStates).
+    - The knob moves as Avalonia moves it: PART_MovingKnobs at Canvas.Left 0 off and PART_SwitchKnob's width on, in a
+      Canvas the knob's width short of the switch, so the travel is the phone's KnobOnToOffOffset, 136 raw px at 2.4
+      (56.6667). KnobTransitions is the phone's RepositionThemeAnimation: 370 ms, KeySpline 0.1,0.9 0.2,1 (#66).
+    - SwitchCurtain, the accent, is as wide as the knob's Canvas.Left, so its edge is always under the knob, as the
+      phone's curtain is (it moves with the knob, 8 to 15.5 into it), clipped by SwitchCurtainBounds.
+    - SwitchThumb, transparent and on top, is the phone's Thumb, which takes the drag and the tap: the switch, 13.5
+      either side, 15.5 above and 6.5 below. PhoneToggleSwitch gives a press on it the phone's tap and drag, and keeps
+      a press elsewhere on the template from toggling. PhoneNoManipulation is the phone's ManipulationMode None on the
+      switch: a drag on it never scrolls its page.
+
+    The visual states: CommonStates' Normal, PointerOver and Pressed set nothing, and FocusAdorner is cleared; Disabled
+    (:disabled) sets the keys the phone's does. ToggleStates' On and Off are where the knob and the curtain rest
+    (:checked, :unchecked); Dragging sets nothing.
+  -->
+  <ControlTheme x:Key="{x:Type ToggleSwitch}" TargetType="ToggleSwitch">
+    <Setter Property="Foreground" Value="{DynamicResource ToggleSwitchForegroundThemeBrush}" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
+    <!-- WinRT's Control has Center by default, which the dumps read; Avalonia's ContentControl has Stretch. -->
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="FontFamily" Value="{DynamicResource ContentControlThemeFontFamily}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="FontSize" Value="{DynamicResource ControlContentThemeFontSize}" />
+    <Setter Property="Margin" Value="0" />
+    <Setter Property="Padding" Value="0,0,25.5,0" />
+    <Setter Property="FocusAdorner" Value="{x:Null}" />
+    <Setter Property="KnobTransitions">
+      <Transitions>
+        <DoubleTransition Property="Canvas.Left" Duration="0:0:0.37">
+          <DoubleTransition.Easing>
+            <SplineEasing X1="0.1" Y1="0.9" X2="0.2" Y2="1" />
+          </DoubleTransition.Easing>
+        </DoubleTransition>
+      </Transitions>
+    </Setter>
+    <Setter Property="wp81:PhoneToggleSwitch.IsEnabled" Value="True" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Background="{TemplateBinding Background}"
+                BorderBrush="{TemplateBinding BorderBrush}"
+                BorderThickness="{TemplateBinding BorderThickness}">
+          <Grid Background="Transparent" RowDefinitions="Auto,Auto,9.5" ColumnDefinitions="*,13.5,77">
+            <ContentPresenter x:Name="HeaderContentPresenter"
+                              Margin="{TemplateBinding Padding}"
+
+                              Content="{TemplateBinding (cf:ControlHeader.Header)}"
+                              ContentTemplate="{TemplateBinding (cf:ControlHeader.HeaderTemplate)}" />
+            <ContentPresenter x:Name="PART_ContentPresenter"
+                              Margin="{TemplateBinding Padding}"
+                              IsVisible="{TemplateBinding (cf:ControlHeader.Header), Converter={x:Static ObjectConverters.IsNull}}"
+                              Content="{TemplateBinding Content}"
+                              ContentTemplate="{TemplateBinding ContentTemplate}" />
+            <Grid Grid.Row="1" Margin="{TemplateBinding Padding}">
+              <ContentPresenter x:Name="PART_OffContentPresenter"
+                                Opacity="0"
+                                IsHitTestVisible="False"
+                                Content="{TemplateBinding OffContent}"
+                                ContentTemplate="{TemplateBinding OffContentTemplate}"
+                                HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+              <ContentPresenter x:Name="PART_OnContentPresenter"
+                                Opacity="0"
+                                IsHitTestVisible="False"
+                                Content="{TemplateBinding OnContent}"
+                                ContentTemplate="{TemplateBinding OnContentTemplate}"
+                                HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+            </Grid>
+            <Grid x:Name="SwitchGrid"
+                  Grid.RowSpan="2"
+                  Grid.Column="2"
+                  VerticalAlignment="Bottom"
+                  wp81:PhoneNoManipulation.IsEnabled="True">
+              <Grid x:Name="SwitchKnobBounds" Height="36">
+                <Border x:Name="OuterBorder" BorderThickness="2.5" Margin="3,4.5">
+                  <Border x:Name="InnerBorder" BorderThickness="2.5" BorderBrush="{DynamicResource ToggleSwitchTrackBorderThemeBrush}">
+                    <Panel x:Name="SwitchCurtainBounds" ClipToBounds="True">
+                      <Rectangle x:Name="SwitchCurtain"
+                                 HorizontalAlignment="Left"
+                                 Width="{Binding #PART_MovingKnobs.(Canvas.Left)}" />
+                    </Panel>
+                  </Border>
+                </Border>
+                <Canvas x:Name="PART_SwitchKnob" Margin="0,0,20.5,0">
+                  <Panel x:Name="PART_MovingKnobs" Height="36">
+                    <Rectangle x:Name="SwitchKnob" Width="20.5" StrokeThickness="2.5" />
+                  </Panel>
+                </Canvas>
+              </Grid>
+              <Panel x:Name="SwitchThumb" Margin="-13.5,-15.5,-13.5,-6.5" Background="Transparent" />
+            </Grid>
+          </Grid>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+
+    <!-- The header, or Avalonia's Content in its place: HeaderContentPresenterStyle's values, the template's brush, the phone's line. -->
+    <Style Selector="^ /template/ ContentPresenter#HeaderContentPresenter, ^ /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="FontFamily" Value="{DynamicResource PhoneFontFamilyNormal}" />
+      <Setter Property="FontSize" Value="{DynamicResource TextStyleMediumFontSize}" />
+      <Setter Property="FontWeight" Value="Normal" />
+      <Setter Property="Foreground" Value="{DynamicResource ToggleSwitchHeaderForegroundThemeBrush}" />
+      <Setter Property="wp81:PhoneHeaderLine.IsEnabled" Value="True" />
+    </Style>
+
+    <!-- OffContent and OnContent: the phone's font, set on the presenters, and its line. -->
+    <Style Selector="^ /template/ ContentPresenter#PART_OffContentPresenter, ^ /template/ ContentPresenter#PART_OnContentPresenter">
+      <Setter Property="FontFamily" Value="{DynamicResource PhoneFontFamilyNormal}" />
+      <Setter Property="FontSize" Value="{DynamicResource TextStyleExtraLargeFontSize}" />
+      <Setter Property="FontWeight" Value="Normal" />
+      <Setter Property="wp81:PhoneHeaderLine.IsEnabled" Value="True" />
+    </Style>
+
+    <Style Selector="^ /template/ Border#OuterBorder">
+      <Setter Property="BorderBrush" Value="{DynamicResource ToggleSwitchOuterBorderBorderThemeBrush}" />
+    </Style>
+    <Style Selector="^ /template/ Rectangle#SwitchCurtain">
+      <Setter Property="Fill" Value="{DynamicResource ToggleSwitchCurtainBackgroundThemeBrush}" />
+    </Style>
+    <Style Selector="^ /template/ Rectangle#SwitchKnob">
+      <Setter Property="Fill" Value="{DynamicResource ToggleSwitchThumbBackgroundThemeBrush}" />
+      <Setter Property="Stroke" Value="{DynamicResource ToggleSwitchThumbBorderThemeBrush}" />
+    </Style>
+
+    <!-- ContentStates: OffContent and OnContent. -->
+    <Style Selector="^:unchecked /template/ ContentPresenter#PART_OffContentPresenter">
+      <Setter Property="Opacity" Value="1" />
+      <Setter Property="IsHitTestVisible" Value="True" />
+    </Style>
+    <Style Selector="^:checked /template/ ContentPresenter#PART_OnContentPresenter">
+      <Setter Property="Opacity" Value="1" />
+      <Setter Property="IsHitTestVisible" Value="True" />
+    </Style>
+
+    <Style Selector="^:disabled">
+      <Style Selector="^ /template/ ContentPresenter#HeaderContentPresenter, ^ /template/ ContentPresenter#PART_ContentPresenter, ^ /template/ ContentPresenter#PART_OffContentPresenter, ^ /template/ ContentPresenter#PART_OnContentPresenter">
+        <Setter Property="Foreground" Value="{DynamicResource ToggleSwitchDisabledForegroundThemeBrush}" />
+      </Style>
+      <Style Selector="^ /template/ Rectangle#SwitchKnob">
+        <Setter Property="Fill" Value="{DynamicResource ToggleSwitchThumbDisabledBackgroundThemeBrush}" />
+        <Setter Property="Stroke" Value="{DynamicResource ToggleSwitchThumbDisabledBorderThemeBrush}" />
+      </Style>
+      <Style Selector="^ /template/ Border#OuterBorder">
+        <Setter Property="BorderBrush" Value="{DynamicResource ToggleSwitchOuterBorderDisabledBorderThemeBrush}" />
+      </Style>
+      <Style Selector="^ /template/ Rectangle#SwitchCurtain">
+        <Setter Property="Fill" Value="{DynamicResource ToggleSwitchCurtainDisabledBackgroundThemeBrush}" />
+      </Style>
+    </Style>
+  </ControlTheme>
+</ResourceDictionary>
