@@ -89,6 +89,8 @@ public class PasswordBoxTests
         var dark = variant == "Dark";
         var box = Specimen();
         using var stage = new TextBoxTests.Stage(VariantOf(variant), box);
+        box.FontWeight = FontWeight.Bold;                // the header's weight is its own
+        Dispatcher.UIThread.RunJobs();
 
         Assert.Equal(PasswordChar, box.PasswordChar);
         Assert.Equal(PasswordChar, TextOf(box).PasswordChar);
@@ -201,6 +203,7 @@ public class PasswordBoxTests
         Assert.Equal(RevealText, reveal.Content);
         Assert.Equal(White, ColourOf(reveal.Foreground));
         Assert.False(reveal.IsTabStop);
+        Assert.False(reveal.Focusable);
         Assert.False(reveal.IsChecked);
         Assert.False(box.RevealPassword);
 
@@ -228,12 +231,14 @@ public class PasswordBoxTests
         Assert.Same(mine, RevealOf(box).Foreground);
     }
 
-    // A tap on the CheckBox checks it and shows the password.
+    // A tap on the CheckBox checks it and shows the password, and the box keeps its focus (the phone's IsTabStop False:
+    // the CheckBox never takes it), so its keyboard stays up.
     [AvaloniaFact]
     public void A_Tap_On_Show_Password_Shows_It()
     {
         var box = Specimen(reveal: true);
         using var stage = new TextBoxTests.Stage(box: box);
+        Assert.True(box.Focus());
         var square = Part<Border>(RevealOf(box), "CheckBackground");
         var at = square.TranslatePoint(new Point(square.Bounds.Width / 2, square.Bounds.Height / 2), stage.Window)!.Value;
 
@@ -242,6 +247,37 @@ public class PasswordBoxTests
         Dispatcher.UIThread.RunJobs();
 
         Assert.True(box.RevealPassword);
+        Assert.True(box.IsFocused, "the tap took the box's focus");
+    }
+
+    // The phone's ButtonStates untick the RevealButton as it shows or goes: taking the class away while the password
+    // shows hides the password, and so does making the box read only; the button shows again unticked.
+    [AvaloniaFact]
+    public void Hiding_The_Reveal_Button_Hides_The_Password()
+    {
+        var box = Specimen(reveal: true);
+        using var stage = new TextBoxTests.Stage(box: box);
+        var reveal = RevealOf(box);
+
+        reveal.SetCurrentValue(Avalonia.Controls.Primitives.ToggleButton.IsCheckedProperty, true);
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(box.RevealPassword);
+
+        box.Classes.Remove("revealPasswordButton");
+        Dispatcher.UIThread.RunJobs();
+        Assert.False(reveal.IsVisible);
+        Assert.False(box.RevealPassword);
+
+        box.Classes.Add("revealPasswordButton");
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(reveal.IsVisible);
+        Assert.False(reveal.IsChecked);
+
+        reveal.SetCurrentValue(Avalonia.Controls.Primitives.ToggleButton.IsCheckedProperty, true);
+        box.IsReadOnly = true;
+        Dispatcher.UIThread.RunJobs();
+        Assert.False(reveal.IsVisible);
+        Assert.False(box.RevealPassword);
     }
 
     // Typing is masked with the phone's circle.
@@ -270,7 +306,13 @@ public class PasswordBoxTests
         using var stage = new TextBoxTests.Stage(VariantOf(variant), box);
         using (var rest = stage.Capture())
         {
-            Near(RestPixel, Frames.PixelAt(rest, 500, BorderTopRow));
+            // The band and inside it one colour: the background inside the border, not under it (0.96 there).
+            for (var i = 0; i < BorderWidthPixels + 2; i++)
+            {
+                Near(RestPixel, Frames.PixelAt(rest, 500, BorderTopRow + i));
+                Near(RestPixel, Frames.PixelAt(rest, BorderLeftColumn + i, 150));
+            }
+
             Near(RestPixel, Frames.PixelAt(rest, 500, RevealBorderBottomRow));
             Assert.Equal(Hex(Page(dark)), PixelHex(rest, 500, RevealBorderBottomRow + 1));
         }
@@ -370,6 +412,33 @@ public class PasswordBoxTests
         Assert.Equal(3, TextOf(box).LetterSpacing);
     }
 
+    // The Focused state is the focus look: keyboard focus draws no adorner.
+    [AvaloniaFact]
+    public void Keyboard_Focus_Draws_No_Adorner()
+    {
+        var box = Specimen();
+        using var stage = new TextBoxTests.Stage(box: box);
+        stage.Window.Focus();
+        stage.Window.KeyPressQwerty(PhysicalKey.Tab, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.True(box.IsFocused, "Tab didn't reach the box");
+        var layer = Avalonia.Controls.Primitives.AdornerLayer.GetAdornerLayer(box);
+        Assert.True(layer is null || layer.Children.Count == 0, $"{layer?.Children.Count} adorners drawn");
+    }
+
+    // The text both ways, as the TextBox's: what the presenter is given comes back to the box.
+    [AvaloniaFact]
+    public void The_Text_Goes_Both_Ways()
+    {
+        var box = Specimen();
+        using var stage = new TextBoxTests.Stage(box: box);
+        TextOf(box).SetCurrentValue(TextPresenter.TextProperty, "changed");
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal("changed", box.Text);
+    }
+
     // The TextBox theme's pieces: its ScrollViewer part's theme.
     [AvaloniaFact]
     public void The_ScrollViewer_Part_Is_The_TextBoxs()
@@ -379,6 +448,11 @@ public class PasswordBoxTests
 
         Assert.Same(stage.Window.FindResource("Wp81TextBoxScrollViewerTheme"), Part<ScrollViewer>(box, "PART_ScrollViewer").Theme);
         Assert.Equal(new Thickness(BorderThickness), ContentRowOf(box).Margin);     // RichEditBoxTextThemeMargin
+
+        // RichEditBoxTextThemeMargin, not the box's BorderThickness, which the TextBox's binds: an app's 0 leaves it 2.5.
+        box.BorderThickness = new Thickness(0);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(new Thickness(2.5), ContentRowOf(box).Margin);
     }
 
     private static void Near(Color expected, Color actual)

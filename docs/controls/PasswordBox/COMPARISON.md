@@ -75,7 +75,7 @@ frames. The box's pixels are read down column 500 and along each edge, the Check
 | 3 | No reveal button: the TextBox's sizes | **Match** | 65.8333, 39.1667 |
 | 4 | The reveal button's layout | **Match** on the phone's stages | 108.75, 31.25, 51.25; 78.75 |
 | 5 | Ticking "Show Password" shows the password | **Match** by the template (no capture of a shown password) | `RevealPassword`, both ways |
-| 6 | Unticked when the button shows or hides | **Gap**, recorded | The CheckBox follows `RevealPassword` alone |
+| 6 | Unticked when the button shows or hides | **Match** by the template (`PhoneRevealButton`) | The class gone, the password hidden |
 | 7 | Under a pointer, drawn whole | **Match** | 255 inside, dark |
 | 8 | The placeholder at the box's size | **Match** by the template | 30 at 30 |
 | 9 | Disabled, the CheckBox too | **Deliberate difference** from the forced capture | Above |
@@ -86,8 +86,6 @@ frames. The box's pixels are read down column 500 and along each edge, the Check
   (#31's).
 - **The text's baseline**, and so the circles, sits 0.95 DIP above the phone's (#36's).
 - **At rest in light**, 203 grey where the phone's is 204: Skia's blend.
-- **The `ButtonStates`' unticking** isn't emulated: an app that takes the class away while the password shows leaves it
-  shown.
 - **Unmeasured**: a shown password (the template unticks a forced one; a probe with a real tap is owed), the caret, the
   selection and the keyboard.
 - **The text is Selawik** (ADR 0001), and **Selawik has no `●`** (U+25CF; it has `•`, U+2022): Avalonia draws the

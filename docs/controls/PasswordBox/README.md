@@ -29,8 +29,10 @@ line, the reveal button and the phone's pointer-over look.
 - **Masked** with `●`, WinRT's default `PasswordChar`, on one line with no return.
 - **"Show Password"**: with the `revealPasswordButton` class, Wp81's CheckBox below the box, lifted 6.5 into the box's
   row, at the left; ticking it is `RevealPassword`, which shows the password, and setting `RevealPassword` ticks it. It
-  shows whether or not there is a password, as on the phone. Its text is `Wp81PasswordBoxRevealText`, "Show Password",
-  which an app can define for its language.
+  shows whether or not there is a password, as on the phone, but not on a read-only box. A tap on it leaves the box
+  focused. When it shows or hides it is unticked, as the phone's `ButtonStates` untick it, so a password is never left
+  shown with nothing to hide it. Its text is `Wp81PasswordBoxRevealText`, "Show Password", which an app can define for
+  its language.
 - **The border with the reveal button** is what the box's height leaves, as on the phone: on the reference app's stage
   31.25 tall, the text overflowing it below; with room, the TextBox's 39.1667.
 - **Under a pointer** (a mouse) the box is drawn whole, as the phone's empty `PointerOver` state ends the 0.8.
@@ -53,7 +55,7 @@ A `Grid` › `BorderElement`, `HeaderContentPresenter`, `ContentRow` › `InnerL
 
 Rung 1 (theme): a keyed `ControlTheme` for Avalonia's `TextBox`, the reveal button by Avalonia's class, Wp81's CheckBox
 for it; rung 2 for `Header` (`ControlHeader`) and the lines (`PhoneHeaderLine`, `PhoneTextBoxLine`, shared with the
-TextBox); rung 6 (recorded) for the baseline, the rounding and the unticking. No type is substituted: no PasswordBox
+TextBox); `PhoneRevealButton`, internal, for the `ButtonStates`' unticking; rung 6 (recorded) for the baseline and the rounding. No type is substituted: no PasswordBox
 class.
 
 ## Extensions
@@ -65,8 +67,6 @@ None new.
 - **Rounding** (ADR 0003): the box ends one raw pixel short; the CheckBox's square is one raw pixel larger (#31's).
 - **The text's baseline**, and so the circles, 0.95 DIP above the phone's (#36's).
 - **Selawik has no `●`**: the circles come from the platform's fallback font.
-- **The CheckBox isn't unticked when the class goes**, as the phone's `ButtonStates` untick it: it follows
-  `RevealPassword` alone.
 - **Unmeasured**: a shown password, the caret, the selection and the keyboard.
 
 ## The checklist

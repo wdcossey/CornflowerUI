@@ -105,7 +105,10 @@ As the TextBox's (#36's plan), and:
 | `PasswordChar` | `●` by default | `\0` (none) by default | 1, the key's style sets `●` |
 | `IsPasswordRevealButtonEnabled` | a property | the `revealPasswordButton` class | 1 |
 | The RevealButton | a CheckBox, "Show Password", in a third row | Simple's eye button inside the box | 1, the phone's CheckBox, `IsChecked` to `RevealPassword` |
-| Unticked when it shows or hides (`ButtonStates`) | WinRT's states set `IsChecked` False | no states | 6, recorded: the CheckBox follows `RevealPassword` only; an app that takes the class away while the password shows leaves it shown |
+| Unticked when it shows or hides (`ButtonStates`) | WinRT's states set `IsChecked` False | no states | 2, `PhoneRevealButton` (new, internal to the theme): the CheckBox showing or hiding clears `RevealPassword`, so taking the class away never leaves a password shown (the first review's finding) |
+| The RevealButton takes no focus | `IsTabStop` False: never focused, so a tap leaves the box focused and its keyboard up | `IsTabStop` keeps it out of the Tab order only; a press focuses it | 1, `Focusable` False too (the first review's finding: a tap took the box's focus) |
+| Read only | a PasswordBox can't be | `IsReadOnly` | 1, no reveal button on a read-only box, as Simple's and Fluent's gate the class |
+| The CheckBox over the box's bottom | lifted 6.5 by `PasswordBoxCheckBoxThemeMargin`, later in the tree, so its transparent top takes a press there | the same | none: the phone's. A press in the box's bottom 6.67 ticks it, on the phone too |
 | Disabled | the parts disabled too (WinRT's `IsEnabled` reaches them; the forced capture can't show it) | the same | none: the CheckBox's own Disabled look |
 | `PointerOver` | ends Normal's 0.8 | `:pointerover`, a mouse's | 1, the box drawn whole under a pointer |
 | The placeholder's size | the box's | | 1, no `FontSize` on the part |
@@ -125,10 +128,11 @@ Each has a test in `tests/Cornflower.Tests/Controls/PasswordBoxTests.cs` unless 
    the top of its row, the CheckBox 51.25 down at the left. `The_Reveal_Button_Is_Below_The_Box_As_On_The_Phone`; and
    with no header 78.75, and with room the full border.
    `The_Border_Takes_What_The_Header_And_The_Reveal_Button_Leave`.
-5. **The RevealButton** is Wp81's CheckBox, "Show Password", white (black light), not a tab stop, unticked; ticking it
-   reveals the password and `RevealPassword` ticks it; a tap ticks it; its foreground is the template's key.
-   `The_Reveal_Button_Is_The_Phones_CheckBox_And_Reveals_The_Password`, `A_Tap_On_Show_Password_Shows_It`,
-   `The_Reveal_Buttons_Foreground_Is_The_Templates_Key`.
+5. **The RevealButton** is Wp81's CheckBox, "Show Password", white (black light), not a tab stop and never focused,
+   unticked; ticking it reveals the password and `RevealPassword` ticks it; a tap ticks it and leaves the box focused;
+   its foreground is the template's key; hiding it (the class gone, or read only) hides the password, and it shows
+   again unticked. `The_Reveal_Button_Is_The_Phones_CheckBox_And_Reveals_The_Password`, `A_Tap_On_Show_Password_Shows_It`,
+   `The_Reveal_Buttons_Foreground_Is_The_Templates_Key`, `Hiding_The_Reveal_Button_Hides_The_Password`.
 6. **Typing is masked.** `Typing_Is_Masked`.
 7. **The pixels** at rest, focused and disabled, the border ending on the phone's row with the reveal button.
    `The_Box_Is_Drawn_As_The_Phones`; **under a pointer** drawn whole. `The_Pointer_Over_It_Draws_The_Box_Whole`.
@@ -136,7 +140,8 @@ Each has a test in `tests/Cornflower.Tests/Controls/PasswordBoxTests.cs` unless 
 9. **Disabled**, the CheckBox too. `Disabled_The_Reveal_Button_Is_Too`.
 10. **The box's text values** stay out of the header, the placeholder and the CheckBox's text.
     `The_Boxs_Text_Values_Stay_In_The_Text`.
-11. **The TextBox's pieces**: its ScrollViewer part's theme; the content inside `RichEditBoxTextThemeMargin`.
+11. **The TextBox's pieces**: its ScrollViewer part's theme; the content inside `RichEditBoxTextThemeMargin`, not the
+    box's `BorderThickness`.
     `The_ScrollViewer_Part_Is_The_TextBoxs`.
 12. **No global rule**: `StyleBudgetTests`, unchanged. No hole: Avalonia has no PasswordBox type.
 13. **The sample's page** (`Sample/PasswordBoxPageTests.cs`): in the catalogue, every box the key's, three with the
@@ -150,8 +155,10 @@ Each has a test in `tests/Cornflower.Tests/Controls/PasswordBoxTests.cs` unless 
   `IsPasswordRevealButtonEnabled`, which the class style would read instead.
 - **The text "Show Password" is a resource, `Wp81PasswordBoxRevealText`**, in the theme, so an app can translate it by
   defining the key. WinRT's comes from the system's language. To reverse: a literal on the CheckBox.
-- **The `ButtonStates`' unticking isn't emulated**: the CheckBox is `RevealPassword`, both ways. To reverse: an
-  attached behaviour clearing `RevealPassword` when the class goes.
+- **The `ButtonStates`' unticking is `PhoneRevealButton`**, new and internal: the CheckBox showing or hiding clears
+  `RevealPassword`. To reverse: drop its setter; a password shown when the class goes then stays shown.
+- **No reveal button on a read-only box**, as Simple's and Fluent's gate the class (WinRT's PasswordBox can't be read
+  only). To reverse: the selector without `[IsReadOnly=False]`.
 - **`PointerOver` draws the box whole**, as the phone's template does, though a touch never sets `:pointerover` in
   Avalonia 12.1.4 (#93): only a mouse shows it.
 - **A disabled box disables its CheckBox**, unlike the forced `Disabled` capture, as WinRT and Avalonia both do for a
@@ -252,8 +259,8 @@ theme's: Avalonia's own names where it looks for one, the phone's otherwise.
 | [x] | `CommonStates` | `Normal` | `BorderElement.Opacity: DoubleAnimation Duration=0 To={ThemeResource TextControlBorderThemeOpacity}` | the theme's plain setters | The Border's 0.8 |
 | [x] | `CommonStates` | `PointerOver` | nothing | `^:pointerover` | Opacity 1: Normal's 0.8 ends |
 | [x] | `CommonStates` | `Focused` | `BorderElement.BorderBrush = {ThemeResource TextSelectionHighlightColorThemeBrush}`<br>`PlaceholderTextContentPresenter.Opacity: DoubleAnimation Duration=0 To=0`<br>`BorderElement.Background = {ThemeResource TextBoxFocusedBackgroundThemeBrush}` | `^:focus-visible` | `^:focus`, as the TextBox's |
-| [x] | `ButtonStates` | `ButtonVisible` | `RevealButton.Visibility = Visible`<br>`RevealButton.IsChecked = False` | `^:buttonvisible` | `^.revealPasswordButton`; the unticking not emulated (decided) |
-| [x] | `ButtonStates` | `ButtonCollapsed` | `RevealButton.Visibility = Collapsed`<br>`RevealButton.IsChecked = False` | `^:buttoncollapsed` | Without the class; the same |
+| [x] | `ButtonStates` | `ButtonVisible` | `RevealButton.Visibility = Visible`<br>`RevealButton.IsChecked = False` | `^:buttonvisible` | `^.revealPasswordButton[IsReadOnly=False]`; unticked by `PhoneRevealButton` |
+| [x] | `ButtonStates` | `ButtonCollapsed` | `RevealButton.Visibility = Collapsed`<br>`RevealButton.IsChecked = False` | `^:buttoncollapsed` | Without the class; unticked the same way |
 
 ### Transitions (0)
 
