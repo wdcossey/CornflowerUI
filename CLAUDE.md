@@ -40,7 +40,7 @@ measure the reference before writing a line, and you build and test before every
 | `tools/collect-vm.ps1`, `tools/setres.ps1` | Run on the reference VM: inventory its SDK files; set its desktop resolution |
 | `tools/guard/` | `hash-reference.js` writes the SHA-256 list of the pulled Microsoft files that the repository guard test checks against |
 | `.github/workflows/ci.yml` | On every push to `main` and every PR: `build-test` restores, builds and tests the solution in Release; `android` installs the workload and builds the Android sample; `tools`, on Linux, parses every PowerShell script with `pwsh`, compiles the Python tools, checks the Node tools' syntax and runs `tools/motion/selftest.py` |
-| `ref/wp81/` | The emulator's captures, committed by control, with the profile and date: `TextBlock/`, the text styles; `Button/`, at rest and in each `CommonStates` state; `ProgressRing/`, an active ring at rest and in each state, each a moment of its running storyboard; `HyperlinkButton/` and `RepeatButton/`, at rest and in each `CommonStates` state; `ToggleButton/`, `CheckBox/` and `RadioButton/`, unchecked and checked (and CheckBox indeterminate), at rest and in their states; `ProgressBar/`, the 40% and indeterminate bars at rest and in each `CommonStates` state |
+| `ref/wp81/` | The emulator's captures, committed by control, with the profile and date: `TextBlock/`, the text styles; `Button/`, at rest and in each `CommonStates` state; `ProgressRing/`, an active ring at rest and in each state, each a moment of its running storyboard; `HyperlinkButton/` and `RepeatButton/`, at rest and in each `CommonStates` state; `ToggleButton/`, `CheckBox/` and `RadioButton/`, unchecked and checked, at rest and in their states (ToggleButton's and CheckBox's indeterminate states too); `ProgressBar/`, the 40% and indeterminate bars at rest and in each `CommonStates` state |
 | `docs/controls/` | Each control's `PLAN.md`, `COMPARISON.md` and `README.md`: `TextBlock/`, the text styles; `Button/`; `ProgressRing/`; `HyperlinkButton/`; `ToggleButton/`; `RepeatButton/`; `CheckBox/`; `RadioButton/`; `ProgressBar/`; each with our frames |
 | `docs/PROCESS.md` | The control loop: plan, build, compare, review, document |
 | `docs/ROADMAP.md` | Scope, the control inventory by tier, the Tier 0 checklist |
@@ -125,7 +125,8 @@ runtime templates and theme resources equal the SDK's design files.
    `InternalsVisibleTo Cornflower.Themes.Wp81`, for the internals a theme needs to run Cornflower's
    timelines (today `CornflowerClock` and `KeySplineCurve`), accepted on the maintainer's behalf on
    2026-11-12 (#88): the two packages ship together, and the alternative is a public timing API
-   apps would come to depend on.
+   apps would come to depend on. Any other change to a shared file in a control's PR (as #93's to
+   `HoleParts.cs`) is the maintainer's to approve, case by case, and its PR says so.
 8. **Style budget.** `StyleBudgetTests` fails when `Wp81Theme`'s global rules pass their limits. A
    PR that needs more, a control's included, raises the limit in `StyleBudgetTests` on purpose and
    says so in its description, with the new total; past the checkpoint, measure on the phone first

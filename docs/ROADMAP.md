@@ -82,7 +82,7 @@ step, and a control that climbs a rung says so in its PR.
 | [#32](https://github.com/wdcossey/CornflowerUI/issues/32) | RadioButton | RadioButton | Theme, tilt; done 2026-11-12 (#94), device run owed | 1, 2 |
 | [#33](https://github.com/wdcossey/CornflowerUI/issues/33) | ToggleSwitch | ToggleSwitch | Theme. Avalonia's has no `Header`: an attached property. A subclass only if the drag measurement fails | 1, 2 |
 | [#34](https://github.com/wdcossey/CornflowerUI/issues/34) | Slider | Slider | Theme | 1 |
-| [#35](https://github.com/wdcossey/CornflowerUI/issues/35) | ProgressBar | ProgressBar | Theme. The indeterminate dots are the hard part; done 2026-11-12 (#95), device run owed | 1 |
+| [#35](https://github.com/wdcossey/CornflowerUI/issues/35) | ProgressBar | ProgressBar | Theme. The indeterminate dots are the hard part; done 2026-11-12 (#95), device run owed | 1, 2 |
 | [#36](https://github.com/wdcossey/CornflowerUI/issues/36) | TextBox | TextBox | Theme, clear button glyph, `Header` | 1, 2 |
 | [#37](https://github.com/wdcossey/CornflowerUI/issues/37) | PasswordBox | TextBox with `PasswordChar` | Theme. No separate control in Avalonia | 1, 2 |
 

@@ -601,7 +601,8 @@ These apply unchanged. Sources are in Avonic's
 
 - `Tapped` has a movement limit and isn't raised on a second quick press. A button-like control
   tracks press and release itself.
-- `:pointerover` also applies during a touch.
+- `:pointerover` also applies during a touch, Avonic found. Not in Avalonia 12.1.4: a touch doesn't set it
+  ([#93](https://github.com/wdcossey/CornflowerUI/pull/93)), so the ToggleButton theme tells a finger slid off with `PhonePress`.
 
 **Headless tests**
 
