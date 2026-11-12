@@ -40,7 +40,8 @@ internal static class RadioButtonReadings
     // (PhoneLineSpacer here).
     public const double EmptyLine = 24.1276;
 
-    // The dump's ContentPresenter: [33.3333, 15.8333, 100.4167, 24.1667], the TextBlock in it 24.1267 tall: Segoe WP's
+    // The dump's ContentPresenter: [33.3333, 15.8333, 100.4167, 24.1667], the TextBlock in it 24.1267 tall (as read; the empty one
+    // reads 24.1276): Segoe WP's
     // line, 1.33 em at 18.14. Its width is the font's, so it isn't compared.
     public static readonly Point ContentAt = new(33.3333, 15.8333);
     public const double ContentHeight = 24.1667;

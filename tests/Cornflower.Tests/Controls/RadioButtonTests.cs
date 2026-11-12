@@ -152,7 +152,7 @@ public class RadioButtonTests
     }
 
     // The phone's ContentPresenter takes its font from the RadioButton (TemplateBinding FontFamily and FontSize; ours
-    // inherits it), unlike the CheckBox's: so the RadioButton's own FontSize and FontFamily reach its text.
+    // inherits it), unlike the phone's CheckBox's: so the RadioButton's own FontSize and FontFamily reach its text.
     [AvaloniaFact]
     public void The_Texts_Font_Is_The_RadioButtons()
     {
@@ -233,8 +233,9 @@ public class RadioButtonTests
         Assert.Equal(OurCircle, CellOf(radio).Bounds.Height, 0.001);
     }
 
-    // An app's style for TextBlock (Selector="TextBlock") doesn't reach the circle's cell: the phone's empty TextBlock is
-    // a spacer here, so a margin or size for TextBlocks doesn't move the circle off the text.
+    // A deliberate difference (PLAN.md, "Decided on the user's behalf"), not a reading of the phone's: an app's style for
+    // TextBlock (Selector="TextBlock") doesn't reach the circle's cell, as the phone's empty TextBlock is a spacer here,
+    // so a margin or size for TextBlocks doesn't move the circle off the text.
     [AvaloniaFact]
     public void An_Apps_TextBlock_Style_Doesnt_Move_The_Circle()
     {

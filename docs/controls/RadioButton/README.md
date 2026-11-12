@@ -84,6 +84,8 @@ None.
 - **The text is Selawik**, its baseline 0.025 em above the phone's (ADR 0003).
 - **The tilt on a RadioButton isn't measured on the phone**, nor its release: the template has no transition, so the
   phone's may snap back where ours eases, as the Button's does.
+- **An app's `TextBlock` style** doesn't reach the template's empty `TextBlock` (here `PhoneLineSpacer`); on the
+  phone an app-wide implicit style may, and move the circle. Unmeasured.
 - **Owed**: the device run on the Pixel 8.
 
 ## The checklist

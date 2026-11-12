@@ -24,10 +24,11 @@
     - CheckMark, the 12.5 dot in the circle's middle, shown when checked, in PhoneRadioCheckBoxCheckBrush.
     - The phone's empty TextBlock, as PhoneLineSpacer: one of the phone's lines (1.33 em) of the RadioButton's own
       font size tall, and nothing wide. When that line is taller than the circle (a larger FontSize), the cell grows to
-      it and the circle is centred on the text's first line. Not a TextBlock, which an app's TextBlock style would reach.
+      it and the circle is centred on the text's first line. Not a TextBlock, which an app's TextBlock style would reach
+      (a deliberate difference: on the phone an app-wide implicit style may reach it; PLAN.md).
     - PART_ContentPresenter, the part Avalonia's ContentControl looks for, is the phone's ContentPresenter: placed by
       the Padding and the content alignment. Its font and foreground are the RadioButton's, inherited, which is what
-      the phone's TemplateBindings give it, so a FontSize on the RadioButton reaches the text (unlike the CheckBox's
+      the phone's TemplateBindings give it, so a FontSize on the RadioButton reaches the text (unlike the phone's CheckBox
       presenter, which sets its own). The TextBlock it makes of data gets the phone's line, 1.33 em, through
       PhoneContentLine (ADR 0003).
 
@@ -39,8 +40,8 @@
     there is none) is Avalonia's RadioButton's own.
 
     The phone's style sets no Foreground: the RadioButton inherits its page's, PhoneForegroundBrush. Wp81 doesn't
-    theme Avalonia's Window, whose Foreground under Simple isn't the phone's, so this theme sets it, as the CheckBox theme
-    (#31) does.
+    theme Avalonia's Window, whose Foreground under Simple isn't the phone's, so this theme sets it (as the CheckBox theme in
+    PR #92 does too).
   -->
   <ControlTheme x:Key="{x:Type RadioButton}" TargetType="RadioButton">
     <Setter Property="Background" Value="{DynamicResource PhoneRadioCheckBoxBrush}" />
