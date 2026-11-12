@@ -1,0 +1,141 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:cf="using:Cornflower.Controls"
+                    xmlns:wp81="using:Cornflower.Themes.Wp81">
+  <!--
+    The Windows Phone 8.1 CheckBox: the default style of the 8.1 Update 1 runtime (checkbox.json, which equals
+    the SDK's generic.xaml), re-expressed as an Avalonia ControlTheme. Every value is the phone's resource key, by
+    DynamicResource, so it follows the theme variant and an app can override it by its key.
+    docs/controls/CheckBox/PLAN.md has the values and their sources.
+
+    The template is the phone's, part for part:
+    - Root, untilted, with a transparent background, takes the hits across the whole CheckBox, the overhang
+      included, as the phone's unnamed root Grid does.
+    - Grid, inside PhoneTouchTargetLargeOverhang (16 above and below), is the part the phone's
+      PointerDownThemeAnimation and PointerUpThemeAnimation target, so it is marked Tilt.IsTarget: the box and
+      the text tilt together, and the overhang doesn't. Two columns: the box's, 25.5, and the content's.
+    - CheckBackground, the 25.5 box: the CheckBox's Background, BorderBrush and BorderThickness.
+    - NormalRectangle, 13 square in the box's middle, shown when indeterminate. Its fill is
+      CheckBoxBackgroundThemeBrush, transparent, so at rest an indeterminate CheckBox looks unchecked, as on the
+      phone; pressed, it is the accent, as the box is.
+    - CheckGlyph, the tick, in the box's middle, shown when checked: Cornflower's own Wp81.Glyph.CheckMark,
+      measured from the phone's captures, drawn at its own size. The phone's is 18.5 × 17, stretched, and arranged
+      18.33 × 17.08, which is the glyph's own size; stretched into the 18.75 Avalonia would round 18.5 up to, it
+      would be 2% wider than the phone's.
+    - PART_ContentPresenter, the part Avalonia's ContentControl looks for, is the phone's ContentPresenter: placed
+      by the Padding and the content alignment, its font PhoneFontFamilyNormal at TextStyleLargeFontSize, Normal,
+      set on the presenter itself as the phone's are, so the CheckBox's own FontSize doesn't reach the text. The
+      TextBlock it makes of data gets the phone's line, 1.33 em, through PhoneContentLine (ADR 0003).
+
+    The visual states: Pressed (Avalonia's :pressed) fills the box with the accent and draws the tick over it in
+    PhoneTextOverAccentColor, and the tilt runs; Disabled (:disabled) dims the border, the tick and the text.
+    Checked (:checked) shows the tick and Indeterminate (:indeterminate) the rectangle. PointerOver and MouseOver
+    change nothing. The phone has no focus states, so FocusAdorner is cleared. A CheckBox in the template of a control
+    Wp81 doesn't theme yet (Simple's ManagedFileChooser) takes the theme under Wp81's CheckBox instead (HoleParts).
+
+    The phone's style sets no Foreground: the CheckBox inherits its page's, PhoneForegroundBrush. Wp81 doesn't
+    theme Avalonia's Window, whose Foreground under Simple isn't the phone's, so this theme sets it.
+  -->
+  <ControlTheme x:Key="{x:Type CheckBox}" TargetType="CheckBox">
+    <Setter Property="Background" Value="{DynamicResource CheckBoxBackgroundThemeBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource CheckBoxBorderThemeBrush}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource PhoneBorderThickness}" />
+    <Setter Property="FontSize" Value="{DynamicResource TextStyleLargeFontSize}" />
+    <Setter Property="FontFamily" Value="{DynamicResource PhoneFontFamilyNormal}" />
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
+    <Setter Property="VerticalContentAlignment" Value="Top" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+    <Setter Property="VerticalAlignment" Value="Top" />
+    <Setter Property="Padding" Value="{DynamicResource CheckBoxAndRadioButtonTextPaddingThickness}" />
+    <Setter Property="MinWidth" Value="{DynamicResource CheckBoxAndRadioButtonMinWidthSize}" />
+    <!-- Not set by the phone's style: what its CheckBox inherits from the page. -->
+    <Setter Property="Foreground" Value="{DynamicResource PhoneForegroundBrush}" />
+    <Setter Property="FocusAdorner" Value="{x:Null}" />
+    <Setter Property="cf:Tilt.IsEnabled" Value="True" />
+    <!-- In the template of a control Wp81 doesn't theme yet (Simple's file dialog), the theme under Wp81's CheckBox instead (HoleParts). -->
+    <Setter Property="wp81:HoleParts.FallBack" Value="True" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Panel x:Name="Root" Background="Transparent">
+          <Grid x:Name="Grid"
+                Margin="{DynamicResource PhoneTouchTargetLargeOverhang}"
+                ColumnDefinitions="25.5,*"
+                cf:Tilt.IsTarget="True">
+            <Panel Grid.Column="0" VerticalAlignment="Top">
+              <Border x:Name="CheckBackground"
+                      IsHitTestVisible="False"
+                      Width="25.5"
+                      Height="25.5"
+                      HorizontalAlignment="Left"
+                      VerticalAlignment="Center"
+                      Background="{TemplateBinding Background}"
+                      BorderBrush="{TemplateBinding BorderBrush}"
+                      BorderThickness="{TemplateBinding BorderThickness}" />
+              <Rectangle x:Name="NormalRectangle"
+                         IsHitTestVisible="False"
+                         IsVisible="False"
+                         Width="13"
+                         Height="13"
+                         HorizontalAlignment="Center"
+                         VerticalAlignment="Center"
+                         Fill="{DynamicResource CheckBoxBackgroundThemeBrush}" />
+              <Path x:Name="CheckGlyph"
+                    IsHitTestVisible="False"
+                    IsVisible="False"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Fill="{DynamicResource CheckBoxForegroundThemeBrush}"
+                    Data="{DynamicResource Wp81.Glyph.CheckMark}" />
+            </Panel>
+            <ContentPresenter x:Name="PART_ContentPresenter"
+                              Grid.Column="1"
+                              Margin="{TemplateBinding Padding}"
+                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                              Content="{TemplateBinding Content}"
+                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                              FontFamily="{DynamicResource PhoneFontFamilyNormal}"
+                              FontSize="{DynamicResource TextStyleLargeFontSize}"
+                              FontWeight="Normal"
+                              RecognizesAccessKey="True"
+                              wp81:PhoneContentLine.IsEnabled="True" />
+          </Grid>
+        </Panel>
+      </ControlTemplate>
+    </Setter>
+
+    <Style Selector="^:checked /template/ Path#CheckGlyph">
+      <Setter Property="IsVisible" Value="True" />
+    </Style>
+    <Style Selector="^:indeterminate /template/ Rectangle#NormalRectangle">
+      <Setter Property="IsVisible" Value="True" />
+    </Style>
+
+    <Style Selector="^:pressed">
+      <Style Selector="^ /template/ Border#CheckBackground">
+        <Setter Property="Background" Value="{DynamicResource CheckBoxPressedBackgroundThemeBrush}" />
+      </Style>
+      <Style Selector="^ /template/ Path#CheckGlyph">
+        <Setter Property="Fill" Value="{DynamicResource CheckBoxPressedForegroundThemeBrush}" />
+      </Style>
+      <Style Selector="^ /template/ Rectangle#NormalRectangle">
+        <Setter Property="Fill" Value="{DynamicResource CheckBoxPressedBackgroundThemeBrush}" />
+      </Style>
+    </Style>
+
+    <Style Selector="^:disabled">
+      <Style Selector="^ /template/ Border#CheckBackground">
+        <Setter Property="BorderBrush" Value="{DynamicResource CheckBoxDisabledBorderThemeBrush}" />
+      </Style>
+      <Style Selector="^ /template/ Path#CheckGlyph">
+        <Setter Property="Fill" Value="{DynamicResource CheckBoxDisabledForegroundThemeBrush}" />
+      </Style>
+      <Style Selector="^ /template/ Rectangle#NormalRectangle">
+        <Setter Property="Fill" Value="{DynamicResource CheckBoxDisabledBackgroundThemeBrush}" />
+      </Style>
+      <Style Selector="^ /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Foreground" Value="{DynamicResource CheckBoxDisabledForegroundThemeBrush}" />
+      </Style>
+    </Style>
+  </ControlTheme>
+</ResourceDictionary>

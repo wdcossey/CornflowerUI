@@ -13,7 +13,6 @@ CalendarDayButton
 CalendarItem
 Carousel
 CarouselPage
-CheckBox
 ComboBox
 ComboBoxItem
 CommandBar
@@ -49,7 +48,6 @@ OverlayPopupHost
 PathIcon
 PipsPager
 PopupRoot
-ProgressBar
 RefreshContainer
 RefreshVisualizer
 ScrollBar
