@@ -72,10 +72,11 @@ def runs(pts):
 active = series('active')
 if len(active) < 10:
     sys.exit('no Active clock readings in the log')
-gaps = [b[0] - a[0] for a, b in zip(active, active[1:])]
 moves = [b[1] - a[1] for a, b in zip(active, active[1:]) if b[1] > a[1]]
-frame, step = ml.median(gaps), ml.median(moves)
-mean = sum(gaps) / len(gaps)
+step = ml.median(moves)
+# Each reading is a frame, and the clock's move says how many frames each gap held (a wrap, one).
+ticks = [max(1, round((b[1] - a[1]) / step)) if b[1] > a[1] else 1 for a, b in zip(active, active[1:])]
+mean, frame, _ = ml.frame_spacing([t for t, _ in active], ticks)
 print('Active: animation time moves %.3f ms a frame (%d of %d moves within 0.002); frames %.3f ms apart on the '
       'stopwatch (median; mean %.3f)' % (step, sum(abs(m - step) < 0.002 for m in moves), len(moves), frame, mean))
 cycles = runs(active)

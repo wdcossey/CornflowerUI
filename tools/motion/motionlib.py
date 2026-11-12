@@ -543,3 +543,47 @@ def print_fits(vals, ticks, curves=(), unit=''):
 
 def median(vals):
     return statistics.median(vals)
+
+
+def frames(times, merge=3.0):
+    """The frames a probe's readings were logged on: the reading times, sorted, a new frame wherever a reading comes
+    more than `merge` ms after the one before it (one frame's readings are logged within a millisecond or so)."""
+    out, last = [], None
+    for t in sorted(times):
+        if last is None or t - last > merge:
+            out.append(t)
+        last = t
+    return out
+
+
+def frame_spacing(frame_times, ticks=None):
+    """How far apart a run's frames are on the stopwatch: (mean ms a frame, median gap ms, frames counted).
+
+    With `ticks`, one count a gap (a clock read each frame, so its moves say how many frames each gap held), the mean
+    is the time from the first frame to the last over their sum. Without, it is estimated from the gaps alone:
+    - a seed, the median of the gaps up to 1.5 times the shortest tenth's longest, which are single frames however
+      sparse the log;
+    - a gap under half the seed is added to the one before it: a late frame and the early one after it are two;
+    - each gap then counts as round(gap / seed) frames, at least 1; one over 2.5 seeds is left out, time and count,
+      as a stretch with nothing logged, whose frames can't be counted;
+    - the mean is the time kept over the frames counted, and that is done once more with the mean as the seed."""
+    gaps = [b - a for a, b in zip(frame_times, frame_times[1:])]
+    if not gaps:
+        return float('nan'), float('nan'), 0
+    med = median(gaps)
+    if ticks is not None:
+        return (frame_times[-1] - frame_times[0]) / sum(ticks), med, sum(ticks)
+    ordered = sorted(gaps)
+    short = ordered[len(ordered) // 10]
+    seed = median([g for g in ordered if g <= 1.5 * short])
+    for _ in range(2):
+        paired = []
+        for g in gaps:
+            if paired and g < seed / 2:
+                paired[-1] += g
+            else:
+                paired.append(g)
+        kept = [g for g in paired if g <= 2.5 * seed]
+        count = sum(max(1, round(g / seed)) for g in kept)
+        seed = sum(kept) / count
+    return seed, med, count
