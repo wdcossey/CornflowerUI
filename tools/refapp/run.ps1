@@ -33,8 +33,8 @@
   open in the emulator, for screenshots by hand. It captures nothing.
   -Probe <name> runs one of the app's probes (app\Probe.cs) instead of the suite: the app lays a control out and
   writes the touches it wants, vm\touch.ps1 plays them on the emulator's display with the mouse, and the app's
-  log of what the control did comes back as probe.txt, beside touch.log. Probes: toggleswitch, tilt, tiltedge,
-  tiltgrid, motion, pages, projections, ring.
+  log of what the control did comes back as probe.txt, beside touch.log. Probes: toggleswitch, toggletap,
+  togglehalf, tilt, tiltedge, tiltgrid, motion, pages, projections, ring, ringsize.
   -Record (with -Probe) records the emulator's display with ffmpeg gdigrab from just before the touches until the
   probe is done, lossless, and brings back record.mkv and frames.csv, each frame's time in seconds. Probes motion,
   pages, projections and ring start their sequence on one tap, so the recording and the log start together.

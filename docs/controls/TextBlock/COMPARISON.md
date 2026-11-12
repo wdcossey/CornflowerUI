@@ -46,7 +46,9 @@ Sizes, positions and colours are compared by measurement, in [PLAN.md](PLAN.md#t
 | `ListViewItemContentTextBlockStyle` | ![](../../../ref/wp81/TextBlock/light__TextBlock__ListViewItemContentTextBlockStyle__base.png) | ![](frames/light__TextBlock__ListViewItemContentTextBlockStyle__base.png) |
 | `ComboBoxPlaceholderTextBlockStyle` | ![](../../../ref/wp81/TextBlock/light__TextBlock__ComboBoxPlaceholderTextBlockStyle__base.png) | ![](frames/light__TextBlock__ComboBoxPlaceholderTextBlockStyle__base.png) |
 
-`MessageDialogTitleStyle` and `MessageDialogContentStyle` have frames of ours in [`frames/`](frames) but no capture.
+`MessageDialogTitleStyle` and `MessageDialogContentStyle` have frames of ours in [`frames/`](frames); their captures, and every
+style's two-line and wrapped ones, came later (refapp run `20261111-2351-dev11`, in
+[`ref/wp81/TextBlock/`](../../../ref/wp81/TextBlock/README.md)) and aren't laid beside ours here yet.
 
 ## Behaviours
 
@@ -85,4 +87,5 @@ Sizes, positions and colours are compared by measurement, in [PLAN.md](PLAN.md#t
 - **MaxHeight baseline**, 0.025 em high: ADR 0003.
 - **The text-size setting.** The phone scales text by the user's Ease of Access setting
   (`IsTextScaleFactorEnabled`); Avalonia has no such setting. Not declared.
-- **Not captured:** the two MessageDialog styles, and two-line text. Owed to the reference app.
+- **Two lines or more:** the phone ends them Segoe WP's descent below the last baseline, the theme 0.18869 ×
+  `LineHeight`, as for one line ([README, Known gaps](README.md#known-gaps)).

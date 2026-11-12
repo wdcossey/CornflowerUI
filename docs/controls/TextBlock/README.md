@@ -100,8 +100,29 @@ substituted.
 - **Rounding**: laid-out heights within −0.15 and +0.47 DIP of the phone's (ADR 0003).
 - **MaxHeight styles' baseline** is 0.025 em high (ADR 0003).
 - **The phone's text-size setting** (`IsTextScaleFactorEnabled`) has no equivalent.
-- **Not captured on the phone**: the two MessageDialog styles (their values are `generic.xaml`'s and their heights
-  the phone's line worked out from them; a reference app run owes a capture, gap register B18), and two-line text.
+- **Two lines or more are short or tall at the bottom** (B18, measured; the theme isn't changed). Refapp run
+  `20261111-2351-dev11` captured every style with two lines and the wrapping ones with a wrapped sentence
+  ([`ref/wp81/TextBlock/`](../../../ref/wp81/TextBlock/README.md); `python -I tools/refapp/lines.py <run>` prints
+  the numbers). On the phone, as the theme assumes, the first baseline stays at 1.0791 em and each later one is
+  `LineHeight` below the one before: the two lines' "A" are `LineHeight` apart in the PNGs to within 1.15 raw pixels
+  (0.48 DIP, Base and Body; the phone places each line's ink on the pixel grid its own way), the first line's "A" ends within a raw
+  pixel of where it ends alone, and the wrapped specimens' heights, two and three lines, fit
+  1.0791 em + (n − 1) × `LineHeight` + the bottom below with n whole to 0.001. But the bottom isn't the theme's: one
+  line ends 0.18869 × `LineHeight` below its baseline, as PLAN.md fitted, and two or more end Segoe WP's descent,
+  514/2048 = 0.25098 em, below the last, in all 14 BaselineToBaseline styles to 0.002 DIP (Base: 4.552 where one
+  line has 4.056; Header: 14.432 where one line has 10.850). `PhoneTextLine` keeps
+  0.18869 × `LineHeight` whatever the count, so by its model (not rendered here) a block of two or more lines is
+  0.18869 × `LineHeight` − 0.25098 em off the phone's height: 0.50 DIP short for Base, Title, FlyoutPickerTitle and
+  MessageDialogContent, 0.02 for Body, 0.71 for ControlHeader and ControlContextualInfo, 1.17 for ListViewItem and
+  ListViewEmptyStatic, 1.30 for Subheader, 1.62 for GroupHeader, 3.58 for Header, 0.46 for MessageDialogTitle,
+  and 0.58 tall for ComboBoxPlaceholder. The two MaxHeight styles are n × 21.28 on the phone, as in the theme.
+- **The MessageDialog styles, captured** as `TextBlock`s in the same run: `MessageDialogTitleStyle` 33.461 and
+  `MessageDialogContentStyle` 23.631 tall, the line model's heights. The system's `MessageDialog` itself
+  (`Windows.UI.Popups`, grabbed from the screen in runs `20261111-2357-dev11` and `-2358-dev11`, kept outside the
+  repository as the shell draws it) doesn't draw with them as an app's `TextBlock` does: its glyphs are 1.077 to
+  1.087 times as wide as the captures' and its lines 57 and 82 raw pixels apart (23.75 and 34.17 DIP, against 21.5
+  and 31.5), and its text starts 50 raw pixels in, not 46. That fits the shell drawing at about 2.6 raw pixels a DIP
+  rather than the app's 2.4, which isn't confirmed.
 - **Fallback fonts and larger runs**: the `Padding` reads the `TextBlock`'s own face and size, so a first line
   whose fallback font (a script Selawik lacks) or a larger `Run` has a taller ascent sits lower than the phone's
   line by the difference.
