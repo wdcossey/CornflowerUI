@@ -36,6 +36,17 @@ internal sealed class AvaloniaSide
         ["Dragging"] = ":dragging",
     };
 
+    /// <summary>
+    /// Rules that hold for a state in one group only, ahead of <see cref="StateRules"/>: a text control's
+    /// <c>CommonStates</c> <c>Focused</c> is <c>:focus</c>, as a tap focuses a text box on the phone, where
+    /// <c>FocusStates</c>' <c>Focused</c> is keyboard focus (docs/ARCHITECTURE.md, "Visual states", #101).
+    /// </summary>
+    internal static readonly IReadOnlyDictionary<(string Group, string State), string> GroupStateRules =
+        new Dictionary<(string Group, string State), string>
+        {
+            [("CommonStates", "Focused")] = ":focus",
+        };
+
     private readonly Type? _type;
     private readonly HashSet<string> _pseudoClasses = new(StringComparer.Ordinal);
     private readonly List<string> _parts = [];
@@ -122,10 +133,16 @@ internal sealed class AvaloniaSide
     /// <summary>
     /// A state's pseudoclasses by <see cref="StateRules"/>, joined (<c>:checked:pointerover</c>);
     /// empty for plain setters; null when no rule covers it. A state of a control Avalonia doesn't
-    /// have becomes a pseudoclass named after it, in lower case, when no rule covers it.
+    /// have becomes a pseudoclass named after it, in lower case, when no rule covers it. A rule for the
+    /// state in its <paramref name="group"/> (<see cref="GroupStateRules"/>) comes first.
     /// </summary>
-    public string? State(string state)
+    public string? State(string state, string group = "")
     {
+        if (GroupStateRules.TryGetValue((group, state), out var byGroup))
+        {
+            return byGroup;
+        }
+
         if (Decompose(state) is { } parts)
         {
             return string.Concat(parts);

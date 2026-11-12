@@ -479,7 +479,7 @@ in a nested style.
 | ToggleSwitch: `On`, `Off`, `Dragging` | `^:checked`, `^:unchecked`, `^:dragging` | |
 | `SelectionStates`: `Selected`, `Unselected` | `^:selected` | |
 | `FocusStates`: `Focused`, `PointerFocused` | `^:focus-visible`, `^:focus` | |
-| `CommonStates` `Focused` on a text control (TextBox, PasswordBox) | `^:focus` | Not `^:focus-visible`: a tap focuses a text box on the phone too. The rule above is for `FocusStates`. As TextBox does ([#101](https://github.com/wdcossey/CornflowerUI/pull/101)) |
+| `CommonStates` `Focused` on a text control (TextBox, PasswordBox, RichEditBox) | `^:focus` | Not `^:focus-visible`: a tap focuses a text box on the phone too. The rule above is for `FocusStates`; the checklist generator maps `Focused` by its group. As TextBox does ([#101](https://github.com/wdcossey/CornflowerUI/pull/101)) |
 | A state Avalonia's control doesn't raise | For a built-in: an attached behaviour that sets a pseudoclass, a part class, a subclass under rung 4, or a recorded gap, in that order. For ours: a pseudoclass named after the state, lower case | |
 | `Orientation`: `Portrait`, `Landscape` | A pseudoclass our control sets from the top level's size | Avalonia has no `:landscape` |
 | `VisualTransition From="A" To="B" GeneratedDuration="…"` | `Transitions` on the part, with that duration | 50 in 8.1. A WinRT transition runs between two named states only; an Avalonia transition runs on any change of the property. Record where that differs. Tested at its end value |
