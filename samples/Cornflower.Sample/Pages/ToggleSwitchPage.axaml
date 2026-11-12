@@ -1,0 +1,47 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:cf="using:Cornflower.Controls"
+             xmlns:sample="using:Cornflower.Sample"
+             x:Class="Cornflower.Sample.Pages.ToggleSwitchPage"
+             Background="{DynamicResource ApplicationPageBackgroundThemeBrush}"
+             Foreground="{DynamicResource PhoneForegroundBrush}"
+             FontFamily="{DynamicResource PhoneFontFamilyNormal}"
+             FontSize="{DynamicResource TextStyleLargeFontSize}">
+  <!--
+    The 8.1 ToggleSwitch, as an 8.1 page writes one: no style, no size, the header by cf:ControlHeader.Header (WinRT's
+    Header). Tap the switch to toggle it, or drag the knob past half way; a tap on the header or the words does nothing,
+    as on the phone. The section headings are the type ramp's.
+  -->
+  <ScrollViewer>
+    <StackPanel Margin="19,12,19,24">
+      <sample:SamplePageHeader x:Name="Header" />
+
+      <TextBlock Text="default" Theme="{DynamicResource GroupHeaderTextBlockStyle}" />
+      <ToggleSwitch x:Name="WiFi" cf:ControlHeader.Header="wi-fi" IsCheckedChanged="OnIsCheckedChanged" />
+      <TextBlock x:Name="State" Theme="{DynamicResource ControlContextualInfoTextBlockStyle}" />
+
+      <TextBlock Text="on" Theme="{DynamicResource GroupHeaderTextBlockStyle}" Margin="0,12,0,0" />
+      <ToggleSwitch x:Name="Bluetooth" cf:ControlHeader.Header="bluetooth" IsChecked="True" />
+
+      <TextBlock Text="no header" Theme="{DynamicResource GroupHeaderTextBlockStyle}" Margin="0,12,0,0" />
+      <ToggleSwitch x:Name="NoHeader" />
+
+      <TextBlock Text="its own words" Theme="{DynamicResource GroupHeaderTextBlockStyle}" Margin="0,12,0,0" />
+      <ToggleSwitch x:Name="Words" cf:ControlHeader.Header="location" OnContent="visible" OffContent="hidden" />
+
+      <TextBlock Text="disabled" Theme="{DynamicResource GroupHeaderTextBlockStyle}" Margin="0,12,0,0" />
+      <ToggleSwitch x:Name="DisabledOff" cf:ControlHeader.Header="airplane mode" IsEnabled="False" />
+      <ToggleSwitch x:Name="DisabledOn" cf:ControlHeader.Header="cellular data" IsChecked="True" IsEnabled="False" />
+
+      <ThemeVariantScope RequestedThemeVariant="Light" Margin="-19,12,-19,0">
+        <Border Background="{DynamicResource ApplicationPageBackgroundThemeBrush}" Padding="19,6,19,12">
+          <StackPanel>
+            <TextBlock Text="light" Theme="{DynamicResource GroupHeaderTextBlockStyle}" />
+            <ToggleSwitch x:Name="Light" cf:ControlHeader.Header="toggle switch" IsChecked="True" />
+            <ToggleSwitch x:Name="LightDisabled" cf:ControlHeader.Header="disabled" IsEnabled="False" />
+          </StackPanel>
+        </Border>
+      </ThemeVariantScope>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>
