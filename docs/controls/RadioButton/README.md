@@ -43,8 +43,9 @@ at `TextStyleLargeFontSize` unless the app sets another, as on the phone.
 - **The pointer over it** changes nothing, as on the phone. **Keyboard focus** draws nothing.
 - **Dark and light**: every brush follows the theme variant; the pressed circle follows the app's accent
   (`SystemColorControlAccentColor`).
-- **A larger font**: the circle is centred on the text's first line, through the template's empty `TextBlock`, one
-  line of the RadioButton's font tall.
+- **A larger font**: the circle is centred on the text's first line, through the template's empty `TextBlock`, here
+  `PhoneLineSpacer`, one of the phone's lines of the RadioButton's font tall. An app's `TextBlock` style doesn't reach
+  it.
 - **Data's line** (a string, a number) is the phone's, 1.33 × the font size. **Access keys** are Avalonia's:
   `_radio` draws `radio`, and Alt+R checks it.
 
@@ -60,15 +61,15 @@ states use the Button's keys, as the phone's template does, not the `RadioButton
 ## The template's parts
 
 `Root` (a transparent `Panel`, untilted, takes the hits) › `Container` (`Tilt.IsTarget`, the phone's `Container`,
-two columns, in the overhang) › a `Panel` holding `CheckBackground` (`Ellipse`), `CheckMark` (`Ellipse`) and an
-empty `TextBlock`, and `PART_ContentPresenter` (the phone's `ContentPresenter`, under the name Avalonia looks for).
+two columns, in the overhang) › a `Panel` holding `CheckBackground` (`Ellipse`), `CheckMark` (`Ellipse`) and a
+`PhoneLineSpacer` (the phone's empty `TextBlock`), and `PART_ContentPresenter` (the phone's `ContentPresenter`, under the name Avalonia looks for).
 A style that reaches into the template uses these names.
 
 ## The ladder
 
 Rung 1 (theme) for the setters, the states, the cleared focus adorner and the untilted root; rung 2 (attached
-behaviour) for the tilt (`Tilt`) and the phone's line (`PhoneContentLine` and `PhoneTextLine`, internal to the
-theme). No type is substituted.
+behaviour) for the tilt (`Tilt`) and the phone's line (`PhoneContentLine`, internal to the theme). `PhoneLineSpacer`,
+internal to the theme, is the template's empty `TextBlock`. No type is substituted.
 
 ## Extensions
 

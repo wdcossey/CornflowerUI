@@ -53,7 +53,7 @@ the frames. The pixels are read on the circle's middle row (97) and column (76).
 | The dot's colour | `#FFFFFFFF` dark, `#FF000000` light; pressed `#FFFFFFFF`; disabled `#73FFFFFF` dark, `#40000000` light | the same, brush and pixels | **match** |
 | `Pressed`: the circle | `#FF3E65FF` (the PNGs; the accent); the ring unchanged | the same, brush and pixels round the dot | **match** |
 | `Pressed`, `Disabled`: the text | unchanged pressed; `#73FFFFFF` dark, `#40000000` light disabled | the same | **match** |
-| The empty TextBlock in the circle's cell | 24.1276 tall | 24.1667 desired, stretched to the cell | Nothing drawn; the cell is the circle's height on both |
+| The empty TextBlock in the circle's cell | 24.1276 tall, 0 wide | `PhoneLineSpacer`, 24.1667 tall, 0 wide | Nothing drawn; the cell is the circle's height on both |
 | The content's left, top, height | 33.3333, 15.8333, 24.1667 | the same | **match** (the 25.5 column rounds to the nearest in both; the phone's 1.33 em line, ADR 0003) |
 | The content's width | 100.4167 ("radio button" in Segoe WP) | 100.4167 | the font's width, the same here by chance |
 
@@ -64,7 +64,7 @@ the frames. The pixels are read on the circle's middle row (97) and column (76).
 | 1 | The style's values | **Match** | Each setter equals `radiobutton.json`'s key's value and the dump's reading, dark and light |
 | 2 | The text's font is the RadioButton's | **Match** | The RadioButton at 30, Courier New: its text at 30, Courier New |
 | 3 | Bounds | **Match**, with ADR 0003's rounding | Above |
-| 4 | A larger font centres the circle on the first line | **Match** for the template's rule | At 30: the cell 39.9 tall, the circle's middle on the text's, within a raw pixel. Not captured on the phone; read from the template |
+| 4 | A larger font centres the circle on the first line | **Match** for the template's rule | At 30: the cell 39.9 tall, the circle's middle on the text's, within a raw pixel. Not captured on the phone; read from the template. An app's `TextBlock` style doesn't move it; the dot is centred on the circle both ways at 1.75, 2.4 and 3.0 |
 | 5 | Data's line, templates, access keys | **Match**; access keys a deliberate difference | 1.33 em; as Button |
 | 6 | The ring's pixels | **Match**, with ADR 0003's rounding | 24 ring pixels and 8 page pixels per frame, dark and light |
 | 7 | Checked, unchecked, indeterminate | **Match** | The dot's ends and middle, and the page past them; indeterminate's frame equals unchecked's, as the phone's PNGs do |

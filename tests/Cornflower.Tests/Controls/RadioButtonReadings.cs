@@ -20,7 +20,6 @@ internal static class RadioButtonReadings
     // The dump's elementInStage: [19.1667, 12.0833, 167.9167, 57.5]. MinWidth 168 is 403.2 raw pixels, which the
     // phone rounds to 403 and Avalonia up to 404 (ADR 0003): ours is 168.3333.
     public static readonly Point InStage = new(19.1667, 12.0833);
-    public const double PhoneWidth = 167.9167;
     public const double OurWidth = 168.3333;
     public const double Height = 57.5;
 
@@ -30,7 +29,6 @@ internal static class RadioButtonReadings
     // The dump's CheckBackground: [0, 15.8333, 25.4167, 25.4167], 25.5 in the template: 61.2 raw pixels, the phone's
     // 61, Avalonia's 62 (ADR 0003). The column it sits in, 25.5 too, is 25.4167 in both: Avalonia's Grid rounds a
     // column to the nearest.
-    public const double PhoneCircle = 25.4167;
     public const double OurCircle = 25.8333;
     public const double Column = 25.4167;
 
@@ -38,7 +36,8 @@ internal static class RadioButtonReadings
     public const double Dot = 12.5;
     public const double DotIn = 6.6667;
 
-    // The dump's empty TextBlock in the circle's cell: [0, 15.8333, 0, 24.1276], Segoe WP's line, 1.33 em at 18.14.
+    // The dump's empty TextBlock in the circle's cell: [0, 15.8333, 0, 24.1276], Segoe WP's line, 1.33 em at 18.14
+    // (PhoneLineSpacer here).
     public const double EmptyLine = 24.1276;
 
     // The dump's ContentPresenter: [33.3333, 15.8333, 100.4167, 24.1667], the TextBlock in it 24.1267 tall: Segoe WP's

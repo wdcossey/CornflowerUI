@@ -62,12 +62,13 @@ The two ellipses have `IsHitTestVisible="False"`. And ours, in
 ```
 Panel "Root"                    Background Transparent; untilted, takes the hits
   Grid "Container"              as the phone's; Tilt.IsTarget: the part the tilt draws on
-    Panel                       the phone's unnamed Grid: one cell, which a Panel lays out the same
+    Panel                       the phone's unnamed Grid: one cell, which a Panel lays out the same; 25.5 wide, Left
       Ellipse "CheckBackground" as the phone's
       Ellipse "CheckMark"       as the phone's
-      TextBlock                 empty, with the phone's line (below)
+      PhoneLineSpacer           the empty TextBlock: one of the phone's lines tall (below)
     ContentPresenter "PART_ContentPresenter"
-                                as the phone's; the TextBlock it makes of data gets the phone's line
+                                as the phone's, its font and foreground inherited; the TextBlock it makes of data
+                                gets the phone's line
 ```
 
 The phone's template already has an untilted root around the tilted `Container`, the shape Button's theme adds: its
@@ -78,18 +79,27 @@ unnamed root `Grid` is transparent and takes the hits, overhang included, and `P
 **The circle and the dot are ellipses**, as the template's are: no glyph. Avalonia's `Ellipse`, like WinRT's, draws
 its stroke inside its bounds, so the ring is 2.5 wide inside the 25.5 circle, 6 raw pixels, on both.
 
-**The empty TextBlock** is the phone's, and kept. It is one line of the RadioButton's font tall (24.1276 at 18.14,
-Segoe WP's 1.33 em), shorter than the 25.5 circle at the default size, so it changes nothing there. With a larger
-`FontSize` its line is taller than the circle, the cell grows to it, and the circle, centred in the cell, is centred
-on the text's first line: at 30, the line is 39.9 and the circle 7 down. Ours gives it the phone's line through
-`PhoneTextLine.MaxHeightLineHeight` at its smallest value (`Double.Epsilon`), which is the phone's own line at any
-size, as `PhoneContentLine` does for the presenter's text. Avalonia stretches it across the cell; its desired height
-is the line.
+**The empty TextBlock** is the phone's, and kept, as a spacer. It is one line of the RadioButton's font tall
+(24.1276 at 18.14, Segoe WP's 1.33 em), shorter than the 25.5 circle at the default size, so it changes nothing there.
+With a larger `FontSize` its line is taller than the circle, the cell grows to it, and the circle, centred in the cell,
+is centred on the text's first line: at 30, the line is 39.9 and the circle 7 down. Ours is `PhoneLineSpacer`
+(internal to the theme, `src/Cornflower.Themes.Wp81/PhoneLineSpacer.cs`): nothing wide, `PhoneTextLine.FontLine`
+(1.33 em) of its inherited `FontSize` tall, drawing nothing. Not a `TextBlock`: in Avalonia an app's
+`<Style Selector="TextBlock">` reaches a `TextBlock` in a template, and its margin or size would move the circle (the
+first review's finding).
 
-**The content's font** is the RadioButton's: the phone's presenter binds `FontFamily` and `FontSize` to it
-(`TemplateBinding`), unlike CheckBox's, which sets its own. So `<RadioButton FontSize="30">` draws its text at 30, on
-the phone and here. The presenter makes data into a `TextBlock` with Segoe WP's line, 1.33 em: the dump's
-`ContentPresenter` is 24.1667 tall. Ours gets the same line through `PhoneContentLine`, as Button's does (ADR 0003).
+**The cell is 25.5 wide and left-aligned**, where the phone's stretches across the 25.5 column. Avalonia rounds the
+column to the nearest raw pixel and the circle up (below), so a cell as wide as the column centres the dot on the
+column across and on the circle down: at 3.0 the column is 76 raw pixels, the circle 77, and the dot would be 19 in
+and 20 down. The cell at the circle's width centres it on the circle both ways (the first review's finding). At 2.4
+it changes no pixel.
+
+**The content's font** is the RadioButton's: the phone's presenter binds `FontFamily`, `FontSize` and `Foreground` to
+it (`TemplateBinding`), unlike CheckBox's, which sets its own font. In Avalonia the three are inherited, so ours sets
+none of them on the presenter, as Button's theme doesn't, with the same result. So `<RadioButton FontSize="30">`
+draws its text at 30, on the phone and here. The presenter makes data into a `TextBlock` with Segoe WP's line,
+1.33 em: the dump's `ContentPresenter` is 24.1667 tall. Ours gets the same line through `PhoneContentLine`, as
+Button's does (ADR 0003).
 
 ### The visual states
 
@@ -149,8 +159,9 @@ ADR 0003 asks each plan to list them. At 2.4:
 | `MinWidth` | 168 | 403.2 | 403, 167.9167 | 404, 168.3333 | Nothing drawn: the RadioButton's transparent bounds |
 | The circle, `CheckBackground` | 25.5 × 25.5 | 61.2 | 61, 25.4167 | 62, 25.8333 | The ring's right and bottom sides one raw pixel further out |
 | The circle's column | 25.5 | 61.2 | 61 | 61 | Nothing: Avalonia's `Grid` rounds a column to the nearest, so the content's left is the phone's, 33.3333 |
-| The dot's place | centred: 15.5 raw across, 16 down | | 16, 16: 6.6667 | 16, 16: 6.6667 | Nothing: the dot is on the phone's pixels. Across, it is centred in the 61-raw cell, and Avalonia rounds the half to even, up here (CheckBox's tick, 8.5, went down) |
-| The empty TextBlock | 24.1276 | 57.9 | 24.1276 | 24.1667 | Nothing at the default size |
+| The circle's cell | stretched across the column | | 61 | 62 | Nothing: ours is 25.5 wide, so the dot is centred on the circle both ways (above) |
+| The dot's place | centred | | 16, 16: 6.6667 (15.5 across, in the 61 cell, rounded up) | 16, 16: 6.6667 (16 in the 62 cell) | Nothing: the dot is on the phone's pixels |
+| The empty TextBlock, `PhoneLineSpacer` | 24.1276 | 57.9 | 24.1276 | 24.1667 | Nothing at the default size |
 
 `SceneTests.Layout_Rounds_A_Size_Up_Where_The_Phone_Rounds_To_The_Nearest` holds the rounding.
 
@@ -178,8 +189,11 @@ Each has a test in `tests/Cornflower.Tests/Controls/RadioButtonTests.cs` unless 
 3. **The bounds**: the RadioButton at 19.1667, 12.0833, 57.5 tall; `Container` 15.8333 down; the circle at its top
    left; the dot 6.6667 in and down, 12.5 across; the empty TextBlock's line; the content at 33.3333, 15.8333,
    24.1667 tall (the dump), with the rounding above. `Its_Bounds_Are_The_Phones_Within_Avalonias_Rounding`.
-4. **A larger font centres the circle on the text's first line**, through the empty TextBlock.
-   `A_Larger_Font_Centres_The_Circle_On_The_Texts_First_Line`.
+4. **A larger font centres the circle on the text's first line**, through the empty TextBlock, `PhoneLineSpacer`,
+   and back at the default size the cell is the circle again; **an app's `TextBlock` style doesn't move the circle**;
+   **the dot is centred on the circle across and down alike** at 1.75, 2.4 and 3.0.
+   `A_Larger_Font_Centres_The_Circle_On_The_Texts_First_Line`, `An_Apps_TextBlock_Style_Doesnt_Move_The_Circle`,
+   `The_Dot_Is_Centred_On_The_Circle_At_Any_Scale`.
 5. **Data's line is the phone's**, 1.33 em; an app's `ContentTemplate` is used; access keys.
    `A_Strings_Line_Is_The_Phones`, `The_Apps_ContentTemplate_Is_Used`,
    `An_Access_Key_Is_Drawn_Without_Its_Underscore_And_Alt_Checks_It`.
@@ -217,9 +231,13 @@ Each has a test in `tests/Cornflower.Tests/Controls/RadioButtonTests.cs` unless 
 - **The release eases back, as the Button's does**, though the template has no transition (above). As
   HyperlinkButton's theme decided (#29). To reverse, once a probe shows a snap: a way in `Tilt` to turn the return
   off, set by this theme.
-- **The empty TextBlock is kept, with the phone's line**, though it costs a `TextBlock` per RadioButton: it is what
-  centres the circle on a larger font's first line. To reverse: delete it from the template; the cell is then the
-  circle's height at any font size.
+- **The empty TextBlock is kept, as `PhoneLineSpacer`**, a control with no template that measures one of the
+  phone's lines, rather than a `TextBlock` (which an app's `TextBlock` style would reach): it is what centres the
+  circle on a larger font's first line. To reverse: delete it from the template; the cell is then the circle's height
+  at any font size.
+- **The circle's cell is 25.5 wide and left-aligned**, not stretched across the column as the phone's: Avalonia's
+  rounding would otherwise put the dot half a raw pixel off the circle's centre on one axis at some scales. No pixel
+  changes at 2.4. To reverse: drop the cell's `Width` and `HorizontalAlignment`.
 
 ## Dependencies and captures
 
@@ -330,8 +348,8 @@ _none_
 |---|---|---|---|---|
 | [x] | `Background` | `{ThemeResource PhoneRadioCheckBoxBrush}` | `TemplatedControl.Background` | Setter, `DynamicResource`; the circle's fill |
 | [x] | `BorderBrush` | `{ThemeResource PhoneRadioCheckBoxBorderBrush}` | `TemplatedControl.BorderBrush` | Setter, `DynamicResource`; the ring |
-| [x] | `FontSize` | `{ThemeResource TextStyleLargeFontSize}` | `TemplatedControl.FontSize` | Setter, `DynamicResource`; bound to the presenter, as the phone's (Behaviour 2) |
-| [x] | `FontFamily` | `{ThemeResource PhoneFontFamilyNormal}` | `TemplatedControl.FontFamily` | Setter, `DynamicResource`: Selawik for Segoe WP; bound to the presenter |
+| [x] | `FontSize` | `{ThemeResource TextStyleLargeFontSize}` | `TemplatedControl.FontSize` | Setter, `DynamicResource`; inherited by the presenter, as the phone's binds it (Behaviour 2) |
+| [x] | `FontFamily` | `{ThemeResource PhoneFontFamilyNormal}` | `TemplatedControl.FontFamily` | Setter, `DynamicResource`: Selawik for Segoe WP; inherited by the presenter |
 | [x] | `HorizontalContentAlignment` | `Left` | `ContentControl.HorizontalContentAlignment` | Setter |
 | [x] | `VerticalContentAlignment` | `Top` | `ContentControl.VerticalContentAlignment` | Setter |
 | [x] | `HorizontalAlignment` | `Left` | `Layoutable.HorizontalAlignment` | Setter |

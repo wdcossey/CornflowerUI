@@ -1,4 +1,3 @@
-using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
@@ -14,6 +13,7 @@ using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Cornflower.Controls;
+using Cornflower.Themes.Wp81;
 using static Cornflower.Tests.Controls.RadioButtonReadings;
 using CfTilt = Cornflower.Controls.Tilt;
 
@@ -36,13 +36,13 @@ public class RadioButtonTests
     {
         private readonly Scene _scene;
 
-        public Stage(ThemeVariant? variant = null, RadioButton? radioButton = null)
+        public Stage(ThemeVariant? variant = null, RadioButton? radioButton = null, double scaling = Scene.ReferenceScaling)
         {
             RadioButton = radioButton ?? new RadioButton { Content = "radio button" };
             var slot = new Grid { Margin = Slot, Children = { RadioButton } };
             var stage = new Grid { Children = { slot } };
             stage.Bind(Panel.BackgroundProperty, stage.GetResourceObservable("ApplicationPageBackgroundThemeBrush"));
-            _scene = new Scene(stage, variant, width: StageWidth, height: StageHeight);
+            _scene = new Scene(stage, variant, width: StageWidth, height: StageHeight, scaling: scaling);
         }
 
         public RadioButton RadioButton { get; }
@@ -69,11 +69,11 @@ public class RadioButtonTests
 
     private static Grid ContainerOf(RadioButton r) => Part<Grid>(r, "Container");
 
-    /// <summary>The circle's cell: the phone's unnamed Grid holding the circle, the dot and the empty TextBlock.</summary>
+    /// <summary>The circle's cell: the phone's unnamed Grid holding the circle, the dot and the empty TextBlock (the spacer).</summary>
     private static Panel CellOf(RadioButton r) => (Panel)CircleOf(r).GetVisualParent()!;
 
-    /// <summary>The phone's empty TextBlock in the circle's cell.</summary>
-    private static TextBlock EmptyTextOf(RadioButton r) => CellOf(r).Children.OfType<TextBlock>().Single();
+    /// <summary>The phone's empty TextBlock in the circle's cell, as <see cref="PhoneLineSpacer"/>.</summary>
+    private static PhoneLineSpacer SpacerOf(RadioButton r) => CellOf(r).Children.OfType<PhoneLineSpacer>().Single();
 
     private static ContentPresenter PresenterOf(RadioButton r) => Part<ContentPresenter>(r, "PART_ContentPresenter");
 
@@ -81,7 +81,7 @@ public class RadioButtonTests
 
     private static Color ColourOf(IBrush? brush) => Assert.IsAssignableFrom<ISolidColorBrush>(brush).Color;
 
-    private static string Hex(Color c) => string.Create(CultureInfo.InvariantCulture, $"#{c.A:X2}{c.R:X2}{c.G:X2}{c.B:X2}");
+    private static string Hex(Color c) => Tokens.Token.Hex(c);
 
     public static TheoryData<string> Variants => ["Dark", "Light"];
 
@@ -125,6 +125,10 @@ public class RadioButtonTests
         var dark = variant == "Dark";
         using var stage = new Stage(VariantOf(variant));
         var radio = stage.RadioButton;
+        // The window's own font is Selawik too (Wp81's ContentControlThemeFontFamily), so give it another: the
+        // RadioButton's is the style's, not inherited.
+        stage.Window.FontFamily = new FontFamily("Courier New");
+        Dispatcher.UIThread.RunJobs();
 
         Assert.Equal(Transparent, ColourOf(radio.Background));
         Assert.Equal(Foreground(dark), ColourOf(radio.BorderBrush));
@@ -147,8 +151,8 @@ public class RadioButtonTests
         Assert.Equal(Foreground(dark), ColourOf(PresenterOf(radio).Foreground));
     }
 
-    // The phone's ContentPresenter takes its font from the RadioButton (TemplateBinding FontFamily and FontSize), unlike
-    // the CheckBox's: so the RadioButton's own FontSize and FontFamily reach its text.
+    // The phone's ContentPresenter takes its font from the RadioButton (TemplateBinding FontFamily and FontSize; ours
+    // inherits it), unlike the CheckBox's: so the RadioButton's own FontSize and FontFamily reach its text.
     [AvaloniaFact]
     public void The_Texts_Font_Is_The_RadioButtons()
     {
@@ -161,8 +165,8 @@ public class RadioButtonTests
         Assert.Equal(30, PresenterOf(radio).FontSize);
     }
 
-    // The dump's bounds: the RadioButton, its Container inside the overhang, the circle, the dot, the empty TextBlock and
-    // the content. Where Avalonia rounds a size up and the phone to the nearest (ADR 0003), ours is the rounded-up size.
+    // The dump's bounds: the RadioButton, its Container inside the overhang, the circle, the dot, the empty TextBlock's
+    // line and the content. Where Avalonia rounds a size up and the phone to the nearest (ADR 0003), ours is the rounded-up size.
     [AvaloniaFact]
     public void Its_Bounds_Are_The_Phones_Within_Avalonias_Rounding()
     {
@@ -192,8 +196,11 @@ public class RadioButtonTests
         Assert.Equal(Dot, dot.Bounds.Width, 0.001);
         Assert.Equal(Dot, dot.Bounds.Height, 0.001);
 
-        // The empty TextBlock: one of the phone's lines tall, rounded up to the raw pixel grid.
-        Assert.Equal(EmptyLine, EmptyTextOf(radio).DesiredSize.Height, 1 / 2.4);
+        // The empty TextBlock: one of the phone's lines tall, rounded up to the raw pixel grid, and nothing wide; the cell
+        // is the circle's size.
+        Assert.Equal(EmptyLine, SpacerOf(radio).DesiredSize.Height, 1 / 2.4);
+        Assert.Equal(0, SpacerOf(radio).DesiredSize.Width);
+        Assert.Equal(OurCircle, CellOf(radio).Bounds.Width, 0.001);
         Assert.Equal(OurCircle, CellOf(radio).Bounds.Height, 0.001);
 
         var presenter = PresenterOf(radio);
@@ -220,6 +227,42 @@ public class RadioButtonTests
         Assert.Equal(textMiddle, circleMiddle, 1 / 2.4);
         var dotMiddle = In(DotOf(radio), radio).Y + Dot / 2;
         Assert.Equal(circleMiddle, dotMiddle, 1 / 2.4);
+
+        radio.FontSize = FontSize;                         // back to the default: the cell is the circle again
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(OurCircle, CellOf(radio).Bounds.Height, 0.001);
+    }
+
+    // An app's style for TextBlock (Selector="TextBlock") doesn't reach the circle's cell: the phone's empty TextBlock is
+    // a spacer here, so a margin or size for TextBlocks doesn't move the circle off the text.
+    [AvaloniaFact]
+    public void An_Apps_TextBlock_Style_Doesnt_Move_The_Circle()
+    {
+        using var stage = new Stage(radioButton: new RadioButton { Content = "radio button", IsChecked = true });
+        stage.Window.Styles.Add(new Style(x => x.OfType<TextBlock>())
+        {
+            Setters = { new Setter(Layoutable.MarginProperty, new Thickness(0, 20)), new Setter(TextBlock.FontSizeProperty, 40.0) },
+        });
+        Dispatcher.UIThread.RunJobs();
+        var radio = stage.RadioButton;
+
+        Assert.Equal(OurCircle, CellOf(radio).Bounds.Height, 0.001);
+        Assert.Equal(ContainerTop, In(CircleOf(radio), radio).Y, 0.001);
+    }
+
+    // The dot is centred on the circle across and down alike at any scale. Avalonia rounds the 25.5 column to the
+    // nearest raw pixel and the 25.5 circle up, so they can differ by one; the cell is the circle's size, not the
+    // column's. At 3.0 the column is 76 raw pixels and the circle 77.
+    [AvaloniaTheory]
+    [InlineData(2.4)]
+    [InlineData(3.0)]
+    [InlineData(1.75)]
+    public void The_Dot_Is_Centred_On_The_Circle_At_Any_Scale(double scaling)
+    {
+        using var stage = new Stage(radioButton: new RadioButton { Content = "radio button", IsChecked = true }, scaling: scaling);
+        var dot = In(DotOf(stage.RadioButton), CircleOf(stage.RadioButton));
+
+        Assert.Equal(dot.X, dot.Y, 0.001);
     }
 
     // A string's line is the phone's, 1.33 em (ADR 0003), through PhoneContentLine, as in Button.
@@ -274,14 +317,24 @@ public class RadioButtonTests
         AssertDot(frame, null, Page(dark));
     }
 
-    private static void AssertRing(WriteableBitmap frame, Color ink, Color page, Color? inside = null)
+    /// <summary>Pixels of a frame against their expected colours, every miss listed at once.</summary>
+    private sealed class PixelCheck(WriteableBitmap frame)
     {
-        var misses = new List<string>();
-        void Expect(int x, int y, Color expected)
+        private readonly List<string> _misses = [];
+
+        public void Expect(int x, int y, Color expected)
         {
             var got = Frames.PixelAt(frame, x, y);
-            if (got != expected) misses.Add($"({x}, {y}): {Hex(got)}, expected {Hex(expected)}");
+            if (got != expected) _misses.Add($"({x}, {y}): {Hex(got)}, expected {Hex(expected)}");
         }
+
+        public void AssertNone() => Assert.True(_misses.Count == 0, string.Join("\n", _misses));
+    }
+
+    private static void AssertRing(WriteableBitmap frame, Color ink, Color page, Color? inside = null)
+    {
+        var check = new PixelCheck(frame);
+        var Expect = check.Expect;
 
         foreach (var x in LeftColumns.Concat(OurRightColumns)) Expect(x, MiddleRow, ink);
         foreach (var y in TopRows.Concat(OurBottomRows)) Expect(MiddleColumn, y, ink);
@@ -289,8 +342,7 @@ public class RadioButtonTests
         foreach (var y in new[] { TopRows[0] - 1, OurBottomRows[^1] + 1 }) Expect(MiddleColumn, y, page);
         foreach (var x in new[] { LeftColumns[^1] + 1, OurRightColumns[0] - 1 }) Expect(x, MiddleRow, inside ?? page);
         foreach (var y in new[] { TopRows[^1] + 1, OurBottomRows[0] - 1 }) Expect(MiddleColumn, y, inside ?? page);
-
-        Assert.True(misses.Count == 0, string.Join("\n", misses));
+        check.AssertNone();
     }
 
     /// <summary>
@@ -299,20 +351,15 @@ public class RadioButtonTests
     /// </summary>
     private static void AssertDot(WriteableBitmap frame, Color? ink, Color inside)
     {
-        var misses = new List<string>();
-        void Expect(int x, int y, Color expected)
-        {
-            var got = Frames.PixelAt(frame, x, y);
-            if (got != expected) misses.Add($"({x}, {y}): {Hex(got)}, expected {Hex(expected)}");
-        }
+        var check = new PixelCheck(frame);
+        var Expect = check.Expect;
 
-        // The ends are a little short of whole on the phone's middle row, so ours are read one in.
-        foreach (var x in new[] { DotLeft + 1, MiddleColumn, DotRight - 1 }) Expect(x, MiddleRow, ink ?? inside);
+        // The phone's ends on its middle row are a little short of whole; ours, on the same pixels, are whole.
+        foreach (var x in new[] { DotLeft, MiddleColumn, DotRight }) Expect(x, MiddleRow, ink ?? inside);
         foreach (var y in new[] { DotTop, MiddleRow, DotBottom }) Expect(MiddleColumn, y, ink ?? inside);
         foreach (var x in new[] { DotLeft - 1, DotRight + 1 }) Expect(x, MiddleRow, inside);
         foreach (var y in new[] { DotTop - 1, DotBottom + 1 }) Expect(MiddleColumn, y, inside);
-
-        Assert.True(misses.Count == 0, string.Join("\n", misses));
+        check.AssertNone();
     }
 
     // CheckStates.Checked shows the dot, in the foreground, on the phone's pixels; Unchecked shows none.
