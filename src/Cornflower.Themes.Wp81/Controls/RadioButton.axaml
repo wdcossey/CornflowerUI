@@ -1,0 +1,124 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="using:System"
+                    xmlns:cf="using:Cornflower.Controls"
+                    xmlns:wp81="using:Cornflower.Themes.Wp81">
+  <!--
+    The Windows Phone 8.1 RadioButton: the default style of the 8.1 Update 1 runtime (radiobutton.json, which equals
+    the SDK's generic.xaml), re-expressed as an Avalonia ControlTheme. Every value is the phone's resource key, by
+    DynamicResource, so it follows the theme variant and an app can override it by its key.
+    docs/controls/RadioButton/PLAN.md has the values and their sources.
+
+    The template is the phone's, part for part:
+    - Root, untilted, with a transparent background, takes the hits across the whole RadioButton, the overhang
+      included, as the phone's unnamed root Grid does.
+    - Container, inside PhoneTouchTargetLargeOverhang (16 above and below), is the part the phone's
+      PointerDownThemeAnimation targets, so it is marked Tilt.IsTarget: the circle and the text tilt together, and
+      the overhang doesn't. Two columns: the circle's, 25.5, and the content's.
+    - The circle's cell, top-aligned, the phone's unnamed Grid: one cell, which a Panel lays out the same.
+    - CheckBackground, the 25.5 circle: the RadioButton's Background, inside a PhoneStrokeThickness ring in its
+      BorderBrush.
+    - CheckMark, the 12.5 dot in the circle's middle, shown when checked, in PhoneRadioCheckBoxCheckBrush.
+    - An empty TextBlock, the phone's, one line of the RadioButton's own font tall: when that line is taller than the
+      circle (a larger FontSize), the cell grows to it and the circle is centred on the text's first line. It has the
+      phone's line, 1.33 em, through PhoneTextLine's MaxHeight line at its smallest.
+    - PART_ContentPresenter, the part Avalonia's ContentControl looks for, is the phone's ContentPresenter: placed by
+      the Padding and the content alignment, its font and foreground the RadioButton's (TemplateBinding, as the
+      phone's are, so a FontSize on the RadioButton reaches the text). The TextBlock it makes of data gets the phone's
+      line, 1.33 em, through PhoneContentLine (ADR 0003).
+
+    The visual states: Pressed (Avalonia's :pressed) fills the circle with ButtonPressedBackgroundThemeBrush, the
+    accent, and draws the dot over it in ButtonPressedForegroundThemeBrush, and the tilt runs; Disabled (:disabled)
+    dims the ring and the dot to ButtonDisabledBorderThemeBrush and the text to ButtonDisabledForegroundThemeBrush.
+    Checked (:checked) shows the dot; Unchecked and Indeterminate show none. PointerOver and MouseOver change nothing.
+    The phone has no focus states, so FocusAdorner is cleared. One checked in a group (GroupName, or the parent when
+    there is none) is Avalonia's RadioButton's own.
+
+    The phone's style sets no Foreground: the RadioButton inherits its page's, PhoneForegroundBrush. Wp81 doesn't
+    theme Avalonia's Window, whose Foreground under Simple isn't the phone's, so this theme sets it, as CheckBox's does.
+  -->
+  <ControlTheme x:Key="{x:Type RadioButton}" TargetType="RadioButton">
+    <Setter Property="Background" Value="{DynamicResource PhoneRadioCheckBoxBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource PhoneRadioCheckBoxBorderBrush}" />
+    <Setter Property="FontSize" Value="{DynamicResource TextStyleLargeFontSize}" />
+    <Setter Property="FontFamily" Value="{DynamicResource PhoneFontFamilyNormal}" />
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
+    <Setter Property="VerticalContentAlignment" Value="Top" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+    <Setter Property="VerticalAlignment" Value="Top" />
+    <Setter Property="Padding" Value="{DynamicResource CheckBoxAndRadioButtonTextPaddingThickness}" />
+    <Setter Property="MinWidth" Value="{DynamicResource CheckBoxAndRadioButtonMinWidthSize}" />
+    <!-- Not set by the phone's style: what its RadioButton inherits from the page. -->
+    <Setter Property="Foreground" Value="{DynamicResource PhoneForegroundBrush}" />
+    <Setter Property="FocusAdorner" Value="{x:Null}" />
+    <Setter Property="cf:Tilt.IsEnabled" Value="True" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Panel x:Name="Root" Background="Transparent">
+          <Grid x:Name="Container"
+                Margin="{DynamicResource PhoneTouchTargetLargeOverhang}"
+                ColumnDefinitions="25.5,*"
+                cf:Tilt.IsTarget="True">
+            <Panel Grid.Column="0" VerticalAlignment="Top">
+              <Ellipse x:Name="CheckBackground"
+                       IsHitTestVisible="False"
+                       Width="25.5"
+                       Height="25.5"
+                       HorizontalAlignment="Left"
+                       VerticalAlignment="Center"
+                       Fill="{TemplateBinding Background}"
+                       Stroke="{TemplateBinding BorderBrush}"
+                       StrokeThickness="{DynamicResource PhoneStrokeThickness}" />
+              <Ellipse x:Name="CheckMark"
+                       IsHitTestVisible="False"
+                       IsVisible="False"
+                       Width="12.5"
+                       Height="12.5"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       Fill="{DynamicResource PhoneRadioCheckBoxCheckBrush}" />
+              <TextBlock wp81:PhoneTextLine.MaxHeightLineHeight="{x:Static sys:Double.Epsilon}" />
+            </Panel>
+            <ContentPresenter x:Name="PART_ContentPresenter"
+                              Grid.Column="1"
+                              Margin="{TemplateBinding Padding}"
+                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                              Content="{TemplateBinding Content}"
+                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                              FontFamily="{TemplateBinding FontFamily}"
+                              FontSize="{TemplateBinding FontSize}"
+                              Foreground="{TemplateBinding Foreground}"
+                              RecognizesAccessKey="True"
+                              wp81:PhoneContentLine.IsEnabled="True" />
+          </Grid>
+        </Panel>
+      </ControlTemplate>
+    </Setter>
+
+    <Style Selector="^:checked /template/ Ellipse#CheckMark">
+      <Setter Property="IsVisible" Value="True" />
+    </Style>
+
+    <Style Selector="^:pressed">
+      <Style Selector="^ /template/ Ellipse#CheckBackground">
+        <Setter Property="Fill" Value="{DynamicResource ButtonPressedBackgroundThemeBrush}" />
+      </Style>
+      <Style Selector="^ /template/ Ellipse#CheckMark">
+        <Setter Property="Fill" Value="{DynamicResource ButtonPressedForegroundThemeBrush}" />
+      </Style>
+    </Style>
+
+    <Style Selector="^:disabled">
+      <Style Selector="^ /template/ Ellipse#CheckBackground">
+        <Setter Property="Stroke" Value="{DynamicResource ButtonDisabledBorderThemeBrush}" />
+      </Style>
+      <Style Selector="^ /template/ Ellipse#CheckMark">
+        <Setter Property="Fill" Value="{DynamicResource ButtonDisabledBorderThemeBrush}" />
+      </Style>
+      <Style Selector="^ /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Foreground" Value="{DynamicResource ButtonDisabledForegroundThemeBrush}" />
+      </Style>
+    </Style>
+  </ControlTheme>
+</ResourceDictionary>
