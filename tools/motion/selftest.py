@@ -324,7 +324,8 @@ def key_spline_is_exact():
 
 @check
 def tilt_release_stops_on_too_little():
-    # A release whose return logs one frame has no frame spacing of its own: the script says so, not a crash.
+    # A run whose returns log one frame each has no frame spacing of its own: the script leaves it out and says so,
+    # then, with no run left, stops, not a crash.
     import tempfile
     with tempfile.TemporaryDirectory() as run:
         with open(os.path.join(run, 'probe.txt'), 'w', encoding='utf-8') as f:
@@ -333,7 +334,8 @@ def tilt_release_stops_on_too_little():
             f.write('1500.0\treleased\tA 0 0 in-control 5 3 Touch\n')
             f.write('1690.0\tvalue\tprojection A rot 0 0 0 centre 0.5 0.5 0 local 0 0 0 global -1 -2 0\n')
         code, out = run_script('tiltrelease.py', run)
-    assert code != 0 and 'no press logged two or more frames' in out and 'Traceback' not in out, out
+    assert code != 0 and 'left out, no press logged two or more frames' in out and 'no run with a press' in out, out
+    assert 'Traceback' not in out, out
 
 
 @check
@@ -368,8 +370,18 @@ def tilt_release_in_frames():
                     last = v
                     if not any(v):
                         break
+            # And one dragged off the button (a move below it) and let go while its tilt was halfway back: left out.
+            t = 1000.0 + 2000 * 12
+            f.write('%.1f\tpressed\tA 0 0 in-control 5 3 Touch handled\n' % t)
+            f.write(line % ((t + 20,) + held))
+            f.write('%.1f\tmoved\tA 0 0 in-control 5 90 Touch\n' % (t + 300))
+            f.write(line % ((t + 600,) + tuple(c / 2 for c in held)))
+            f.write('%.1f\treleased\tA 0 0 in-control 5 90 Touch handled\n' % (t + 610))
+            f.write(line % ((t + 625,) + tuple(c / 4 for c in held)))
+            f.write(line % ((t + 640,) + (0, 0, 0)))
         code, out = run_script('tiltrelease.py', run)
     assert code == 0, out
+    assert '12 presses, 1 left out' in out, out
     assert 'the first change is frame 13 after the release' in out, out
     m = re.search(r'control points fixed: hold ([\d.]+) ms, return ([\d.]+) ms; rms ([\d.]+)', out)
     assert m, out

@@ -173,25 +173,4 @@ public class TiltModelTests
     {
         Assert.Equal(left, TiltModel.ReturnFactor(TimeSpan.FromMilliseconds(sinceReleaseMs)), 1e-9);
     }
-
-    // The return's spline, and others near its corners, solved, not approximated: at any parameter s,
-    // KeySplineCurve's value at the Bézier's x(s) is its y(s). The ring's splines are checked in
-    // ProgressRingTests.
-    [Theory]
-    [InlineData(0.1, 0.25, 0.75, 0.9)]
-    [InlineData(0.001, 0.27, 0.77, 0.91)]
-    [InlineData(0.1, 0.9, 0.2, 1)]
-    [InlineData(0, 0, 1, 1)]
-    [InlineData(0.5, 0, 0.5, 1)]
-    [InlineData(0.42, 0, 0.58, 1)]
-    public void The_Spline_Is_Exact(double x1, double y1, double x2, double y2)
-    {
-        for (var s = 0.0; s <= 1; s += 1.0 / 64)
-        {
-            double r = 1 - s;
-            var x = 3 * x1 * s * r * r + 3 * x2 * s * s * r + s * s * s;
-            var y = 3 * y1 * s * r * r + 3 * y2 * s * s * r + s * s * s;
-            Assert.Equal(y, new KeySplineCurve(x1, y1, x2, y2).Ease(x), 1e-11);
-        }
-    }
 }

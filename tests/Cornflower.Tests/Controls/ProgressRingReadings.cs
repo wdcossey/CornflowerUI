@@ -124,7 +124,7 @@ internal static class ProgressRingReadings
             }
 
             var progress = (local - AngleSeconds[i - 1]) / (AngleSeconds[i] - AngleSeconds[i - 1]);
-            var eased = Splines[i] is { } s ? Bezier(s[0], s[1], s[2], s[3], progress) : progress;
+            var eased = Splines[i] is { } s ? KeySplineCurveTests.Bezier(s[0], s[1], s[2], s[3], progress) : progress;
             return Angles[dot][i - 1] + (Angles[dot][i] - Angles[dot][i - 1]) * eased;
         }
 
@@ -140,25 +140,4 @@ internal static class ProgressRingReadings
 
     /// <summary>The time into a dot's track, to the microsecond, so a time made by adding up frames meets a key time exactly.</summary>
     private static double Local(int dot, double storyboardSeconds) => Math.Round((storyboardSeconds - BeginSeconds[dot]) * 1e6) / 1e6;
-
-    /// <summary>A KeySpline's y at x: the Bézier with control points (x1, y1) and (x2, y2), solved for its parameter.</summary>
-    public static double Bezier(double x1, double y1, double x2, double y2, double x)
-    {
-        static double At(double a, double b, double t) => 3 * a * t * (1 - t) * (1 - t) + 3 * b * t * t * (1 - t) + t * t * t;
-        double lo = 0, hi = 1;
-        for (var i = 0; i < 60; i++)
-        {
-            var mid = (lo + hi) / 2;
-            if (At(x1, x2, mid) < x)
-            {
-                lo = mid;
-            }
-            else
-            {
-                hi = mid;
-            }
-        }
-
-        return At(y1, y2, (lo + hi) / 2);
-    }
 }

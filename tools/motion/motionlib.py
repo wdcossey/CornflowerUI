@@ -411,8 +411,9 @@ def expo_out(k):
 
 def key_spline(x1, y1, x2, y2):
     """A KeySpline: the cubic Bezier from (0, 0) to (1, 1) with control points (x1, y1), (x2, y2), as y(x). Its
-    parameter is solved from x exactly: Newton's method kept inside a bisection bracket, to 1e-12 in x, as
-    `Cornflower.Controls.KeySplineCurve` is. The control points' x are in [0, 1], so x rises with the parameter."""
+    parameter is solved from x exactly, to 1e-12 in x, by Newton's method kept inside a bisection bracket. (The C#
+    `Cornflower.Controls.KeySplineCurve` reaches the same answer another way: Newton's method, then bisection if it
+    strays or stalls.) The control points' x are in [0, 1], so x rises with the parameter."""
     def bez(s, a, b):
         r = 1 - s
         return 3 * a * s * r * r + 3 * b * s * s * r + s * s * s

@@ -169,16 +169,18 @@ public class TiltTests
         }
     }
 
-    // Run 2307's first press, released, frame by frame on the emulator's 15.625 ms frames: frame k
-    // after the release at (k - 1) x 15.625 ms. Held through frame 12; from frame 13 each component
-    // is the reading's fraction of its held value, within the model's worst against the readings
-    // (0.0010 of the tilt, with its hold and return rounded to 182.6 and 167.0 ms) and the reading's
-    // rounding (0.0005 over the held value); at rest on frame 24. With #60's sine (a 180 ms hold,
-    // 195 ms back) every frame is out by more: frame 13 by 0.0016 beyond the rounding, the rest further.
+    // Run 2307's first press, released, on the emulator's 15.625 ms frames: frame k after the release,
+    // the release animation's time (k - 1) x 15.625 ms, the first frame after it its time 0. Held
+    // through frame 12; from frame 13 each component is the reading's fraction of its held value,
+    // within the model's worst against the readings (0.0010 of the tilt, with its hold and return
+    // rounded to 182.6 and 167.0 ms) and the reading's rounding (0.0005 over the held value); at rest
+    // on frame 24. With #60's sine (a 180 ms hold, 195 ms back) every frame is out by more: frame 13
+    // by 0.0016 beyond the rounding, the rest further. Timed from the release instead of its first
+    // frame, frame 12 would already have moved.
     [AvaloniaFact]
     public void A_Release_Holds_Then_Eases_Back_As_The_Emulator_Did()
     {
-        using var clock = new TestClock { FrameInterval = TimeSpan.FromMilliseconds(15.625) };
+        using var clock = new TestClock { FrameInterval = TimeSpan.FromMilliseconds(15.625), FramesOnGrid = true };
         using var page = new Page(GridButtons);
         var button = page.Buttons["A"];
         var corner = page.At("A", new Point(5.848, 3.344));
@@ -190,18 +192,19 @@ public class TiltTests
         AssertNear(read, held);
 
         page.Window.TouchEnd(touch, corner);
-        var released = clock.Now.TotalMilliseconds;
+        var first = (Math.Floor(clock.Now.TotalMilliseconds / 15.625) + 1) * 15.625;   // frame 1, time 0
+        double Frame(int k) => first + (k - 1) * 15.625;
 
         for (var frame = 1; frame < ReleaseFirstFrame; frame++)
         {
-            clock.At(released + (frame - 1) * 15.625);
-            Assert.Equal(held, CfTilt.Current(button));
+            clock.At(Frame(frame));
+            Assert.True(held == CfTilt.Current(button), $"frame {frame}: moved in the hold");
         }
 
         for (var i = 0; i < ReleaseFrames.Length; i++)
         {
             var frame = ReleaseFirstFrame + i;
-            clock.At(released + (frame - 1) * 15.625);
+            clock.At(Frame(frame));
             var now = CfTilt.Current(button);
             var (rotationX, rotationY, offsetZ) = ReleaseFrames[i];
             if (i == ReleaseFrames.Length - 1)
@@ -846,7 +849,7 @@ public class TiltTests
         Assert.NotEqual(TiltState.Rest, CfTilt.Current(item));
         scene.Window.TouchEnd(touch, corner);
         var released = clock.Now.TotalMilliseconds;
-        var holdOver = released + TiltModel.Hold.TotalMilliseconds;
+        var holdOver = released + (CornflowerClock.FrameInterval + TiltModel.Hold).TotalMilliseconds;   // time 0 is a frame on
         clock.At(holdOver);                                         // the hold over: the item starts back
 
         scene.Window.TouchBegin(new Point(50 + 20 + 30, 100 + 20 + 20));

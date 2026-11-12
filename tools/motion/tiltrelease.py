@@ -21,8 +21,10 @@ Prints:
   the second frame after the release, each hold would be 15.625 ms shorter;
 - for comparison, #60's fit: the sine against each frame's stopwatch time since the release.
 
-Presses with nothing logged after the release (dragged off the button, which returned before it), or with no tilt
-before it, are left out and counted. A press whose fractions are more than 0.002 off the median at any frame is
+Left out and counted: a press dragged off its button (a move outside the button's laid-out size before the
+release: its tilt started back then, so the release finds it mid-return or at rest), one with no tilt before the
+release, and one whose return isn't logged to rest. A run whose returns each log a single frame has no frame spacing of
+its own and is left out, and said so. A press whose fractions are more than 0.002 off the median at any frame is
 listed and left out of the medians.
 """
 import math
@@ -36,20 +38,39 @@ runs, _ = ml.parse_args(__doc__, nargs=(1, 99))
 TICK = ml.TICK
 
 
+def labelled(p):
+    """The button's label and the rest of a pressed, moved or released line: a grid run names the button first."""
+    return (p[0], p[1:]) if p and not p[0][:1].isdigit() and p[0][:1] != '-' else (None, p)
+
+
 def presses(run):
     """(release ms, held (rx, ry, gz), [(ms, (rx, ry, gz))] after it until rest) for each press with a tilt held and
     its return logged, and how many presses were left out."""
-    out, left, cur = [], 0, None
+    out, left, cur, sizes = [], 0, None, {}
     for t, what, det in ml.probe(run):
         p = det.split()
-        if what == 'pressed':
+        if what == 'layout' and p[:1] == ['button']:  # button [A] x y w h ...
+            label, q = labelled(p[1:])
+            sizes[label] = (float(q[2]), float(q[3]))
+        elif what == 'pressed':
             left += cur is not None
-            label = p[0] if p and not p[0][:1].isdigit() and p[0][:1] != '-' else None
-            cur = dict(label=label, held=None, released=None, ret=[])
+            label, _ = labelled(p)
+            cur = dict(label=label, held=None, released=None, ret=[], off=False)
         elif cur is None:
             continue
-        elif what == 'released' and cur['released'] is None:
-            cur['released'] = t
+        elif what in ('moved', 'released') and labelled(p)[0] == cur['label'] and cur['released'] is None:
+            q = labelled(p)[1]  # x y in-control ix iy ...
+            w, h = sizes.get(cur['label'], (math.inf, math.inf))
+            if 'in-control' in q:
+                i = q.index('in-control')
+                ix, iy = float(q[i + 1]), float(q[i + 2])
+                cur['off'] |= what == 'moved' and not (0 <= ix <= w and 0 <= iy <= h)
+            if what == 'released':
+                if cur['off']:  # dragged off: left out
+                    left += 1
+                    cur = None
+                    continue
+                cur['released'] = t
         elif what == 'value' and p[:1] == ['projection']:
             q = p[1:]
             if cur['label'] is not None:
@@ -79,17 +100,21 @@ every = []  # (release ms, [(frame number from the first change, ms, fraction)])
 for run in runs:
     got, left = presses(run)
     gaps = [b[0] - a[0] for _, _, r in got for a, b in zip(r, r[1:])]
-    if not got:
-        raise SystemExit('%s: no press with a tilt held and its return logged' % run)
+    name = os.path.basename(os.path.normpath(run))
     if not gaps:
-        raise SystemExit('%s: no press logged two or more frames of its return, so the frames\' spacing is unknown' % run)
+        print('%s: left out, %s' % (name, 'no press with a tilt held and its return logged' if not got else
+                                    'no press logged two or more frames of its return, so its frames\' spacing is unknown'))
+        continue
     spacing = ml.median(gaps)
     for released, held, ret in got:
         t0 = ret[0][0]
         every.append((released, [(1 + round((t - t0) / spacing), t, fraction(v, held)) for t, v in ret]))
     print('%s: %d presses%s; frames %.2f ms apart (median), %.3f (mean)' % (
-        os.path.basename(os.path.normpath(run)), len(got), ', %d left out' % left if left else '', spacing,
+        name, len(got), ', %d left out' % left if left else '', spacing,
         sum(gaps) / len(gaps)))
+
+if not every:
+    raise SystemExit('no run with a press whose return logs two or more frames')
 
 # The return, frame by frame, each frame by its number from the first change.
 length = max(f[-1][0] for _, f in every)
@@ -175,7 +200,7 @@ for start in ([0.39, 0.575, 0.565, 1, r, ph], [0.25, 0.25, 0.75, 0.75, r - 30, p
     _, x = ml.minimize(spline_rms, start, [0.1, 0.1, 0.1, 0.1, 10, 0.3])
     fits.append(ml.minimize(spline_rms, x, [0.02, 0.02, 0.02, 0.02, 2, 0.06]))
 v, (x1, y1, x2, y2, sr, sph) = min(fits, key=lambda f: f[0])
-close = [f for f in fits if f[0] < 2 * v]
+close = [f for f in fits if f[0] <= 2 * v]
 agree = max(max(abs(f[1][4] - sr), abs(hold(f[1][5]) - hold(sph))) for f in close)
 print('  KeySpline %.3f,%.3f %.3f,%.3f: hold %.1f ms, return %.1f ms; rms %.5f, worst %.5f (%d of %d starts within '
       'twice that rms, their holds and returns within %.1f ms)' % (
