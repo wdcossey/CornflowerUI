@@ -84,7 +84,7 @@ step, and a control that climbs a rung says so in its PR.
 | [#34](https://github.com/wdcossey/CornflowerUI/issues/34) | Slider | Slider | Theme; `Header` by an attached property, `ControlHeader`; done 2026-11-12 (#96), device run passed 2026-11-12 | 1, 2 |
 | [#35](https://github.com/wdcossey/CornflowerUI/issues/35) | ProgressBar | ProgressBar | Theme. The indeterminate dots are the hard part; done 2026-11-12 (#95), device run passed 2026-11-12 | 1, 2 |
 | [#36](https://github.com/wdcossey/CornflowerUI/issues/36) | TextBox | TextBox | Theme, `Header` (no clear button: the phone's template has none); done 2026-11-12 (#101), device run passed 2026-11-12 | 1, 2 |
-| [#37](https://github.com/wdcossey/CornflowerUI/issues/37) | PasswordBox | TextBox with `PasswordChar` | Theme, keyed `PasswordBox`, on a `TextBox`. No separate control in Avalonia; done 2026-11-12 (#103), device run passed 2026-11-12; the keyboard told it's a password, #104 | 1, 2 |
+| [#37](https://github.com/wdcossey/CornflowerUI/issues/37) | PasswordBox | TextBox with `PasswordChar` | Theme, keyed `PasswordBox`, on a `TextBox`. No separate control in Avalonia; done 2026-11-12 (#103), device run passed 2026-11-12; #104 fixed by #106: a masked box tells the keyboard it holds a password | 1, 2 |
 
 ### Tier 2
 
