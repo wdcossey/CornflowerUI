@@ -1,5 +1,4 @@
-# Windows only: runs on the reference VM, in its Windows PowerShell, not on the machine that drives it.
-# Lists the UI Automation tree of the emulator's (XDE's) windows, to find the Screenshot tool's controls.
+# Windows only, on the reference VM: lists the UI Automation tree of the emulator's (XDE's) windows, to find the Screenshot tool's controls.
 # Runs in the signed-in desktop session. -OpenTools presses the toolbar's >> to open Additional Tools, and -Tab
 # selects one of its tabs, before the listing. Keep -Depth low while a file dialog is open: its tree is slow to walk.
 param([string]$Out = 'C:\cornflower\grab\xde-tree.txt', [switch]$OpenTools, [string]$Tab = '', [int]$Depth = 12)

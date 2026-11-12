@@ -4,9 +4,9 @@ The device run: the sample on a real phone, over ADB (ADR 0002, "Platforms";
 [`PROCESS.md`](../../docs/PROCESS.md#4-review), "The device run").
 
 ```sh
-pwsh -File tools/android/run.ps1             # build, install, start, capture
-pwsh -File tools/android/run.ps1 -NoBuild    # reuse the last build
-pwsh -File tools/android/run.ps1 -Page theme # open a page of the catalogue
+pwsh -NoProfile -File tools/android/run.ps1             # build, install, start, capture
+pwsh -NoProfile -File tools/android/run.ps1 -NoBuild    # reuse the last build
+pwsh -NoProfile -File tools/android/run.ps1 -Page theme # open a page of the catalogue
 ```
 
 It runs on Linux, macOS and Windows, under PowerShell 7.4 or later (`pwsh`; see
@@ -61,7 +61,10 @@ start, naming the titles it has, and the script stops with the app's crash repor
    writes `CORNFLOWER cost <line>` after the ready line, what the page cost to open
    ([`docs/performance`](../../docs/performance/README.md#in-a-debug-build)).
 6. Saves the screen with `adb exec-out screencap -p`, its PNG redirected to `frame.png` byte for
-   byte (PowerShell 7.4 keeps a native command's bytes when it redirects them to a file).
+   byte (PowerShell 7.4 keeps a native command's bytes when it redirects them to a file), and
+   checks the file starts with PNG's signature: `exec-out` passes on neither screencap's exit code
+   nor its errors apart from its output, so a failed screencap shows as text in the file, which the
+   script quotes.
 
 It writes one folder per run, `artifacts/device/<yyyyMMdd-HHmmss>-<model>/` unless `-Out` says
 otherwise. `artifacts/` is ignored by git.
@@ -72,9 +75,18 @@ otherwise. `artifacts/` is ignored by git.
 | `run.json` | The device, the APK, `launchState` and `totalTimeMs` from `am start -W`, the page opened (`page`) and the shell's time to open it (`openMs`), the ready line's facts (`ready`), and in a Debug build the cost line (`cost`) |
 | `logcat.txt` | The run's whole log, also written when the ready line never comes |
 
-`adb` is taken from `$ANDROID_SDK_ROOT/platform-tools`, then `$ANDROID_HOME/platform-tools`, then
-`PATH`, then the SDK's default folder, where Android Studio puts it: `%LOCALAPPDATA%\Android\Sdk`
-on Windows, `~/Library/Android/sdk` on macOS, `~/Android/Sdk` on Linux.
+`adb` is taken from `$ANDROID_HOME/platform-tools`, then `$ANDROID_SDK_ROOT/platform-tools`, then
+the SDK's default folder, where Android Studio puts it (`%LOCALAPPDATA%\Android\Sdk` on Windows,
+`~/Library/Android/sdk` on macOS, `~/Android/Sdk` on Linux), then `PATH`. Keep to one adb: a
+different one restarts the adb server, which can drop the phone's wireless pairing. The build is
+given the SDK that adb is in (`-p:AndroidSdkDirectory`, as CI gives it `$ANDROID_HOME`), so that
+one SDK is used for both; an adb that isn't in an SDK's `platform-tools`, such as a packaged one
+on `PATH`, leaves the build to find its own.
+
+Run it with `-NoProfile`, so that nothing in a PowerShell profile changes the run. The script also
+pins the two settings it depends on, `$PSNativeCommandArgumentPassing` (`Standard`, so a title's
+quotes reach adb intact) and `$PSNativeCommandUseErrorActionPreference` (off, as each call's exit
+code is checked).
 
 ## The phone
 

@@ -1,5 +1,4 @@
-# Windows only: runs on the reference VM, in its Windows PowerShell, not on the machine that drives it.
-# Runs on the reference VM in the signed-in desktop session, started by session.ps1 -Grab.
+# Windows only: runs on the reference VM in the signed-in desktop session, started by session.ps1 -Grab.
 #
 # Watches the emulator's output window (class OPWindowClass) and, each time the picture has changed and then
 # held still for -SteadyMs, saves a screenshot with the emulator's own Screenshot tool (Additional Tools >

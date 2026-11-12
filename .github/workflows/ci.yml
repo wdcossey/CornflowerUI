@@ -63,15 +63,11 @@ jobs:
       - name: Build the Android sample
         run: dotnet build samples/Cornflower.Sample.Android --configuration Release -p:AndroidSdkDirectory="$ANDROID_HOME"
 
-  # The repo's tools on Linux and macOS (#83): every PowerShell script parses under pwsh, and the portable tools'
+  # The repo's tools off Windows (#83): every PowerShell script parses under pwsh, and the portable tools'
   # self-tests pass. Windows-only scripts (tools/real-window, and those that run on the reference VM) are parsed,
-  # not run. pwsh, Python 3 and Node come with the runner images.
+  # not run. Linux only, as none of these checks depends on the OS. pwsh, Python 3 and Node come with the image.
   tools:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
 

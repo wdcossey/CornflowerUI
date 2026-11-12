@@ -18,13 +18,14 @@
     5. copy the results to <-Out>/<timestamp>-dev<Device>, write index.html, remove the task
 
   -Out is where run folders go: by default $env:CORNFLOWER_REFERENCE/refapp, or on Windows, with that
-  unset, R:\cornflower-reference\refapp. Elsewhere, give one or the other.
+  unset, R:\cornflower-reference\refapp. Elsewhere, give one or the other. -NoProfile keeps a profile's
+  settings out of the run.
 
 .EXAMPLE
-  pwsh -File tools/refapp/run.ps1
-  pwsh -File tools/refapp/run.ps1 -Device 13
-  pwsh -File tools/refapp/run.ps1 -Device 11 -Only 'Flyout|Dialog|ComboBox'
-  pwsh -File tools/refapp/run.ps1 -Out ~/cornflower-reference/refapp
+  pwsh -NoProfile -File tools/refapp/run.ps1
+  pwsh -NoProfile -File tools/refapp/run.ps1 -Device 13
+  pwsh -NoProfile -File tools/refapp/run.ps1 -Device 11 -Only 'Flyout|Dialog|ComboBox'
+  pwsh -NoProfile -File tools/refapp/run.ps1 -Out ~/cornflower-reference/refapp
 
   -Only keeps the specimens and popups whose name matches the regex, for a quick run.
   -Popups also or -Popups only adds the popups (flyouts, dialogs, pickers), which are left out by default.
@@ -70,6 +71,8 @@ param(
 $ErrorActionPreference = 'Stop'
 # ssh's and scp's exit codes are what count, checked after each call.
 $PSNativeCommandUseErrorActionPreference = $false
+# Each argument reaches ssh and scp as it is; a profile that set Legacy would mangle quotes.
+$PSNativeCommandArgumentPassing = 'Standard'
 if ($Record -and -not $Probe) { throw '-Record goes with -Probe' }
 if ($Native -and ($Probe -or $Demo -or $Grab -or $Popups -or $Only)) { throw '-Native runs on its own' }
 if (-not $Out) {
@@ -77,6 +80,8 @@ if (-not $Out) {
     elseif ($IsWindows) { $Out = 'R:\cornflower-reference\refapp' }
     else { throw 'Give -Out, or set CORNFLOWER_REFERENCE to the reference folder: run folders go in its refapp folder.' }
 }
+# A full file system path, as scp is given it: scp knows neither ~ nor a PowerShell drive, nor this session's folder.
+$Out = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Out)
 $here = $PSScriptRoot
 # Paths on the VM, which runs Windows.
 $remote = 'C:\cornflower\refapp'

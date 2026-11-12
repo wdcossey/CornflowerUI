@@ -21,15 +21,16 @@ only, `R:\cornflower-reference\refapp`.
 
 ## PowerShell
 
-The scripts are PowerShell 7 (`pwsh`), run as `pwsh -File tools/<tool>/<script>.ps1`; `android/` and
-`refapp/run.ps1` need 7.4 or later. Install it from
+The scripts are PowerShell 7 (`pwsh`), run as `pwsh -NoProfile -File tools/<tool>/<script>.ps1`
+(`-NoProfile`, so that nothing in a profile changes a run); `android/` and `refapp/run.ps1` need 7.4
+or later. Install it from
 [Microsoft's instructions](https://learn.microsoft.com/powershell/scripting/install/installing-powershell)
 (on Windows `winget install Microsoft.PowerShell`, on macOS `brew install --cask powershell`, on Linux
 the distribution's package from Microsoft's repository). Windows PowerShell 5.1 isn't supported, but for
-`real-window/drive.ps1`, which still runs under it. The scripts in `refapp/vm/`, `collect-vm.ps1`
+`real-window/drive.ps1`, which still runs under it and hasn't yet been run end to end under `pwsh`. The scripts in `refapp/vm/`, `collect-vm.ps1`
 and `setres.ps1` run on the reference VM, in its own Windows PowerShell.
 
 `python` in the tools' READMEs is Python 3: where the command is `python3`, as on most Linux and
 macOS systems, use that. CI parses every script with `pwsh`, compiles the Python tools, checks the
-Node tools' syntax and runs `motion/selftest.py`, on Linux and macOS (`tools` in
+Node tools' syntax and runs `motion/selftest.py`, on Linux (`tools` in
 `.github/workflows/ci.yml`).

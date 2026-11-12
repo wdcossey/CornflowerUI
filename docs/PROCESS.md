@@ -165,7 +165,7 @@ exists, the two images sit next to each other in the comparison.*
   through URLs pinned to the commit, naming the emulator profile and saying if ours is headless.
 - **The device run**, once per batch, before it is called ready to merge: the sample on the
   Android device over ADB, with frames pulled back, by
-  [`tools/android/run.ps1`](../tools/android/README.md) (`pwsh -File tools/android/run.ps1`, on any
+  [`tools/android/run.ps1`](../tools/android/README.md) (`pwsh -NoProfile -File tools/android/run.ps1`, on any
   OS; [`tools/README.md`](../tools/README.md#powershell) has how to install PowerShell 7). Ask first.
 - **The style budget** in CI. Over the limit, see whether the alternatives can go, or raise the
   limit on purpose and say so in the PR (`StyleBudgetTests`;

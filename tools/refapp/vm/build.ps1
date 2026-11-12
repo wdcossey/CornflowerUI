@@ -1,5 +1,4 @@
-# Windows only: runs on the reference VM, in its Windows PowerShell, not on the machine that drives it.
-# Runs on the reference VM: builds the reference app with MSBuild 14 into app\AppPackages\.
+# Windows only: runs on the reference VM. Builds the reference app with MSBuild 14 into app\AppPackages\.
 # Called over SSH by ..\run.ps1. Needs Visual Studio 2015 with the Windows Phone 8.1 tools.
 param([string]$Root = 'C:\cornflower\refapp')
 
