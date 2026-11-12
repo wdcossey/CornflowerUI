@@ -85,10 +85,10 @@ transitions.
 |---|---|---|---|
 | `Normal`, `PointerOver`, `Pressed` | nothing | | the plain setters; no `:pointerover` or `:pressed` style |
 | `Indeterminate`, `IndeterminatePointerOver`, `IndeterminatePressed` | nothing | | the plain setters: `:indeterminate` is never `:checked` |
-| `Checked`, `CheckedPointerOver` | `EnabledBackground.Background` = `PhoneAccentBrush`; `EnabledContent.Foreground` = `PhoneButtonBasePressedForegroundBrush`; and three setters on the disabled parts | `SystemColorControlAccentColor`, Cobalt `#FF3E65FF`; `PhoneTextOverAccentColor`, `#FFFFFFFF` in both | `^:checked:not(:pressed), ^:checked:not(:pointerover)` |
-| `CheckedPressed` | nothing | | the plain setters: `:checked:pressed:pointerover` matches neither of the above |
+| `Checked`, `CheckedPointerOver` | `EnabledBackground.Background` = `PhoneAccentBrush`; `EnabledContent.Foreground` = `PhoneButtonBasePressedForegroundBrush`; and three setters on the disabled parts | `SystemColorControlAccentColor`, Cobalt `#FF3E65FF`; `PhoneTextOverAccentColor`, `#FFFFFFFF` in both | `^:checked:not(:pressed), ^:checked[(wp81|PhonePress.IsOff)=True]` |
+| `CheckedPressed` | nothing | | the plain setters: checked, pressed and the pressing pointer on it matches neither of the above |
 | `Disabled`, `IndeterminateDisabled` | `EnabledBackground` collapsed, `DisabledBackground` visible | `ButtonDisabledBorderThemeBrush`, `ButtonDisabledForegroundThemeBrush`: `PhoneBaseLowColor`, `#73FFFFFF` dark, `#40000000` light | `^:disabled:not(:checked)`: the Border transparent, its border and the text in those brushes |
-| `CheckedDisabled` | `EnabledBackground.Background` = `PhoneAccentBrush`, `EnabledBackground.Opacity` = 0.4, `EnabledContent.Foreground` = `PhoneButtonBasePressedForegroundBrush` | | `^:checked:disabled`, the same three |
+| `CheckedDisabled` | `EnabledBackground.Background` = `PhoneAccentBrush`, `EnabledBackground.Opacity` = 0.4, `EnabledContent.Foreground` = `PhoneButtonBasePressedForegroundBrush` | | `^:checked:disabled`: the opacity; the accent and the text come from the checked style, as Avalonia's Button is never pressed while disabled |
 
 `Checked` and `CheckedPointerOver` also set `DisabledBackground.Background` and `BorderBrush` to `PhoneDisabledBrush` and
 `DisabledContent.Foreground` to `PhoneBackgroundBrush`. They are never seen: `DisabledBackground` is collapsed in every
@@ -130,7 +130,7 @@ theme, and against the captures and the probe:
 | The states | the table above | Simple's | 1, theme |
 | Two parts per look | `EnabledBackground`/`EnabledContent` and `DisabledBackground`/`DisabledContent` | one element can't be in two presenters | 1: one Border and presenter, restyled for Disabled; the same pixels |
 | A press on a checked one | the unchecked look while pressed | `:checked:pressed` | 1, theme: the accent only when not pressed, or pressed with the pointer off it |
-| Sliding off while pressed | `CheckedPressed` › `Checked` at the edge | stays `:pressed`; `:pointerover` goes false off the control, the pointer still captured (tested) | 1, theme: `:checked:not(:pointerover)` draws the accent |
+| Sliding off while pressed | `CheckedPressed` › `Checked` at the edge | stays `:pressed`. Its `:pointerover` can't tell: it isn't set under a touch at all, nor for a press from the keyboard (tested) | 2, `PhonePress`, internal to the theme: `IsOff`, the pressing pointer off the control, judged as Avalonia's Button judges a release; `:checked[IsOff=True]` draws the accent |
 | The lift off it | doesn't toggle | doesn't click (Avalonia's Button clicks on release only over itself) | nothing: the same |
 | `CheckedDisabled`'s 0.4 | the Border and its content as one layer | each thing drawn at 0.4 | 1, theme: `RenderOptions.RequiresFullOpacityHandling` on the root |
 | The tilt | none | none | nothing |
@@ -144,6 +144,13 @@ theme, and against the captures and the probe:
 | Layout rounding | the nearest raw pixel | up to the raw pixel | ADR 0003's recorded deviation; none shows here |
 
 No type is substituted. Rung 1 and 2 only.
+
+### PhonePress
+
+`PhonePress` (`src/Cornflower.Themes.Wp81/PhonePress.cs`, internal, new in this PR, shared with RepeatButton) follows
+the pointer that pressed the control, from the press to the release, and sets `IsOff` while that pointer is off it: no
+part of the control under it, as Avalonia's Button decides a release doesn't click. Only that pointer counts. With no
+pointer press (Space), nothing is off. The ToggleButton theme turns it on and reads `IsOff` in its checked selector.
 
 ### HoleParts, by style key
 
@@ -170,7 +177,7 @@ Each has a test in `tests/Cornflower.Tests/Controls/ToggleButtonTests.cs` unless
 3. **Unchecked**: the border where the PNGs draw it, the page inside. `Unchecked_The_Border_Is_Drawn_Where_The_Phone_Draws_It`.
 4. **Checked**: the accent inside, the text over it, the border unchanged; the app's accent. `Checked_Fills_With_The_Accent_And_Draws_The_Text_Over_It`, `Checked_Follows_The_Apps_Accent`.
 5. **Pressed and CheckedPressed show the unchecked look, and the release toggles.** `A_Press_Shows_The_Unchecked_Look_And_The_Release_Toggles`.
-6. **Sliding off a pressed checked one shows it checked; the lift off it keeps it.** `Sliding_Off_A_Pressed_Checked_One_Shows_It_Checked_And_The_Lift_Off_It_Keeps_It`.
+6. **Sliding off a pressed checked one shows it checked; the lift off it keeps it**, by mouse and by touch; a held Space shows the unchecked look. `Sliding_Off_A_Pressed_Checked_One_Shows_It_Checked_And_The_Lift_Off_It_Keeps_It`, `Under_A_Finger_Checked_Looks_Unchecked_Until_It_Slides_Off`, `Held_Space_On_A_Checked_One_Shows_The_Unchecked_Look`.
 7. **The pointer over it changes nothing**, checked or not. `The_Pointer_Over_It_Changes_Nothing`.
 8. **Disabled** dims the border and the text, transparent inside whatever the app set (`#FF737373`, `#FFBFBFBF`).
    `Disabled_Dims_The_Border_And_The_Text_As_The_Phone_Does`.
@@ -244,7 +251,7 @@ WinRT `Windows.UI.Xaml.Controls.Primitives.ToggleButton`; Avalonia `Avalonia.Con
 | [x] | `CommandParameter` | `Object` | `Button.CommandParameter` | Avalonia's stands |
 | [x] | `Command` | `ICommand` | `Button.Command` | Avalonia's stands |
 | [x] | `ClickMode` | `ClickMode` | `Button.ClickMode` | Avalonia's stands: Release, as the probe read |
-| [x] | `IsPointerOver` (read-only) | `Boolean` | `InputElement.IsPointerOver` | Avalonia's stands; draws nothing; false off the control while pressed, which draws the accent again (Behaviour 6) |
+| [x] | `IsPointerOver` (read-only) | `Boolean` | `InputElement.IsPointerOver` | Avalonia's stands; draws nothing. Not set under a touch, so the slide off is `PhonePress.IsOff`'s (Behaviour 6) |
 | [x] | `IsPressed` (read-only) | `Boolean` | `Button.IsPressed` | Avalonia's stands; the unchecked look while pressed over it (Behaviour 5) |
 
 ### Events, from `ButtonBase` (1)
@@ -315,10 +322,10 @@ Avalonia's control looks for: `PART_ContentPresenter`.
 | [x] | `CommonStates` | `PointerOver` | nothing | `^:pointerover` | No style |
 | [x] | `CommonStates` | `Pressed` | nothing | `^:pressed` | No style (Behaviour 5) |
 | [x] | `CommonStates` | `Disabled` | `EnabledBackground.Visibility = Collapsed`<br>`DisabledBackground.Visibility = Visible` | `^:disabled` | `^:disabled:not(:checked)`: `EnabledBackground` drawn as `DisabledBackground` (Behaviour 8) |
-| [x] | `CommonStates` | `Checked` | `EnabledBackground.Background = {ThemeResource PhoneAccentBrush}`<br>`EnabledContent.Foreground = {ThemeResource PhoneButtonBasePressedForegroundBrush}`<br>`DisabledBackground.Background = {ThemeResource PhoneDisabledBrush}`<br>`DisabledBackground.BorderBrush = {ThemeResource PhoneDisabledBrush}`<br>`DisabledContent.Foreground = {ThemeResource PhoneBackgroundBrush}` | `^:checked` | `^:checked:not(:pressed), ^:checked:not(:pointerover)`, the first two; the three on the collapsed disabled parts are never seen |
+| [x] | `CommonStates` | `Checked` | `EnabledBackground.Background = {ThemeResource PhoneAccentBrush}`<br>`EnabledContent.Foreground = {ThemeResource PhoneButtonBasePressedForegroundBrush}`<br>`DisabledBackground.Background = {ThemeResource PhoneDisabledBrush}`<br>`DisabledBackground.BorderBrush = {ThemeResource PhoneDisabledBrush}`<br>`DisabledContent.Foreground = {ThemeResource PhoneBackgroundBrush}` | `^:checked` | `^:checked:not(:pressed), ^:checked[(wp81|PhonePress.IsOff)=True]`, the first two; the three on the collapsed disabled parts are never seen |
 | [x] | `CommonStates` | `CheckedPointerOver` | as `Checked` | `^:checked:pointerover` | The same style |
 | [x] | `CommonStates` | `CheckedPressed` | nothing | `^:checked:pressed` | No style: the plain setters while pressed over it (Behaviours 5, 6) |
-| [x] | `CommonStates` | `CheckedDisabled` | `EnabledBackground.Background = {ThemeResource PhoneAccentBrush}`<br>`EnabledBackground.Opacity = 0.4`<br>`EnabledContent.Foreground = {ThemeResource PhoneButtonBasePressedForegroundBrush}` | `^:checked:disabled` | `^:checked:disabled`, the three, drawn as one layer (Behaviour 9) |
+| [x] | `CommonStates` | `CheckedDisabled` | `EnabledBackground.Background = {ThemeResource PhoneAccentBrush}`<br>`EnabledBackground.Opacity = 0.4`<br>`EnabledContent.Foreground = {ThemeResource PhoneButtonBasePressedForegroundBrush}` | `^:checked:disabled` | The opacity on `^:checked:disabled`; the accent and the text from the checked style (a disabled Button is never pressed); one layer (Behaviour 9) |
 | [x] | `CommonStates` | `Indeterminate` | nothing | `^:indeterminate` | No style (Behaviour 10) |
 | [x] | `CommonStates` | `IndeterminatePointerOver` | nothing | `^:indeterminate:pointerover` | No style |
 | [x] | `CommonStates` | `IndeterminatePressed` | nothing | `^:indeterminate:pressed` | No style |
@@ -340,8 +347,8 @@ _none_
 | [x] | `PhoneButtonContentPadding` | `9.5,0,9.5,3.5` | same | yes | `Padding` |
 | [x] | `PhoneButtonMinHeight` | `57.5` | same | yes | `MinHeight` |
 | [x] | `PhoneButtonMinWidth` | `109` | same | yes | `MinWidth` |
-| [x] | `PhoneAccentBrush` | `SolidColorBrush {ThemeResource SystemColorControlAccentColor}` | same | yes | `:checked` and `:checked:disabled`, the Border's `Background`; follows an app's accent |
-| [x] | `PhoneButtonBasePressedForegroundBrush` | `SolidColorBrush {ThemeResource PhoneTextOverAccentColor} → #FFFFFFFF` | same | yes | `:checked` and `:checked:disabled`, the presenter's `Foreground` |
+| [x] | `PhoneAccentBrush` | `SolidColorBrush {ThemeResource SystemColorControlAccentColor}` | same | yes | `:checked` (disabled too), the Border's `Background`; follows an app's accent |
+| [x] | `PhoneButtonBasePressedForegroundBrush` | `SolidColorBrush {ThemeResource PhoneTextOverAccentColor} → #FFFFFFFF` | same | yes | `:checked` (disabled too), the presenter's `Foreground` |
 | [-] | `PhoneDisabledBrush` | `SolidColorBrush {ThemeResource PhoneDisabledColor} → #66FFFFFF` | `SolidColorBrush {ThemeResource PhoneDisabledColor} → #66000000` | yes | Not used: set by `Checked` on the collapsed `DisabledBackground`, never seen |
 | [-] | `PhoneBackgroundBrush` | `SolidColorBrush {ThemeResource PhoneBackgroundColor} → #FF000000` | `SolidColorBrush {ThemeResource PhoneBackgroundColor} → #FFFFFFFF` | yes | Not used: as `PhoneDisabledBrush` |
 | [x] | `PhoneTouchTargetOverhang` | `0,9.5` | same | yes | The Border's `Margin` |

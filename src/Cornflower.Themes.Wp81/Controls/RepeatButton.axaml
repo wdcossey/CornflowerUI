@@ -16,7 +16,7 @@
     The phone's own values for what the style doesn't set, read through the API in the emulator (run
     20261112-0755-dev11): ClickMode Press, Delay 500 and Interval 33, where Avalonia's RepeatButton has Release, 300
     and 100. So a press clicks at once, the first repeat is half a second later, and one every 33 ms after that.
-    PhoneRepeat stops the repeats while the finger is off the button, as the phone's do.
+    PhonePress stops the repeats while the finger is off the button, as the phone's do.
   -->
   <ControlTheme x:Key="{x:Type RepeatButton}" TargetType="RepeatButton">
     <Setter Property="Background" Value="Transparent" />
@@ -38,7 +38,7 @@
     <Setter Property="Delay" Value="500" />
     <Setter Property="Interval" Value="33" />
     <Setter Property="FocusAdorner" Value="{x:Null}" />
-    <Setter Property="wp81:PhoneRepeat.IsEnabled" Value="True" />
+    <Setter Property="wp81:PhonePress.IsEnabled" Value="True" />
     <!-- In the template of a control Wp81 doesn't theme yet (ScrollBar), the theme under Wp81's RepeatButton instead. -->
     <Setter Property="wp81:HoleParts.FallBack" Value="True" />
     <Setter Property="Template">

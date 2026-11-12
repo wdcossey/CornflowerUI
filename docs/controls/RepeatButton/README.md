@@ -29,7 +29,7 @@ It is Button's size: at least 109 × 57.5, left-aligned, its border 9.5 inside i
   at once; held, it repeats after half a second, then every 33 ms (the theme's setters; an app sets its own as it
   would on the phone).
 - **Off the button the repeats stop**, while it stays pressed, and the next tick after the finger comes back clicks, as
-  on the phone: `PhoneRepeat`, internal to the theme. The keyboard's clicks are Avalonia's.
+  on the phone: `PhonePress`, internal to the theme. The keyboard's clicks are Avalonia's.
 - **Dark and light**, and **the app's accent**.
 - **Data's line** is the phone's 1.33 em, as Button's.
 - **Other controls' templates**: a plain RepeatButton in a template written for the theme under Wp81 (Simple's
@@ -52,7 +52,7 @@ A transparent `Panel` (takes the hits on the overhang) › `Border` (the phone's
 ## The ladder
 
 Rung 1 (theme) for the setters, the states, the timing's values and the cleared focus adorner; rung 2 (attached
-behaviour) for the repeats off the button (`PhoneRepeat`), the phone's line (`PhoneContentLine`) and the holes'
+behaviour) for the repeats off the button (`PhonePress`), the phone's line (`PhoneContentLine`) and the holes'
 RepeatButtons (`HoleParts`), all internal to the theme. No type is substituted.
 
 ## Extensions

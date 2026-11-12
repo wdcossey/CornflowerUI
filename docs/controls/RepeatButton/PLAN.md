@@ -70,7 +70,9 @@ logged with the app's stopwatch, touched for real:
 
 So the phone clicks at the press, waits `Delay`, and repeats while the finger is on it. **The repeats came every 60 ms,
 not every 33**: `Interval` reads 33, and the first repeat came 17 to 19 ms after `Delay` too. Both are the emulator's
-timer; which of the two to reproduce is a decision (below).
+timer, or the phone's; the probe can't tell. **Decided: the theme sets the API's 33**, so an app reads what the
+phone's reads and an app's own `Interval` means what it says. To reproduce the emulator's cadence instead, the
+setter would be 60. The PR lists it under "Decided on the user's behalf".
 
 ## Avalonia's RepeatButton against the phone's
 
@@ -84,7 +86,7 @@ then `Interval`, raising `Click` (and the `Command`) on each tick, and stops it 
 | `ClickMode` | `Press`: a click at the press, none at the lift | `Release`: the timer starts at the press, a click at the lift | 1, theme setter `Press` |
 | `Delay` | 500 | 300 | 1, theme setter 500 |
 | `Interval` | 33 (read); the emulator repeated every 60 | 100 | 1, theme setter 33: the API's value. Ours repeats every 33.0 (measured headless, 28 gaps, 32.9 to 33.0), the first after 502 |
-| Off the button while held | no repeats; the next tick after it comes back clicks | repeats wherever the pointer is | 2, `PhoneRepeat`, internal to the theme: a class handler marks a repeat's `Click` handled while the pressing pointer is off the button, so neither the app's handlers nor the `Command` run; the timer keeps running, as the phone's does |
+| Off the button while held | no repeats; the next tick after it comes back clicks | repeats wherever the pointer is | 2, `PhonePress`, internal to the theme: a class handler marks a repeat's `Click` handled while the pressing pointer is off the button, so neither the app's handlers nor the `Command` run; the timer keeps running, as the phone's does. Off is judged at each Click from where the pressing pointer was last seen, so a button that moves away from a still finger stops too, and only that pointer counts |
 | The look while slid off | stays `Pressed` | stays `:pressed` | nothing: the same |
 | Focus | no `FocusStates` | a focus rectangle when `FocusAdorner` is unset | 1, the theme clears `FocusAdorner` |
 | The text's line | Segoe WP's 1.33 em | Selawik's 1.2 em | 2, `PhoneContentLine`, as Button's |
@@ -128,10 +130,13 @@ Each has a test in `tests/Cornflower.Tests/Controls/RepeatButtonTests.cs` unless
 9. **A tap clicks once, at the press**, on the overhang too. `A_Tap_Clicks_Once_On_The_Press_The_Overhang_Too`.
 10. **A held press repeats after `Delay`, at `Interval`.** `A_Held_Press_Repeats_After_The_Delay_At_The_Interval`.
 11. **Off the button the repeats stop, and come back with the finger**, without a second delay; the `Command` too.
-    `Off_The_Button_The_Repeats_Stop_And_Come_Back_With_The_Finger`; `PhoneRepeat` is what does it:
-    `Without_PhoneRepeat_Avalonias_Repeats_Go_On_Off_The_Button`.
+    `Off_The_Button_The_Repeats_Stop_And_Come_Back_With_The_Finger`; `PhonePress` is what does it:
+    `Without_PhonePress_Avalonias_Repeats_Go_On_Off_The_Button`; a button that moves from a still finger stops,
+    `A_Button_That_Moves_From_A_Still_Finger_Stops_Repeating`; another pointer over it changes nothing,
+    `Another_Pointer_Over_It_Doesnt_Bring_The_Repeats_Back`; a lift off it leaves nothing behind,
+    `After_A_Lift_Off_It_The_Next_Tap_Clicks`; a click from its content goes on, `A_Click_From_Its_Content_Isnt_Held_Back`.
 12. **The keyboard's clicks aren't held back.** `Space_Clicks_Whatever_The_Pointer_Did_Before`.
-13. **RepeatButtons in templates written for the theme under Wp81 keep that theme's**, and without `PhoneRepeat`: a
+13. **RepeatButtons in templates written for the theme under Wp81 keep that theme's**, and without `PhonePress`: a
     ScrollBar's, every hole's (`Completeness/HoleTogglePartsTests.cs`).
 14. **Holes**: `RepeatButton` is themed (`Completeness/HolesTests`, its line deleted from `Holes.txt`).
 15. **No global rule**: `StyleBudgetTests`, unchanged.
@@ -144,7 +149,7 @@ Each has a test in `tests/Cornflower.Tests/Controls/RepeatButtonTests.cs` unless
 - Captures used: `base`, `PointerOver`, `Pressed`, `Disabled`, dark and light, run `20261108-1443-dev11`; the probe,
   run `20261112-0755-dev11`.
 - **Not measured**: the cadence on a real phone (is 60 ms the emulator's, or the platform's?), and a RepeatButton with
-  `Interval` set by the app (does the emulator's cadence follow it, or round it?). Either would settle the decision below.
+  `Interval` set by the app (does the emulator's cadence follow it, or round it?). Either would settle the decision above.
 
 ## Checklist
 

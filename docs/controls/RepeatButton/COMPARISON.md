@@ -36,7 +36,7 @@ real time.
 | A tap | one click, at the press | the same | **match** |
 | The first repeat | 516.7 to 519 ms after the press | 502 ms | **match** to `Delay`; the phone's came 17 to 19 ms late |
 | The repeats | every 59.95 ms (57.9 to 61.2), though `Interval` reads 33 | every 33.0 ms (32.9 to 33.0) | **deliberate difference** (below) |
-| Off the button while held | none; the next tick after it comes back | the same (`PhoneRepeat`) | **match** |
+| Off the button while held | none; the next tick after it comes back | the same (`PhonePress`) | **match** |
 | The look while off it | stays `Pressed` | stays `:pressed` | **match** |
 
 ## Gaps and deliberate differences

@@ -30,7 +30,7 @@ their own style key, so none of them takes it.
 - **Checked**: the accent inside the border, the text in `PhoneButtonBasePressedForegroundBrush`, white.
 - **Pressed** changes nothing drawn, and **a checked one pressed shows the unchecked look**: the phone's
   `CheckedPressed` sets nothing. The release toggles. If the finger slides off a checked one while pressed, it shows
-  checked again, and lifting there doesn't toggle it, as on the phone.
+  checked again, and lifting there doesn't toggle it, as on the phone (`PhonePress`, internal to the theme).
 - **Disabled**: the border and the text in `PhoneBaseLowColor`, transparent inside, whatever the app set.
   **Checked and disabled**: the checked look at 0.4, the border, accent and text together, as one layer.
 - **Indeterminate** (`IsThreeState`, `IsChecked` null) looks unchecked; disabled, it looks disabled.
@@ -59,7 +59,8 @@ made: their look is drawn by the same Border and presenter when disabled.
 ## The ladder
 
 Rung 1 (theme) for the setters and the states, the one-layer opacity and the cleared focus adorner; rung 2 (attached
-behaviour) for the phone's line (`PhoneContentLine`) and the holes' ToggleButtons (`HoleParts`, now by style key). No
+behaviour, internal to the theme) for the slide off (`PhonePress`), the phone's line (`PhoneContentLine`) and the
+holes' ToggleButtons (`HoleParts`, now by style key). No
 type is substituted.
 
 ## Extensions

@@ -256,6 +256,57 @@ public class ToggleButtonTests
         Dispatcher.UIThread.RunJobs();
         Assert.True(toggle.IsChecked);
         Assert.Equal(Accent, Fill(toggle));
+
+        // The lift ends it: a press from the keyboard next is on it, CheckedPressed.
+        toggle.Focus();
+        stage.Window.KeyPressQwerty(PhysicalKey.Space, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(ButtonReadings.Transparent, Fill(toggle));
+        stage.Window.KeyReleaseQwerty(PhysicalKey.Space, RawInputModifiers.None);
+    }
+
+    // The same under a finger, as on the phone (Avalonia's touch pointer is over the control while it touches it, and
+    // not once it has slid off).
+    [AvaloniaFact]
+    public void Under_A_Finger_Checked_Looks_Unchecked_Until_It_Slides_Off()
+    {
+        using var stage = new ButtonStage<ToggleButton>(Toggle(isChecked: true));
+        var toggle = stage.Button;
+        var off = stage.At(toggle.Bounds.Width / 2, toggle.Bounds.Height + 30);
+
+        var finger = stage.Window.TouchBegin(stage.Centre);
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(toggle.IsPressed);
+        Assert.Equal(ButtonReadings.Transparent, Fill(toggle));
+
+        stage.Window.TouchMove(finger, off);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(Accent, Fill(toggle));
+
+        stage.Window.TouchEnd(finger, off);
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(toggle.IsChecked);
+        Assert.Equal(Accent, Fill(toggle));
+    }
+
+    // A press from the keyboard is a press like any other, with no pointer off it: CheckedPressed, the unchecked look,
+    // wherever the mouse is.
+    [AvaloniaFact]
+    public void Held_Space_On_A_Checked_One_Shows_The_Unchecked_Look()
+    {
+        using var stage = new ButtonStage<ToggleButton>(Toggle(isChecked: true));
+        var toggle = stage.Button;
+        stage.Window.MouseMove(stage.At(toggle.Bounds.Width / 2, toggle.Bounds.Height + 30));
+        toggle.Focus();
+
+        stage.Window.KeyPressQwerty(PhysicalKey.Space, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(toggle.IsPressed);
+        Assert.Equal(ButtonReadings.Transparent, Fill(toggle));
+
+        stage.Window.KeyReleaseQwerty(PhysicalKey.Space, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+        Assert.False(toggle.IsChecked);
     }
 
     // PointerOver and CheckedPointerOver: as Normal and Checked.

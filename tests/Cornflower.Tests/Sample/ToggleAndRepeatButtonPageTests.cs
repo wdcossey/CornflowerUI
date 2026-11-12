@@ -56,10 +56,10 @@ public class ToggleAndRepeatButtonPageTests
         Assert.All(repeats, r =>
         {
             Assert.Contains(r.GetVisualDescendants(), v => v is Border { Name: "Border" });
-            Assert.True(PhoneRepeat.GetIsEnabled(r));
+            Assert.True(PhonePress.GetIsEnabled(r));
         });
         Assert.All(page.GetVisualDescendants().OfType<ScrollBar>().SelectMany(b => b.GetVisualDescendants().OfType<RepeatButton>()),
-            r => Assert.False(PhoneRepeat.GetIsEnabled(r)));
+            r => Assert.False(PhonePress.GetIsEnabled(r)));
         Assert.Equal("repeatbutton", page.FindControl<SamplePageHeader>("Header")!.Title);
     }
 

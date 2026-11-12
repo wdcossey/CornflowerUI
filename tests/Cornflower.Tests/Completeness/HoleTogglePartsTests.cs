@@ -106,7 +106,7 @@ public class HoleTogglePartsTests
         Assert.NotEmpty(repeats);
         Assert.All(repeats, r => Assert.Same(ThemeOf(simple, typeof(RepeatButton)), r.Theme));
         Assert.Equal(expected, repeats.Select(r => r.Bounds.Size).ToList());
-        Assert.All(repeats, r => Assert.False(PhoneRepeat.GetIsEnabled(r)));
+        Assert.All(repeats, r => Assert.False(PhonePress.GetIsEnabled(r)));
     }
 
     // An app's own templated control isn't a hole: its ToggleButton and RepeatButton are the phone's.

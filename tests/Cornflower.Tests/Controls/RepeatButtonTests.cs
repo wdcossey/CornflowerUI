@@ -241,6 +241,54 @@ public class RepeatButtonTests
         stage.Window.MouseUp(stage.Centre, MouseButton.Left);
     }
 
+    // Off is where the finger is now: a button that moves away from a finger held still stops repeating too.
+    [AvaloniaFact]
+    public void A_Button_That_Moves_From_A_Still_Finger_Stops_Repeating()
+    {
+        using var stage = new ButtonStage<RepeatButton>(Repeat());
+        var button = stage.Button;
+        var clicks = 0;
+        button.Click += (_, _) => clicks++;
+
+        stage.Window.MouseDown(stage.Centre, MouseButton.Left);
+        RunFor(10_000, () => clicks >= 2);
+        Assert.True(clicks >= 2, "no repeat");
+        button.Margin = new Avalonia.Thickness(250, 0, 0, 0);                            // away to the right, the pointer still
+        Dispatcher.UIThread.RunJobs();
+        var atMove = clicks;
+        RunFor(10 * RepeatInterval + 100);
+        Assert.True(button.IsPressed);
+        Assert.Equal(atMove, clicks);
+        stage.Window.MouseUp(stage.Centre, MouseButton.Left);
+    }
+
+    // Only the finger that pressed counts: the mouse moving over the button while that finger is off it doesn't bring the
+    // repeats back.
+    [AvaloniaFact]
+    public void Another_Pointer_Over_It_Doesnt_Bring_The_Repeats_Back()
+    {
+        using var stage = new ButtonStage<RepeatButton>(Repeat());
+        var button = stage.Button;
+        var clicks = 0;
+        button.Click += (_, _) => clicks++;
+        var off = stage.At(button.Bounds.Width / 2, button.Bounds.Height + 30);
+
+        var finger = stage.Window.TouchBegin(stage.Centre);
+        RunFor(10_000, () => clicks >= 2);
+        Assert.True(clicks >= 2, "no repeat under a touch");
+        stage.Window.TouchMove(finger, off);
+        stage.Window.MouseMove(stage.Centre);
+        Dispatcher.UIThread.RunJobs();
+        var atOff = clicks;
+        RunFor(10 * RepeatInterval + 100);
+        Assert.Equal(atOff, clicks);
+
+        stage.Window.TouchMove(finger, stage.Centre);
+        RunFor(10_000, () => clicks > atOff);
+        Assert.True(clicks > atOff, "no repeat after the finger came back");
+        stage.Window.TouchEnd(finger, stage.Centre);
+    }
+
     // A press slid off and lifted there leaves nothing behind: the next tap clicks at its press.
     [AvaloniaFact]
     public void After_A_Lift_Off_It_The_Next_Tap_Clicks()
@@ -300,13 +348,13 @@ public class RepeatButtonTests
         Assert.True(clicks > before);
     }
 
-    // PhoneRepeat is the theme's: a RepeatButton without it repeats wherever the pointer is, as Avalonia's does.
+    // PhonePress is the theme's: a RepeatButton without it repeats wherever the pointer is, as Avalonia's does.
     [AvaloniaFact]
-    public void Without_PhoneRepeat_Avalonias_Repeats_Go_On_Off_The_Button()
+    public void Without_PhonePress_Avalonias_Repeats_Go_On_Off_The_Button()
     {
         using var stage = new ButtonStage<RepeatButton>(Repeat());
         var button = stage.Button;
-        PhoneRepeat.SetIsEnabled(button, false);
+        PhonePress.SetIsEnabled(button, false);
         button.Delay = 50;
         var clicks = 0;
         button.Click += (_, _) => clicks++;

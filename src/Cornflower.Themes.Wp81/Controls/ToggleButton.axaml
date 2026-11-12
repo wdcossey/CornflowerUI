@@ -22,7 +22,8 @@
     - Checked and CheckedPointerOver: the accent behind the text in PhoneButtonBasePressedForegroundBrush.
     - CheckedPressed: nothing, so a checked ToggleButton looks unchecked while it is pressed. When the finger slides
       off it, the phone goes back to Checked (run 20261112-0755-dev11): so the accent is drawn while checked and not
-      pressed, or pressed with the pointer off it.
+      pressed, or pressed with the pressing pointer off it (PhonePress.IsOff: Avalonia's :pointerover isn't set under a
+      touch, nor for the keyboard's press).
     - Disabled and IndeterminateDisabled: the border and the text in PhoneBaseLowColor, the background transparent.
     - CheckedDisabled: the checked look at 0.4 opacity, border, background and text together.
     No theme animation runs, so there is no tilt, and there are no focus states, so FocusAdorner is cleared.
@@ -44,6 +45,7 @@
     <Setter Property="HorizontalContentAlignment" Value="Center" />
     <Setter Property="VerticalContentAlignment" Value="Center" />
     <Setter Property="FocusAdorner" Value="{x:Null}" />
+    <Setter Property="wp81:PhonePress.IsEnabled" Value="True" />
     <!-- In the template of a control Wp81 doesn't theme yet (ComboBox, DrawerPage), the theme under Wp81's ToggleButton instead. -->
     <Setter Property="wp81:HoleParts.FallBack" Value="True" />
     <Setter Property="Template">
@@ -72,7 +74,7 @@
     </Setter>
 
     <!-- Checked and CheckedPointerOver; and CheckedPressed left, the finger slid off. -->
-    <Style Selector="^:checked:not(:pressed), ^:checked:not(:pointerover)">
+    <Style Selector="^:checked:not(:pressed), ^:checked[(wp81|PhonePress.IsOff)=True]">
       <Style Selector="^ /template/ Border#EnabledBackground">
         <Setter Property="Background" Value="{DynamicResource PhoneAccentBrush}" />
       </Style>
@@ -92,15 +94,12 @@
       </Style>
     </Style>
 
-    <!-- CheckedDisabled: the checked look, the Border and what it holds at 0.4 together. -->
-    <Style Selector="^:checked:disabled">
-      <Style Selector="^ /template/ Border#EnabledBackground">
-        <Setter Property="Background" Value="{DynamicResource PhoneAccentBrush}" />
-        <Setter Property="Opacity" Value="0.4" />
-      </Style>
-      <Style Selector="^ /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Foreground" Value="{DynamicResource PhoneButtonBasePressedForegroundBrush}" />
-      </Style>
+    <!--
+      CheckedDisabled: the checked look at 0.4, the Border and what it holds together. The accent and the text over it
+      come from the checked style above: Avalonia's Button is never pressed while disabled.
+    -->
+    <Style Selector="^:checked:disabled /template/ Border#EnabledBackground">
+      <Setter Property="Opacity" Value="0.4" />
     </Style>
   </ControlTheme>
 </ResourceDictionary>
