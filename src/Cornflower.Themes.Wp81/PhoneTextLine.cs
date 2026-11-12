@@ -3,7 +3,6 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Data;
 using Avalonia.Media;
-using Avalonia.Threading;
 
 namespace Cornflower.Themes.Wp81;
 
@@ -40,7 +39,8 @@ namespace Cornflower.Themes.Wp81;
 /// rest (spike 6, docs/spikes). Until the pass runs, the values this set are stale: read in the same job (a
 /// <c>Measure</c> right after <c>Theme = null</c>), they are the old style's. It is posted at <c>Normal</c>, above
 /// <c>Render</c> and every priority layout and render run at in Avalonia 12.1.4, so the next layout sees it done
-/// (Taking_The_Style_Away_Settles_In_One_Run_Of_Jobs).</para>
+/// (Taking_The_Style_Away_Settles_In_One_Run_Of_Jobs). <see cref="DeferredPass{TSlots}"/> does this, and the pass
+/// again after a change other code makes in the middle of one, for <see cref="PhonePasswordKeyboard"/> too.</para>
 /// <para>It writes the three properties because they are the line: a <c>TextBlock</c>'s own layout reads them, and nothing
 /// outside it can apply the line during layout instead; a coercion can't see a value's priority as it comes in, and
 /// a coerced default stays in the store (spike 7, docs/spikes; #81).</para>
@@ -144,21 +144,10 @@ internal static class PhoneTextLine
         }
 
         var slots = SlotsFor(change.Property);
-        if (applied.Updating)
-        {
-            // Not the change this is making: something else's, raised in the middle of it. Worked out again after it.
-            if (change.Property != applied.Setting)
-                applied.Dirty |= slots;
+        if (applied.InPass(change.Property, slots))
             return;
-        }
 
-        if (change.Priority is BindingPriority.Unset or BindingPriority.Inherited)
-        {
-            applied.Defer(slots);
-            return;
-        }
-
-        Update(block, applied, slots);
+        applied.Handle(change.Priority, slots);
     }
 
     /// <summary>Whether <paramref name="change"/> sets one of the three to something this acts on.</summary>
@@ -168,53 +157,38 @@ internal static class PhoneTextLine
         : change.Property == CharacterSpacingProperty && change.GetNewValue<int>() != 0;
 
     /// <summary>
-    /// Works out the values in <paramref name="slots"/>, the line height before the padding, which reads it; again for
-    /// what a change made by other code in the middle of it moved, a few times at most.
+    /// Works out the values in <paramref name="slots"/>, the line height before the padding, which reads it: one pass
+    /// (<see cref="DeferredPass{TSlots}"/> runs it again for what a change made by other code in the middle of it moved).
     /// </summary>
-    private static void Update(TextBlock block, Applied applied, Slots slots)
+    private static void WorkOut(TextBlock block, Applied applied, Slots slots)
     {
-        applied.Updating = true;
-        try
+        var fontSize = block.FontSize;
+
+        if ((slots & Slots.LineHeight) != 0)
         {
-            for (var pass = 0; slots != Slots.None && pass < 4; pass++)
-            {
-                applied.Dirty = Slots.None;
-                var fontSize = block.FontSize;
-
-                if ((slots & Slots.LineHeight) != 0)
-                {
-                    var maxHeight = block.GetValue(MaxHeightLineHeightProperty);
-                    if (IsSize(maxHeight))
-                        Put(block, applied, ref applied.LineHeight, TextBlock.LineHeightProperty, Math.Max(maxHeight, FontLine * fontSize));
-                    else
-                        Take(applied, ref applied.LineHeight, TextBlock.LineHeightProperty);
-                }
-
-                if ((slots & Slots.LetterSpacing) != 0)
-                {
-                    var spacing = block.GetValue(CharacterSpacingProperty);
-                    if (spacing != 0)
-                        Put(block, applied, ref applied.LetterSpacing, TextBlock.LetterSpacingProperty, spacing * fontSize / 1000);
-                    else
-                        Take(applied, ref applied.LetterSpacing, TextBlock.LetterSpacingProperty);
-                }
-
-                if ((slots & Slots.Padding) != 0)
-                {
-                    var lineHeight = block.LineHeight;
-                    if (block.GetValue(BaselineToBaselineProperty) && IsSize(fontSize) && IsSize(lineHeight))
-                        Put(block, applied, ref applied.Padding, TextBlock.PaddingProperty, Padding(fontSize, lineHeight, applied.MetricsOf(block)));
-                    else
-                        Take(applied, ref applied.Padding, TextBlock.PaddingProperty);
-                }
-
-                slots = applied.Dirty;
-            }
+            var maxHeight = block.GetValue(MaxHeightLineHeightProperty);
+            if (IsSize(maxHeight))
+                Put(block, applied, ref applied.LineHeight, TextBlock.LineHeightProperty, Math.Max(maxHeight, FontLine * fontSize));
+            else
+                Take(applied, ref applied.LineHeight, TextBlock.LineHeightProperty);
         }
-        finally
+
+        if ((slots & Slots.LetterSpacing) != 0)
         {
-            applied.Updating = false;
-            applied.Dirty = Slots.None;
+            var spacing = block.GetValue(CharacterSpacingProperty);
+            if (spacing != 0)
+                Put(block, applied, ref applied.LetterSpacing, TextBlock.LetterSpacingProperty, spacing * fontSize / 1000);
+            else
+                Take(applied, ref applied.LetterSpacing, TextBlock.LetterSpacingProperty);
+        }
+
+        if ((slots & Slots.Padding) != 0)
+        {
+            var lineHeight = block.LineHeight;
+            if (block.GetValue(BaselineToBaselineProperty) && IsSize(fontSize) && IsSize(lineHeight))
+                Put(block, applied, ref applied.Padding, TextBlock.PaddingProperty, Padding(fontSize, lineHeight, applied.MetricsOf(block)));
+            else
+                Take(applied, ref applied.Padding, TextBlock.PaddingProperty);
         }
     }
 
@@ -269,12 +243,9 @@ internal static class PhoneTextLine
     /// <summary>A value set at style priority, with the handle that takes it back.</summary>
     private readonly record struct Entry(IDisposable? Set, object? Value);
 
-    /// <summary>What this has set on one <c>TextBlock</c>, and the pass it has waiting.</summary>
-    private sealed class Applied
+    /// <summary>What this has set on one <c>TextBlock</c>; its passes, and the one it has waiting, are the base's.</summary>
+    private sealed class Applied(TextBlock block) : DeferredPass<Slots>
     {
-        private readonly Action _run;
-        private DispatcherOperation? _posted;
-        private Slots _deferred;
         private (FontFamily Family, FontStyle Style, FontWeight Weight, FontStretch Stretch) _face;
         private FontMetrics _metrics;
 
@@ -282,32 +253,7 @@ internal static class PhoneTextLine
         public Entry LetterSpacing;
         public Entry Padding;
 
-        public Applied(TextBlock block) => _run = () =>
-        {
-            var slots = _deferred;
-            _deferred = Slots.None;
-            Update(block, this, slots);
-        };
-
-        /// <summary>While this works the values out, the changes it raises itself aren't handled again.</summary>
-        public bool Updating;
-
-        /// <summary>The property this is setting or taking back, whose change is its own.</summary>
-        public AvaloniaProperty? Setting;
-
-        /// <summary>The values a change made by other code during a pass moved.</summary>
-        public Slots Dirty;
-
-        /// <summary>
-        /// Works <paramref name="slots"/> out in a pass from the dispatcher, at <c>Normal</c> priority, which runs before
-        /// layout and render. One pass at a time; a later change posts again if the last one was aborted.
-        /// </summary>
-        public void Defer(Slots slots)
-        {
-            _deferred |= slots;
-            if (_posted is not { Status: DispatcherOperationStatus.Pending })
-                _posted = Dispatcher.UIThread.InvokeAsync(_run, DispatcherPriority.Normal);
-        }
+        protected override void Pass(Slots slots) => WorkOut(block, this, slots);
 
         /// <summary>The metrics of the <c>TextBlock</c>'s face, looked up again only when the face changes.</summary>
         public FontMetrics MetricsOf(TextBlock block)
