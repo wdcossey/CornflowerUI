@@ -1,6 +1,6 @@
 # TextBox
 
-Status: done · [#36](https://github.com/wdcossey/CornflowerUI/issues/36) · owed: the device run on the Pixel 8, and captures of a caret, a selection and the keyboard
+Status: done · [#36](https://github.com/wdcossey/CornflowerUI/issues/36) · device run passed 2026-11-12 (Pixel 8, Release, over wireless adb, `run.ps1 -Page textbox` on `main` at `7dddcde`: cold 789 ms, the page opened in 401 ms, the first screen's specimens drawn, a tap focuses a box with the accent round it, and typing works) · real-window run passed 2026-11-12 (`tools/real-window/drive.ps1` under `pwsh` 7.7, Debug, on `main` at `3bcf02e`: 71 of 71, the textbox page opened in 62 ms with 123 elements) · owed: captures of a caret, a selection and the keyboard
 
 The Windows Phone 8.1 TextBox: Avalonia's `TextBox`, themed by `Wp81Theme` with the phone's default style and
 template, in `src/Cornflower.Themes.Wp81/Controls/TextBox.axaml`. WinRT's `Header` is `cf:ControlHeader.Header`,

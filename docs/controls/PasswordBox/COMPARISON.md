@@ -92,7 +92,7 @@ frames. The box's pixels are read down column 500 and along each edge, the Check
   selection and the keyboard.
 - **The text is Selawik** (ADR 0001), and **Selawik has no `●`** (U+25CF; it has `•`, U+2022): Avalonia draws the
   circles from the platform's fallback font. Headless on Windows they are the phone's size within a pixel; another
-  platform's fallback draws its own (Android's Roboto and Noto have one). Unmeasured on the Pixel 8 until the device run.
+  platform's fallback draws its own (Android's Roboto and Noto have one). On the Pixel 8 (the device run, 2026-11-12) the circles are drawn; their size there is unmeasured.
 
 ## The checklist
 
