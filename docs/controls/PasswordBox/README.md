@@ -69,8 +69,9 @@ None new.
 - **Selawik has no `●`**: the circles come from the platform's fallback font.
 - **A tap on "Show Password" focuses an unfocused box**; the phone's leaves focus where it was.
 - **The keyboard suggests the password** ([#104](https://github.com/wdcossey/CornflowerUI/issues/104)): on the Pixel 8,
-  masked or shown, Gboard offered words from what was typed. The phone's keyboard offers none in a PasswordBox.
-- **Unmeasured**: a shown password, the caret, the selection and the keyboard.
+  Gboard offered words from what was typed with the password masked, and its strip stayed with it shown. Whether the
+  phone's keyboard suggests in a PasswordBox is unmeasured; a keyboard that may learn a password is a bug either way.
+- **Unmeasured on the phone**: a shown password, the caret, the selection and the keyboard.
 
 ## The checklist
 

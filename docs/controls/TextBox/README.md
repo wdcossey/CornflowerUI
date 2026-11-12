@@ -84,7 +84,6 @@ None new. `Cornflower.Controls.ControlHeader` (#96) gives WinRT's `Header` and `
   `PreventKeyboardDisplayOnProgrammaticFocus`**: Avalonia has none.
 - **Data validation shows nothing**, as the phone has no such display; Simple's `DataValidationErrors` isn't in the
   template.
-- **Back with the keyboard up** hides the keyboard and leaves the box focused (the Pixel 8); the phone's is unchecked.
 - **Unmeasured**: the caret, the selection's text colour and handles, the keyboard, and scrolling.
 - **The text is Selawik** (ADR 0001).
 
