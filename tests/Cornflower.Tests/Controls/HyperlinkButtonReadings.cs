@@ -44,11 +44,9 @@ internal static class HyperlinkButtonReadings
 
     // The PNGs' ink: of the 17 colours in base and Disabled, the commonest after the page (4,727 pixels, the glyphs'
     // insides) is the text's colour composited on the page. Pressed's 256 colours are all greys: no accent.
-    public static Color Ink(bool dark) => Color.FromUInt32(dark ? 0xFFFFFFFFu : 0xFF000000u);
+    public static Color Ink(bool dark) => Foreground(dark);                  // opaque, so drawn as itself
 
     public static Color DisabledInk(bool dark) => Color.FromUInt32(dark ? 0xFF666666u : 0xFF999999u);
 
     // No underline: the longest run of ink on any row of base is 31 px (the t's bar), against the text's 497 px.
-    public const int LongestInkRun = 31;
-    public const int TextInkWidth = 497;
 }

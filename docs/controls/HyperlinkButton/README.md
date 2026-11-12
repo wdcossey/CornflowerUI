@@ -28,7 +28,8 @@ centred in its slot. It has no minimum size, no border and no underline.
   over 167 ms: `Tilt`, turned on by the theme, drawn on the template's `PART_ContentPresenter` alone, as the phone's
   `PointerDownThemeAnimation` is. No colour changes.
 - **A press anywhere on it clicks**, the padding and the very edge of the tilted text included: the `Grid` and
-  `Border` around the presenter stay still and take the hits.
+  `Border` around the presenter stay still, and `Grid`'s transparent background takes the hits, whatever the app's
+  `Background`.
 - **Disabled**: the text in `PhoneDisabledColor` (#66 of the foreground). An app's background stays.
 - **The pointer over it** changes nothing, and nor does **visited** (`IsVisited`, `:visited`): the phone has no
   visited state.
@@ -50,7 +51,7 @@ as the phone's template doesn't use them either.
 
 ## The template's parts
 
-`Grid` (a `Panel`, the phone's unnamed `Grid`) › `Border` (the phone's) › `PART_ContentPresenter` (the phone's
+`Grid` (a transparent `Panel`, the phone's unnamed `Grid`, which takes the hits) › `Border` (the phone's) › `PART_ContentPresenter` (the phone's
 `ContentPresenter`, under the name Avalonia's Button looks for, and `Tilt.IsTarget`). A style that reaches into the
 template uses these names.
 
@@ -74,6 +75,8 @@ None.
 - **Only data gets the phone's line**, as in the Button's theme.
 - **Access keys** are Avalonia's, where the phone had none: a deliberate difference, as in the Button's theme.
 - **No hand cursor**, where Simple's theme sets one: the phone has no cursor.
+- **`Grid` has a transparent background**, where the phone's has none, so a control whose app sets `Background` to
+  null still takes a press anywhere on it, not only on its text.
 
 ## The checklist
 

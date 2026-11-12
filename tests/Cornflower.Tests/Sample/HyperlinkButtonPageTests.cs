@@ -17,6 +17,7 @@ public class HyperlinkButtonPageTests
         var pages = SampleShell.Pages.ToList();
         var entry = Assert.Single(pages, page => page.Type == typeof(HyperlinkButtonPage));
         Assert.Equal("hyperlinkbutton", entry.Title);
+        Assert.Equal(29, Assert.Single(typeof(HyperlinkButtonPage).GetCustomAttributes(typeof(SamplePageAttribute), false).Cast<SamplePageAttribute>()).Order);   // the issue
         Assert.True(pages.IndexOf(entry) > pages.FindIndex(page => page.Type == typeof(ButtonPage)));
     }
 

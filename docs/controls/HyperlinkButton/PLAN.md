@@ -56,8 +56,8 @@ Grid                         (no name, no background)
 And ours, in `src/Cornflower.Themes.Wp81/Controls/HyperlinkButton.axaml`, written new:
 
 ```
-Panel "Grid"                 the phone's Grid; untilted
-  Border "Border"            as the phone's; its transparent background takes the hits across the control
+Panel "Grid"                 the phone's Grid; untilted; a transparent background, so it takes the hits across the control
+  Border "Border"            as the phone's
     ContentPresenter "PART_ContentPresenter"
                              as the phone's; Tilt.IsTarget, the part the tilt draws on; the text it makes of data
                              gets the phone's line
@@ -66,7 +66,11 @@ Panel "Grid"                 the phone's Grid; untilted
 The same three elements as the phone's. The Button's template needs a fourth, an untilted `Root` around the tilted
 `Grid`, because the phone tilts a Button's whole `Grid`. Here the phone tilts only the `ContentPresenter`, so the
 `Grid` and `Border` already stay still around it and take the hits: a press at a tilted edge clicks without an
-extra element. `Grid` is a `Panel`: a `Grid` with no rows or columns lays out as a `Panel` does.
+extra element. `Grid` is a `Panel`: a `Grid` with no rows or columns lays out as a `Panel` does. The phone's `Grid` has
+no background, and its `Border`'s transparent one takes the hits; ours gives `Grid` a transparent background too, so
+an app that sets `Background` to null still has the whole control to press, as `Tilt` needs of the root around its
+target (the first review's finding). On the phone, such a control would take hits on its text alone: a deliberate
+difference no app sees unless it nulls the background.
 
 ### The visual states
 
@@ -153,7 +157,8 @@ Each has a test in `tests/Cornflower.Tests/Controls/HyperlinkButtonTests.cs` unl
 2. **The bounds**: at 19.1667, 32.5 on the stage, 47.0833 tall; `Grid` and `Border` fill it; the presenter 2.9167
    down, 40 tall, as wide as the control. `Its_Bounds_Are_The_Phones`.
 3. **The content is centred** in a larger control, across and down. `The_Content_Is_Centred_In_A_Larger_Control`.
-4. **Data's line is the phone's**, 1.33 em. `A_Strings_Line_Is_The_Phones`.
+4. **Data's line is the phone's**, 1.33 em; an app's `ContentTemplate` wins and keeps its own.
+   `A_Strings_Line_Is_The_Phones`, `The_Apps_ContentTemplate_Wins_Over_The_Strings_Line`.
 5. **No underline**, in the frame and on the text. `There_Is_No_Underline`.
 6. **The text in the foreground**: the glyphs' insides `#FFFFFFFF` dark, `#FF000000` light.
    `The_Text_Is_Drawn_In_The_Foreground`.
@@ -172,10 +177,11 @@ Each has a test in `tests/Cornflower.Tests/Controls/HyperlinkButtonTests.cs` unl
     element. `A_Held_Press_Settles_At_The_Phones_Tilt_For_Its_Point`.
 15. **A tap just inside each edge clicks** (run `20261110-0822-dev11`'s 12 taps, on a presenter of the first
     Button's bounds). `A_Tap_Just_Inside_Each_Edge_Clicks`.
-16. **The padding takes taps.** `A_Tap_In_The_Padding_Clicks`.
+16. **The padding takes taps**, with an app's null background too. `A_Tap_In_The_Padding_Clicks`,
+    `With_No_Background_A_Tap_In_The_Padding_Or_At_A_Tilted_Edge_Still_Clicks`.
 17. **Holes**: `HyperlinkButton` is themed (`Completeness/HolesTests`, its line deleted from `Holes.txt`).
 18. **No global rule**: `StyleBudgetTests`, unchanged.
-19. **The sample's page**: in the catalogue after the Button's, every HyperlinkButton on it the theme's, its header,
+19. **The sample's page**: in the catalogue after the Button's, at order 29, every HyperlinkButton on it the theme's, its header,
     a click counted (`Sample/HyperlinkButtonPageTests.cs`).
 
 ## Dependencies and captures
@@ -245,7 +251,7 @@ _none_
 |---|---|---|---|---|
 | [-] | `ContentTransitions` | `TransitionCollection` | none | Not declared: no Avalonia equivalent (mapping rules, theme animations). The template binds it, but sets none |
 | [-] | `ContentTemplateSelector` | `DataTemplateSelector` | none | Not declared: an Avalonia `IDataTemplate` in `ContentTemplate` chooses by its own `Match` |
-| [x] | `ContentTemplate` | `DataTemplate` | `ContentControl.ContentTemplate` | Template-bound to the presenter, as the phone's |
+| [x] | `ContentTemplate` | `DataTemplate` | `ContentControl.ContentTemplate` | Template-bound to the presenter, as the phone's; an app's keeps its own line (Behaviour 4) |
 | [x] | `Content` | `Object` | `ContentControl.Content` | Template-bound to the presenter, as the phone's; data gets the phone's line (Behaviour 4) |
 | [-] | `ContentTemplateRoot` (read-only) (not a dependency property) | `UIElement` | none | Not declared: `Presenter.Child` is Avalonia's |
 
@@ -266,7 +272,7 @@ _none_
 | ✓ | Property | Value | Avalonia | Action |
 |---|---|---|---|---|
 | [x] | `Foreground` | `{ThemeResource HyperlinkForegroundThemeBrush}` | `TemplatedControl.Foreground` | Setter, `DynamicResource` |
-| [x] | `Background` | `{ThemeResource HyperlinkButtonBackgroundThemeBrush}` | `TemplatedControl.Background` | Setter, `DynamicResource`; the Border's, which takes the hits |
+| [x] | `Background` | `{ThemeResource HyperlinkButtonBackgroundThemeBrush}` | `TemplatedControl.Background` | Setter, `DynamicResource`; the Border's |
 | [x] | `BorderBrush` | `{ThemeResource HyperlinkButtonBorderThemeBrush}` | `TemplatedControl.BorderBrush` | Setter, `DynamicResource` |
 | [x] | `BorderThickness` | `{ThemeResource HyperlinkButtonBorderThemeThickness}` | `TemplatedControl.BorderThickness` | Setter, `DynamicResource` |
 | [x] | `Padding` | `0,3,0,4` | `TemplatedControl.Padding` | Setter, the literal; the presenter's `Margin`, as the phone's |

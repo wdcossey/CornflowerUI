@@ -4,6 +4,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Templates;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
@@ -32,8 +33,11 @@ public class HyperlinkButtonTests
     /// <summary>Long enough for a press to settle: four or five frames.</summary>
     private const double SettleMs = 160;
 
-    /// <summary>A HyperlinkButton on the reference app's stage: 450 × 100, the page's background, in a slot 19 in and 12 down.</summary>
-    private sealed class Stage : IDisposable
+    /// <summary>
+    /// A HyperlinkButton on the reference app's stage: 450 × 100, the page's background, in a slot 19 in and 12 down.
+    /// <see cref="HyperlinkButtonFrames"/> saves our frames on it too.
+    /// </summary>
+    internal sealed class Stage : IDisposable
     {
         private readonly Scene _scene;
 
@@ -186,6 +190,22 @@ public class HyperlinkButtonTests
         using var stage = new Stage();
 
         Assert.Equal(1.33 * FontSize, TextOf(stage.Link).LineHeight, 0.01);
+    }
+
+    // The app's own ContentTemplate decides how its content is shown, and what it makes keeps its own line.
+    [AvaloniaFact]
+    public void The_Apps_ContentTemplate_Wins_Over_The_Strings_Line()
+    {
+        var link = new HyperlinkButton
+        {
+            Content = "hyperlink button",
+            ContentTemplate = new FuncDataTemplate<string>((s, _) => new TextBlock { Name = "Apps", Text = s }),
+        };
+        using var stage = new Stage(link: link);
+
+        var text = TextOf(link);
+        Assert.Equal("Apps", text.Name);
+        Assert.True(double.IsNaN(text.LineHeight), $"the app's TextBlock was given a LineHeight of {text.LineHeight}");
     }
 
     // The PNGs draw the text alone: no underline (the longest ink on a row is 31 px of 497), where Simple's
@@ -481,5 +501,28 @@ public class HyperlinkButtonTests
         Assert.Equal(1, clicks);
         clock.At(SettleMs + 1000);
         Assert.Equal(TiltState.Rest, CfTilt.Current(stage.Link));
+    }
+
+    // An app's null Background leaves the Border no hits, but the untilted Grid still takes them across the control:
+    // the padding and a tilted edge still click, as Tilt needs of the root around its target.
+    [AvaloniaFact]
+    public void With_No_Background_A_Tap_In_The_Padding_Or_At_A_Tilted_Edge_Still_Clicks()
+    {
+        using var clock = new TestClock();
+        using var stage = new Stage(link: new HyperlinkButton { Content = "hyperlink button", Background = null });
+        var clicks = 0;
+        stage.Link.Click += (_, _) => clicks++;
+        var time = 0.0;
+
+        foreach (var point in new[] { new Point(100, 1), new Point(0.84, stage.Link.Bounds.Height / 2), new Point(stage.Link.Bounds.Width - 0.84, 10) })
+        {
+            var at = stage.Link.TranslatePoint(point, stage.Window)!.Value;
+            var touch = stage.Window.TouchBegin(at);
+            clock.At(time += SettleMs);
+            stage.Window.TouchEnd(touch, at);
+            clock.At(time += 1000);
+        }
+
+        Assert.Equal(3, clicks);
     }
 }

@@ -32,16 +32,13 @@ public class HyperlinkButtonFrames
         foreach (var state in new[] { "base", "CommonStates.PointerOver", "CommonStates.Pressed", "CommonStates.Disabled" })
         {
             using var clock = new TestClock();
-            var link = new HyperlinkButton { Content = "hyperlink button", IsEnabled = state != "CommonStates.Disabled" };
-            var stage = new Grid { Children = { new Grid { Margin = Slot, Children = { link } } } };
-            stage.Bind(Panel.BackgroundProperty, stage.GetResourceObservable("ApplicationPageBackgroundThemeBrush"));
-            using var scene = new Scene(stage, variant, width: StageWidth, height: StageHeight);
-            var centre = link.TranslatePoint(new Point(link.Bounds.Width / 2, link.Bounds.Height / 2), scene.Window)!.Value;
-            if (state == "CommonStates.PointerOver") scene.Window.MouseMove(centre);
-            if (state == "CommonStates.Pressed") scene.Window.MouseDown(centre, MouseButton.Left);
+            using var stage = new HyperlinkButtonTests.Stage(variant, new HyperlinkButton { Content = "hyperlink button", IsEnabled = state != "CommonStates.Disabled" });
+            var centre = stage.Centre;
+            if (state == "CommonStates.PointerOver") stage.Window.MouseMove(centre);
+            if (state == "CommonStates.Pressed") stage.Window.MouseDown(centre, MouseButton.Left);
             clock.At(160);
             Dispatcher.UIThread.RunJobs();
-            using var frame = scene.Capture();
+            using var frame = stage.Capture();
             frame.Save(Path.Combine(folder, $"{variant.ToString().ToLowerInvariant()}__HyperlinkButton__default__{state}.png"), PngBitmapEncoderOptions.Default);
         }
     }

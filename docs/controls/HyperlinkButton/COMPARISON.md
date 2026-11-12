@@ -69,7 +69,7 @@ frames.
 | 11 | Follows the variant | **Match** | The ink after a change from dark to light |
 | 12 | Access keys | Deliberate difference, as in the Button's theme | `_Open` draws `Open` and Alt+O clicks |
 | 13, 14 | The tilt on the presenter alone | **Match** for where and how much | Above |
-| 15, 16 | Edge taps and the padding click | **Match** | Above |
+| 15, 16 | Edge taps and the padding click | **Match** | Above; with a null background too, a deliberate difference (below) |
 
 ## Gaps and deliberate differences
 
@@ -87,3 +87,5 @@ frames.
 - **Visited** draws nothing: the phone has no such state. `IsVisited` and `:visited` still work for an app's own
   style.
 - **No hand cursor**, unlike Simple's: the phone has no cursor. Decided in the PR.
+- **`Grid` has a transparent background**, where the phone's has none. It shows only when an app sets `Background` to
+  null: ours still takes a press anywhere on the control, as `Tilt` needs; the phone's would take it on the text only.

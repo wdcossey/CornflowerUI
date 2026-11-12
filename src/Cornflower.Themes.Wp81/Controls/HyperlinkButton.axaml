@@ -10,7 +10,9 @@
 
     It is plain text in the foreground, Segoe WP Semilight at 29.86 (Selawik Semilight here): no underline, no
     accent, no border. The template is the phone's Grid, Border and ContentPresenter:
-    - Grid and Border stay untilted. The Border's transparent background takes the hits across the whole control.
+    - Grid and Border stay untilted. Grid's transparent background takes the hits across the whole control, as Tilt
+      needs of the root around its target, even when an app's Background is null; the phone's Grid has none, but its
+      Border's transparent background does the same unless the app takes it away.
     - PART_ContentPresenter, the part Avalonia's Button looks for, is the phone's ContentPresenter, and the part the
       phone's PointerDownThemeAnimation targets: the tilt (Tilt.IsEnabled) is drawn on it alone (Tilt.IsTarget), not
       on the whole control as on a Button. As the root isn't tilted, a press at a tilted edge still clicks.
@@ -41,7 +43,7 @@
     <Setter Property="cf:Tilt.IsEnabled" Value="True" />
     <Setter Property="Template">
       <ControlTemplate>
-        <Panel x:Name="Grid">
+        <Panel x:Name="Grid" Background="Transparent">
           <Border x:Name="Border"
                   Background="{TemplateBinding Background}"
                   BorderBrush="{TemplateBinding BorderBrush}"
