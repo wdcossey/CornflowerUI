@@ -66,6 +66,12 @@ internal sealed class TemplateParts : IDisposable
 
     private void OnTemplateApplied(object? sender, TemplateAppliedEventArgs e)
     {
+        // Disposed by an earlier handler of this same TemplateApplied: the event still calls this one.
+        if (_disposed)
+        {
+            return;
+        }
+
         _release();
         _take(name => e.NameScope.Find<Control>(name));
     }

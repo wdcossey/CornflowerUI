@@ -152,4 +152,24 @@ public class TemplatePartsTests
         Assert.Equal(["take own none none", "release"], log.Seen);
         window.Close();
     }
+
+    // Disposed by an earlier handler of the same TemplateApplied (the behaviour turned off as a template comes): the
+    // event still calls the later handler, which takes nothing and releases nothing more.
+    [AvaloniaFact]
+    public void Disposed_During_TemplateApplied_It_Takes_Nothing()
+    {
+        var owner = new Owner();
+        var window = Show(owner.Control);
+        var log = new Log();
+        TemplateParts? parts = null;
+        owner.Control.TemplateApplied += (_, _) => parts?.Dispose();
+        parts = log.Watch(owner.Control);
+
+        owner.Control.Template = Owner.Template("new");
+        Dispatcher.UIThread.RunJobs();
+        window.UpdateLayout();
+
+        Assert.Equal(["take own none none", "release"], log.Seen);
+        window.Close();
+    }
 }

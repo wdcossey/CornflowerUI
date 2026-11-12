@@ -112,11 +112,6 @@ internal static class PhoneToggleSwitch
                 PutBack();
             if (_knob is not null)
                 _knob.PropertyChanged -= OnKnobChanged;
-
-            _root = null;
-            _thumb = null;
-            _knob = null;
-            _track = null;
         }
 
         /// <summary>
