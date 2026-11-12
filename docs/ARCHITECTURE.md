@@ -443,7 +443,7 @@ control that needs it, and **moves into `CLAUDE.md` only once proven**.
 | `<Style TargetType="Button">` with a `Template` setter, unkeyed | `<ControlTheme x:Key="{x:Type Button}" TargetType="Button">` | 58 unkeyed styles in 8.1; 117 in 19041 |
 | `<Style x:Key="…" TargetType="Button">` | A keyed `ControlTheme`, same key, used through `Theme="{StaticResource …}"` | An app's `Style="{StaticResource …}"` becomes `Theme=` |
 | `BasedOn="{StaticResource …}"` | `BasedOn` on the `ControlTheme` | |
-| A WinRT control Avalonia has as another type with a property set (PasswordBox: a `TextBox` with `PasswordChar`) | A `ControlTheme` for that type keyed by the WinRT name, used as `Theme="{DynamicResource PasswordBox}"` | Proven by PasswordBox ([#103](https://github.com/wdcossey/CornflowerUI/pull/103)). The checklist generator treats such a control as one Avalonia lacks; its plan maps it by hand |
+| A WinRT control Avalonia has as another type with a property set (PasswordBox: a `TextBox` with `PasswordChar`) | A `ControlTheme` for that type keyed by the WinRT name, used as `Theme="{DynamicResource PasswordBox}"` | As PasswordBox does ([#103](https://github.com/wdcossey/CornflowerUI/pull/103)). The checklist generator treats such a control as one Avalonia lacks; its plan maps it by hand |
 | `{ThemeResource Key}` | `{DynamicResource Key}` | 1,657 uses in 8.1; 3,696 in 19041 |
 | `{StaticResource Key}` | `{StaticResource Key}` in the same file; `{DynamicResource}` across files | Avalonia's docs say a `StaticResource` into another included file fails at load (reported) |
 | `{TemplateBinding P}` | `{TemplateBinding P}` | 502 uses in 8.1; 1,455 in 19041 |
@@ -479,7 +479,7 @@ in a nested style.
 | ToggleSwitch: `On`, `Off`, `Dragging` | `^:checked`, `^:unchecked`, `^:dragging` | |
 | `SelectionStates`: `Selected`, `Unselected` | `^:selected` | |
 | `FocusStates`: `Focused`, `PointerFocused` | `^:focus-visible`, `^:focus` | |
-| `CommonStates` `Focused` on a text control (TextBox, PasswordBox) | `^:focus` | Not `^:focus-visible`: a tap focuses a text box on the phone too. The rule above is for `FocusStates`. Proven by TextBox ([#101](https://github.com/wdcossey/CornflowerUI/pull/101)) |
+| `CommonStates` `Focused` on a text control (TextBox, PasswordBox) | `^:focus` | Not `^:focus-visible`: a tap focuses a text box on the phone too. The rule above is for `FocusStates`. As TextBox does ([#101](https://github.com/wdcossey/CornflowerUI/pull/101)) |
 | A state Avalonia's control doesn't raise | For a built-in: an attached behaviour that sets a pseudoclass, a part class, a subclass under rung 4, or a recorded gap, in that order. For ours: a pseudoclass named after the state, lower case | |
 | `Orientation`: `Portrait`, `Landscape` | A pseudoclass our control sets from the top level's size | Avalonia has no `:landscape` |
 | `VisualTransition From="A" To="B" GeneratedDuration="…"` | `Transitions` on the part, with that duration | 50 in 8.1. A WinRT transition runs between two named states only; an Avalonia transition runs on any change of the property. Record where that differs. Tested at its end value |
@@ -548,7 +548,7 @@ millisecond. A theme transition built on Avalonia's `Transitions` is tested at i
 | `UseSystemFocusVisuals`, `FocusVisualMargin` | `FocusAdorner`, with the margin in its template | Avonic found an unset `FocusAdorner` falls back to the base theme's, so set it deliberately |
 | `AutomationProperties.AccessibilityView="Raw"` | The same attached property | |
 | `IsTabStop="False"` | `IsTabStop="False"` | |
-| A WinRT flag Avalonia expresses as a class (`IsPasswordRevealButtonEnabled`) | That class (`revealPasswordButton`) | An app sets `Classes="revealPasswordButton"`. Proven by PasswordBox ([#103](https://github.com/wdcossey/CornflowerUI/pull/103)) |
+| A WinRT flag Avalonia expresses as a class (`IsPasswordRevealButtonEnabled`) | That class (`revealPasswordButton`) | An app sets `Classes="revealPasswordButton"`. As PasswordBox does ([#103](https://github.com/wdcossey/CornflowerUI/pull/103)) |
 | `ItemsPanelTemplate` | `ItemsPanelTemplate` | |
 | `CornerRadius="{TemplateBinding CornerRadius}"` | The same | Zero throughout these eras |
 
