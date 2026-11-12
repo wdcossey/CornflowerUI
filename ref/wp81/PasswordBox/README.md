@@ -15,7 +15,7 @@ the box's parts enabled (the RevealButton keeps its enabled look). Copied unchan
 Run `20261112-1429-dev11` was made for #37 from a copy of `tools/refapp` with the four specimens above added to
 `Catalog.cs`, and a fifth, `revealed`, which ticked the RevealButton once loaded; the template's `ButtonVisible` state
 unticks it as the box loads, so its captures show the password hidden and aren't copied. The repository's
-`Catalog.cs` doesn't have them yet (the PasswordBox PR proposes them). The same run's `password` captures are the
+`Catalog.cs` has had the four since the batch-3 roll-up, so a full run makes them. The same run's `password` captures are the
 2026-11-08 ones, byte for byte, as are run `20261108-1732-dev11`'s.
 
 | | |
