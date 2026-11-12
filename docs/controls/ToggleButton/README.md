@@ -1,6 +1,6 @@
 # ToggleButton
 
-Status: done · [#30](https://github.com/wdcossey/CornflowerUI/issues/30) · owed: the device run on the Pixel 8
+Status: done · [#30](https://github.com/wdcossey/CornflowerUI/issues/30) · device run passed 2026-11-12 (Pixel 8, Release, over wireless adb, `run.ps1 -Page togglebutton` on `main` at `764c435`: cold 781 ms, the page opened in 377 ms, every specimen drawn)
 
 The Windows Phone 8.1 ToggleButton: Avalonia's `ToggleButton`, themed by `Wp81Theme` with the phone's default style
 and template, in `src/Cornflower.Themes.Wp81/Controls/ToggleButton.axaml`. The plan, with every value and its source,
@@ -75,7 +75,7 @@ None.
 - **Access keys** are Avalonia's, as Button's: a deliberate difference.
 - **Not captured on the phone**: a finger sliding back onto a pressed ToggleButton.
 - **A finger held still while the ToggleButton moves away** keeps the pressed look until the finger moves.
-- **Owed**: the device run on the Pixel 8.
+- **Device run**: passed on the Pixel 8, 2026-11-12 (the status line).
 
 ## The checklist
 

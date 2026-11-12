@@ -75,4 +75,4 @@ frames. The pixels are read on row 134 (through the track), column 200 (the decr
 - **`Inline` ticks** are missing; **the ticks' place and look** are unmeasured (the bars without the template's −4.5
   margins, so each tick is where the thumb stops).
 - **Unmeasured**: the vertical Slider, ticks, no header and all input are from the template and WinUI's source; their
-  captures and a probe are owed, and the device run.
+  captures and a probe are owed. The device run passed on 2026-11-12.

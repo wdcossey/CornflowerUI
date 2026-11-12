@@ -1,6 +1,6 @@
 # Slider
 
-Status: done · [#34](https://github.com/wdcossey/CornflowerUI/issues/34) · owed: the device run on the Pixel 8, captures of a vertical Slider and of ticks, and a probe of a tap and a drag
+Status: done · [#34](https://github.com/wdcossey/CornflowerUI/issues/34) · device run passed 2026-11-12 (Pixel 8, Release, over wireless adb, `run.ps1 -Page slider` on `main` at `764c435`: cold 830 ms, the page opened in 397 ms, the specimens above the fold drawn, the vertical ones too; the page scrolls) · owed: captures of a vertical Slider and of ticks, and a probe of a tap and a drag
 
 The Windows Phone 8.1 Slider: Avalonia's `Slider`, themed by `Wp81Theme` with the phone's default style and its
 horizontal and vertical templates, in `src/Cornflower.Themes.Wp81/Controls/Slider.axaml`. WinRT's `Header` is
@@ -92,7 +92,7 @@ theme shows them.
   without the template's −4.5 margins: unmeasured.
 - **The text is Selawik**, its baseline 0.025 em above the phone's (ADR 0003).
 - **Unmeasured**: the vertical Slider, ticks, no header, and all input are from the template and WinUI's source.
-- **Owed**: the device run on the Pixel 8, those captures, and a probe of a tap and a drag.
+- **Owed**: those captures, and a probe of a tap and a drag.
 
 ## The checklist
 

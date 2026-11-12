@@ -1,6 +1,6 @@
 # CheckBox
 
-Status: done · [#31](https://github.com/wdcossey/CornflowerUI/issues/31) · owed: the device run on the Pixel 8
+Status: done · [#31](https://github.com/wdcossey/CornflowerUI/issues/31) · device run passed 2026-11-12 (Pixel 8, Release, over wireless adb, `run.ps1 -Page checkbox` on `main` at `764c435`: cold 786 ms, the page opened in 402 ms, every specimen drawn)
 
 The Windows Phone 8.1 CheckBox: Avalonia's `CheckBox`, themed by `Wp81Theme` with the phone's default style and
 template, in `src/Cornflower.Themes.Wp81/Controls/CheckBox.axaml`. The plan, with every value and its source, is
@@ -79,7 +79,7 @@ None.
 - **The text is Selawik**, its baseline 0.025 em above the phone's (ADR 0003).
 - **The tilt on a CheckBox isn't measured on the phone**: its target is flatter than any Button probed, and a press in
   the overhang, outside the target, takes the tilt of the nearest edge. Nor is sliding off while pressed.
-- **Owed**: the device run on the Pixel 8.
+- **Device run**: passed on the Pixel 8, 2026-11-12 (the status line).
 
 ## The checklist
 
