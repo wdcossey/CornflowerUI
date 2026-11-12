@@ -30,7 +30,8 @@
     The visual states: Pressed (Avalonia's :pressed) fills the box with the accent and draws the tick over it in
     PhoneTextOverAccentColor, and the tilt runs; Disabled (:disabled) dims the border, the tick and the text.
     Checked (:checked) shows the tick and Indeterminate (:indeterminate) the rectangle. PointerOver and MouseOver
-    change nothing. The phone has no focus states, so FocusAdorner is cleared.
+    change nothing. The phone has no focus states, so FocusAdorner is cleared. A CheckBox in the template of a control
+    Wp81 doesn't theme yet (Simple's ManagedFileChooser) takes the theme under Wp81's CheckBox instead (HoleParts).
 
     The phone's style sets no Foreground: the CheckBox inherits its page's, PhoneForegroundBrush. Wp81 doesn't
     theme Avalonia's Window, whose Foreground under Simple isn't the phone's, so this theme sets it.
@@ -51,6 +52,8 @@
     <Setter Property="Foreground" Value="{DynamicResource PhoneForegroundBrush}" />
     <Setter Property="FocusAdorner" Value="{x:Null}" />
     <Setter Property="cf:Tilt.IsEnabled" Value="True" />
+    <!-- In the template of a control Wp81 doesn't theme yet (Simple's file dialog), the theme under Wp81's CheckBox instead (HoleParts). -->
+    <Setter Property="wp81:HoleParts.FallBack" Value="True" />
     <Setter Property="Template">
       <ControlTemplate>
         <Panel x:Name="Root" Background="Transparent">

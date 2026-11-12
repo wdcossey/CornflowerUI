@@ -190,6 +190,9 @@ Each has a test in `tests/Cornflower.Tests/Controls/CheckBoxTests.cs` unless nam
 16. **No global rule**: `StyleBudgetTests`, unchanged.
 17. **The sample's page**: in the catalogue, every CheckBox on it the theme's, its header from its title, its state
     shown (`Sample/CheckBoxPageTests.cs`).
+18. **A CheckBox in a hole's template keeps the theme under Wp81**: `ManagedFileChooser`'s takes Simple's CheckBox
+    theme, Simple's width and no tilt; in an app's own template it is the phone's
+    (`CheckBoxHolePartsTests.cs`).
 
 ## Decided on the user's behalf
 
@@ -215,8 +218,9 @@ Each has a test in `tests/Cornflower.Tests/Controls/CheckBoxTests.cs` unless nam
   press in the overhang, outside the target, takes the tilt of the nearest edge here, unmeasured on the phone); the
   pressed colours while a finger slides off; and the device run on the Pixel 8.
 - **Other controls' templates**: of Simple's templates, only `ManagedFileChooser` (the file dialogs' "show hidden
-  files") holds a plain `CheckBox`. Under Wp81 it takes the phone's CheckBox. `HoleParts` can fall it back to
-  Simple's once it falls back by a control's own type (#30's change); see the PR.
+  files") holds a plain `CheckBox` (probed: every control type Simple themes in Avalonia.Controls and
+  Avalonia.Dialogs, built with Simple alone). The theme sets `HoleParts.FallBack`, so since #93, which falls back by
+  the control's own type, it takes Simple's CheckBox theme there (Behaviour 18).
 
 ## Checklist
 

@@ -37,6 +37,8 @@ it. For other text, give the CheckBox a `ContentTemplate` (a `TextBlock` with on
   untilted, takes the hits, as the phone's does.
 - **Disabled**: the border, the tick and the text in `PhoneBaseLowColor`; an app's background stays.
 - **The pointer over it** changes nothing, as on the phone. **Keyboard focus** draws nothing.
+- **Other controls' templates**: a plain CheckBox in a template written for the theme under Wp81 (Simple's file
+  dialog's "show hidden files") keeps that theme's CheckBox (`HoleParts`). An app's own template has the phone's.
 - **Dark and light**: every brush follows the theme variant; the pressed box follows the app's accent
   (`SystemColorControlAccentColor`).
 - **Data's line** (a string, a number) is the phone's, 1.33 × the font size. **Access keys** are Avalonia's:
@@ -61,8 +63,8 @@ for). A style that reaches into the template uses these names.
 ## The ladder
 
 Rung 1 (theme) for the setters, the states, the glyph, the cleared focus adorner and the untilted root; rung 2
-(attached behaviour) for the tilt (`Tilt`) and the phone's line (`PhoneContentLine`, internal to the theme). No type
-is substituted.
+(attached behaviour) for the tilt (`Tilt`), the phone's line (`PhoneContentLine`) and the holes' CheckBoxes
+(`HoleParts`), the last two internal to the theme. No type is substituted.
 
 ## Extensions
 
@@ -77,8 +79,6 @@ None.
 - **The text is Selawik**, its baseline 0.025 em above the phone's (ADR 0003).
 - **The tilt on a CheckBox isn't measured on the phone**: its target is flatter than any Button probed, and a press in
   the overhang, outside the target, takes the tilt of the nearest edge. Nor is sliding off while pressed.
-- **In Simple's file dialog** (`ManagedFileChooser`), the "show hidden files" CheckBox takes this theme, not Simple's,
-  until `HoleParts` falls back by a control's own type.
 - **Owed**: the device run on the Pixel 8.
 
 ## The checklist
