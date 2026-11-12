@@ -87,28 +87,18 @@ internal static class PhoneToggleSwitch
         private Panel? _knob;
         private Panel? _track;
         private Press? _press;
+        private TemplateParts? _parts;
 
-        public void Attach()
-        {
-            toggle.TemplateApplied += OnTemplateApplied;
-            // The template may already be applied: a theme that turns this on after it gets no TemplateApplied for it.
-            var named = toggle.GetVisualDescendants().OfType<Control>()
-                .Where(c => c.Name is not null && c.TemplatedParent == toggle)
-                .GroupBy(c => c.Name!).ToDictionary(g => g.Key, g => g.First());
-            Hook(toggle.GetVisualChildren().FirstOrDefault() as Control, name => named.GetValueOrDefault(name));
-        }
+        /// <summary>
+        /// Takes the template's parts: the one already applied (a theme that turns this on after it gets no
+        /// <c>TemplateApplied</c> for it) and each new one, letting go of the old one's first.
+        /// </summary>
+        public void Attach() => _parts = TemplateParts.Watch(toggle, Hook, Unhook);
 
-        public void Detach()
-        {
-            toggle.TemplateApplied -= OnTemplateApplied;
-            Hook(null, _ => null);
-        }
+        public void Detach() => _parts?.Dispose();
 
-        private void OnTemplateApplied(object? sender, TemplateAppliedEventArgs e) =>
-            Hook(toggle.GetVisualChildren().FirstOrDefault() as Control, name => e.NameScope.Find<Control>(name));
-
-        /// <summary>Lets go of the old template's parts and takes the new one's: the root, the thumb and the two knob panels.</summary>
-        private void Hook(Control? root, Func<string, Control?> find)
+        /// <summary>Lets go of the template's parts: a press on them is put back.</summary>
+        private void Unhook()
         {
             if (_root is not null)
             {
@@ -123,7 +113,19 @@ internal static class PhoneToggleSwitch
             if (_knob is not null)
                 _knob.PropertyChanged -= OnKnobChanged;
 
-            _root = root;
+            _root = null;
+            _thumb = null;
+            _knob = null;
+            _track = null;
+        }
+
+        /// <summary>
+        /// Takes the template's parts: the root, the thumb and the two knob panels. It handles presses only when all four
+        /// are there.
+        /// </summary>
+        private void Hook(Func<string, Control?> find)
+        {
+            _root = toggle.GetVisualChildren().FirstOrDefault() as Control;
             _thumb = find("SwitchThumb");
             _knob = find("PART_MovingKnobs") as Panel;
             _track = find("PART_SwitchKnob") as Panel;

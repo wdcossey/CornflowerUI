@@ -1,7 +1,6 @@
 using System.Runtime.CompilerServices;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Shapes;
 using Avalonia.Data;
 using Avalonia.Media;
@@ -112,8 +111,7 @@ internal static class PhoneProgressRing
             {
                 // Stopped now, so that a runner made in the same pass reads the dots' own angles, not the old one's.
                 Runners.Remove(ring);
-                old.Unsubscribe();
-                old.Stop();
+                old.Detach();
             }
 
             if (e.GetNewValue<bool>())
@@ -150,42 +148,34 @@ internal static class PhoneProgressRing
         private readonly IDisposable?[] _shown = new IDisposable?[6];
         private readonly double?[] _opacity = new double?[6];
         private IDisposable? _pending;
+        private TemplateParts? _parts;
         private TimeSpan _start;
         private bool _running;
         private bool _attached;
 
+        /// <summary>
+        /// Starts following the ring: its window, and its template's parts, the one already applied (a theme that turns
+        /// this on after it gets no <c>TemplateApplied</c> for it) and each new one, stopping before a new one's.
+        /// </summary>
         public void Attach()
         {
-            ring.TemplateApplied += OnTemplateApplied;
             ring.AttachedToVisualTree += OnAttached;
             ring.DetachedFromVisualTree += OnDetached;
             _attached = ring.IsAttachedToVisualTree();
-            // The template may already be applied: a theme that turns this on after it (one replacing another) gets
-            // no TemplateApplied for it.
-            var named = new Dictionary<string, Control>();
-            foreach (var control in ring.GetVisualDescendants().OfType<Control>())
-            {
-                if (control.Name is { } name)
-                {
-                    named.TryAdd(name, control);
-                }
-            }
-
-            FindParts(name => named.GetValueOrDefault(name));
-            Update();
+            _parts = TemplateParts.Watch(ring, TakeParts, Stop);
         }
 
-        public void Unsubscribe()
+        /// <summary>Stops following the ring, and stops the storyboard.</summary>
+        public void Detach()
         {
-            ring.TemplateApplied -= OnTemplateApplied;
             ring.AttachedToVisualTree -= OnAttached;
             ring.DetachedFromVisualTree -= OnDetached;
+            _parts?.Dispose();
         }
 
-        private void OnTemplateApplied(object? sender, TemplateAppliedEventArgs e)
+        private void TakeParts(Func<string, Control?> find)
         {
-            Stop();
-            FindParts(name => e.NameScope.Find<Control>(name));
+            FindParts(find);
             Update();
         }
 
