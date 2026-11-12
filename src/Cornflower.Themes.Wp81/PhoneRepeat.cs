@@ -29,14 +29,13 @@ internal static class PhoneRepeat
     public static readonly AttachedProperty<bool> IsEnabledProperty =
         AvaloniaProperty.RegisterAttached<RepeatButton, bool>("IsEnabled", typeof(PhoneRepeat));
 
-    /// <summary>Whether the pointer pressing the button was last seen off it.</summary>
+    /// <summary>Whether the pointer pressing the button was last seen off it; cleared when it is released.</summary>
     private static readonly AttachedProperty<bool> IsOffProperty =
         AvaloniaProperty.RegisterAttached<RepeatButton, bool>("IsOff", typeof(PhoneRepeat));
 
     static PhoneRepeat()
     {
-        // Pressed and moved arrive handled (Button handles the press), so the handlers take handled events too.
-        InputElement.PointerPressedEvent.AddClassHandler<RepeatButton>((button, _) => button.ClearValue(IsOffProperty), handledEventsToo: true);
+        // A move arrives handled while the button holds the pointer, so the handler takes handled events too.
         InputElement.PointerMovedEvent.AddClassHandler<RepeatButton>(OnMoved, handledEventsToo: true);
         Button.ClickEvent.AddClassHandler<RepeatButton>(OnClick);
         Button.IsPressedProperty.Changed.AddClassHandler<RepeatButton>((button, e) =>
@@ -60,7 +59,8 @@ internal static class PhoneRepeat
 
     private static void OnClick(RepeatButton button, RoutedEventArgs e)
     {
-        if (e.Source == button && button.IsPressed && button.GetValue(IsOffProperty) && button.GetValue(IsEnabledProperty))
+        // Only the button's own Click: one from a control in its content goes on, wherever this one's pointer is.
+        if (e.Source == button && button.IsPressed && button.GetValue(IsOffProperty))
             e.Handled = true;
     }
 }

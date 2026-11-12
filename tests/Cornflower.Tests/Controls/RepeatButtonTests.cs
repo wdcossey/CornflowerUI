@@ -241,6 +241,44 @@ public class RepeatButtonTests
         stage.Window.MouseUp(stage.Centre, MouseButton.Left);
     }
 
+    // A press slid off and lifted there leaves nothing behind: the next tap clicks at its press.
+    [AvaloniaFact]
+    public void After_A_Lift_Off_It_The_Next_Tap_Clicks()
+    {
+        using var stage = new ButtonStage<RepeatButton>(Repeat());
+        var clicks = 0;
+        stage.Button.Click += (_, _) => clicks++;
+        var off = stage.At(stage.Button.Bounds.Width / 2, stage.Button.Bounds.Height + 30);
+        stage.Window.MouseDown(stage.Centre, MouseButton.Left);
+        stage.Window.MouseMove(off);
+        stage.Window.MouseUp(off, MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(1, clicks);
+
+        stage.Window.MouseMove(stage.Centre);
+        stage.Window.MouseDown(stage.Centre, MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(2, clicks);
+        stage.Window.MouseUp(stage.Centre, MouseButton.Left);
+    }
+
+    // Only the RepeatButton's own Click is held back off it: a Button in its content clicking still reaches the window.
+    [AvaloniaFact]
+    public void A_Click_From_Its_Content_Isnt_Held_Back()
+    {
+        var inner = new Button { Content = "inner" };
+        using var stage = new ButtonStage<RepeatButton>(new RepeatButton { Content = inner });
+        var reached = new List<object?>();
+        stage.Window.AddHandler(Button.ClickEvent, (_, e) => reached.Add(e.Source));
+        stage.Window.MouseDown(stage.At(5, 4), MouseButton.Left);                       // the overhang: the RepeatButton's, not the inner one's
+        stage.Window.MouseMove(stage.At(stage.Button.Bounds.Width / 2, stage.Button.Bounds.Height + 30));
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(stage.Button.IsPressed);
+
+        inner.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        Assert.Contains(inner, reached);
+    }
+
     // The keyboard's clicks are Avalonia's, and nothing holds them back: Space clicks.
     [AvaloniaFact]
     public void Space_Clicks_Whatever_The_Pointer_Did_Before()
