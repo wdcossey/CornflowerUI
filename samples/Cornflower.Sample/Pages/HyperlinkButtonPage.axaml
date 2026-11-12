@@ -1,0 +1,43 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sample="using:Cornflower.Sample"
+             x:Class="Cornflower.Sample.Pages.HyperlinkButtonPage"
+             Background="{DynamicResource ApplicationPageBackgroundThemeBrush}"
+             Foreground="{DynamicResource PhoneForegroundBrush}"
+             FontFamily="{DynamicResource PhoneFontFamilyNormal}"
+             FontSize="{DynamicResource TextStyleLargeFontSize}">
+  <!--
+    The 8.1 HyperlinkButton, as an 8.1 page writes one: no style, no size. It is plain text, with no underline or
+    accent; press one to see its text tilt. The disabled ones are dimmed; the light section is the same in the light
+    theme. The one with a NavigateUri opens it, as Avalonia's HyperlinkButton does through the platform's launcher.
+    The section headings are the type ramp's, by their keys.
+  -->
+  <ScrollViewer>
+    <StackPanel Margin="19,12,19,24">
+      <sample:SamplePageHeader x:Name="Header" />
+
+      <TextBlock Text="default" Theme="{DynamicResource GroupHeaderTextBlockStyle}" />
+      <HyperlinkButton x:Name="Default" Content="hyperlink button" Click="OnClick" />
+      <TextBlock x:Name="Clicks" Text="not clicked yet" Theme="{DynamicResource ControlContextualInfoTextBlockStyle}" />
+
+      <TextBlock Text="disabled" Theme="{DynamicResource GroupHeaderTextBlockStyle}" Margin="0,12,0,0" />
+      <HyperlinkButton x:Name="Disabled" Content="hyperlink button" IsEnabled="False" />
+
+      <TextBlock Text="with a NavigateUri" Theme="{DynamicResource GroupHeaderTextBlockStyle}" Margin="0,12,0,0" />
+      <HyperlinkButton x:Name="Navigate" Content="cornflower on github" NavigateUri="https://github.com/wdcossey/CornflowerUI" />
+
+      <TextBlock Text="stretched" Theme="{DynamicResource GroupHeaderTextBlockStyle}" Margin="0,12,0,0" />
+      <HyperlinkButton x:Name="Stretched" Content="stretched" HorizontalAlignment="Stretch" />
+
+      <ThemeVariantScope RequestedThemeVariant="Light" Margin="-19,12,-19,0">
+        <Border Background="{DynamicResource ApplicationPageBackgroundThemeBrush}" Padding="19,6,19,12">
+          <StackPanel>
+            <TextBlock Text="light" Theme="{DynamicResource GroupHeaderTextBlockStyle}" />
+            <HyperlinkButton x:Name="Light" Content="hyperlink button" />
+            <HyperlinkButton x:Name="LightDisabled" Content="hyperlink button" IsEnabled="False" />
+          </StackPanel>
+        </Border>
+      </ThemeVariantScope>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

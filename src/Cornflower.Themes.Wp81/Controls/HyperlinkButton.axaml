@@ -1,0 +1,69 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:cf="using:Cornflower.Controls"
+                    xmlns:wp81="using:Cornflower.Themes.Wp81">
+  <!--
+    The Windows Phone 8.1 HyperlinkButton: the default style of the 8.1 Update 1 runtime (hyperlinkbutton.json,
+    which equals the SDK's generic.xaml), re-expressed as an Avalonia ControlTheme. Every value the phone takes from
+    a resource is its key, by DynamicResource; the padding and the weight are literals in the phone's style too.
+    docs/controls/HyperlinkButton/PLAN.md has the values and their sources.
+
+    It is plain text in the foreground, Segoe WP Semilight at 29.86 (Selawik Semilight here): no underline, no
+    accent, no border. The template is the phone's Grid, Border and ContentPresenter:
+    - Grid and Border stay untilted. Grid's transparent background takes the hits across the whole control, as Tilt
+      needs of the root around its target, even when an app's Background is null; the phone's Grid has none, but its
+      Border's transparent background does the same unless the app takes it away.
+    - PART_ContentPresenter, the part Avalonia's Button looks for, is the phone's ContentPresenter, and the part the
+      phone's PointerDownThemeAnimation targets: the tilt (Tilt.IsEnabled) is drawn on it alone (Tilt.IsTarget), not
+      on the whole control as on a Button. As the root isn't tilted, a press at a tilted edge still clicks.
+
+    The visual states: Pressed (Avalonia's :pressed) only tilts; the phone changes no colour. Disabled (:disabled)
+    dims the text to HyperlinkDisabledThemeBrush. PointerOver changes nothing, so :pointerover has no style, and
+    Avalonia's :visited has none either: the phone has no visited state. The phone has no focus states, so
+    FocusAdorner is cleared.
+
+    The TextBlock the presenter makes of content that isn't an element gets the phone's own line, 1.33 em, through
+    PhoneContentLine (ADR 0003), as in the Button's theme.
+  -->
+  <ControlTheme x:Key="{x:Type HyperlinkButton}" TargetType="HyperlinkButton">
+    <Setter Property="Foreground" Value="{DynamicResource HyperlinkForegroundThemeBrush}" />
+    <Setter Property="Background" Value="{DynamicResource HyperlinkButtonBackgroundThemeBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource HyperlinkButtonBorderThemeBrush}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource HyperlinkButtonBorderThemeThickness}" />
+    <Setter Property="Padding" Value="0,3,0,4" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="FontFamily" Value="{DynamicResource PhoneFontFamilySemiLight}" />
+    <Setter Property="FontWeight" Value="SemiLight" />
+    <Setter Property="FontSize" Value="{DynamicResource TextStyleExtraLargePlusFontSize}" />
+    <!-- Not set by the phone's style: WinRT's own defaults for a Control, which Avalonia's are not. -->
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="FocusAdorner" Value="{x:Null}" />
+    <Setter Property="cf:Tilt.IsEnabled" Value="True" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Panel x:Name="Grid" Background="Transparent">
+          <Border x:Name="Border"
+                  Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}">
+            <ContentPresenter x:Name="PART_ContentPresenter"
+                              Margin="{TemplateBinding Padding}"
+                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                              Content="{TemplateBinding Content}"
+                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                              RecognizesAccessKey="True"
+                              cf:Tilt.IsTarget="True"
+                              wp81:PhoneContentLine.IsEnabled="True" />
+          </Border>
+        </Panel>
+      </ControlTemplate>
+    </Setter>
+
+    <Style Selector="^:disabled /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Foreground" Value="{DynamicResource HyperlinkDisabledThemeBrush}" />
+    </Style>
+  </ControlTheme>
+</ResourceDictionary>

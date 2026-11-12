@@ -33,7 +33,6 @@ FlyoutPresenter
 GridSplitter
 GroupBox
 HeaderedContentControl
-HyperlinkButton
 ItemsControl
 Label
 ListBox
