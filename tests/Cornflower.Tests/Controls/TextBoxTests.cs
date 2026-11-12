@@ -245,6 +245,7 @@ public class TextBoxTests
         var dark = variant == "Dark";
         using var stage = new Stage(VariantOf(variant));
         var header = HeaderOf(stage.Box);
+        stage.Box.FontFamily = new FontFamily("Courier New");
         stage.Box.FontSize = 40;
         stage.Box.FontWeight = FontWeight.Bold;
         Dispatcher.UIThread.RunJobs();
@@ -577,6 +578,21 @@ public class TextBoxTests
         box.CaretIndex = 6;
         Dispatcher.UIThread.RunJobs();
         Assert.Equal(6, text.CaretIndex);
+    }
+
+    // The Focused state is the focus look: keyboard focus draws no adorner, where Avalonia would put the control's
+    // FocusAdorner (left unset, Simple's under Wp81 draws a rectangle) in the window's adorner layer.
+    [AvaloniaFact]
+    public void Keyboard_Focus_Draws_No_Adorner()
+    {
+        using var stage = new Stage();
+        stage.Window.Focus();
+        stage.Window.KeyPressQwerty(PhysicalKey.Tab, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.True(stage.Box.IsFocused, "Tab didn't reach the TextBox");
+        var layer = AdornerLayer.GetAdornerLayer(stage.Box);
+        Assert.True(layer is null || layer.Children.Count == 0, $"{layer?.Children.Count} adorners drawn");
     }
 
     // The phone's TextBox has no PointerOver state: the pointer over it changes no pixel.

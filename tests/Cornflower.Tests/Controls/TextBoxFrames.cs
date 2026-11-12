@@ -8,7 +8,7 @@ namespace Cornflower.Tests.Controls;
 /// <summary>
 /// Our side of docs/controls/TextBox/COMPARISON.md: the reference app's TextBoxes headless on its stage (450 × 140 at
 /// 2.4, so 1080 × 336 like the captures; 110 for no header, 220 wrapped), at rest, focused and disabled, dark and light,
-/// named as the reference app names its captures. Focused is real focus, so the caret may show in a frame, where the
+/// named as the reference app names its captures. Focused is real focus, with the caret drawn transparent, as the
 /// phone's forced state draws none. By hand: it does nothing unless <c>CORNFLOWER_FRAMES</c> names a folder.
 /// <code>
 /// CORNFLOWER_FRAMES=/absolute/folder dotnet test tests/Cornflower.Tests --filter FullyQualifiedName~TextBoxFrames
@@ -36,7 +36,7 @@ public class TextBoxFrames
         {
             var box = make();
             box.IsEnabled = state != "CommonStates.Disabled";
-            box.CaretBlinkInterval = TimeSpan.Zero;
+            box.CaretBrush = Avalonia.Media.Brushes.Transparent;
             using var stage = new TextBoxTests.Stage(variant, box, height);
             if (state == "CommonStates.Focused") box.Focus();
             Dispatcher.UIThread.RunJobs();
