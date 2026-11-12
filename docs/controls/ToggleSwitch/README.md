@@ -88,6 +88,7 @@ None. `Cornflower.Controls.ControlHeader` (#96) gives WinRT's `Header` and `Head
 - **From on**, the drag's line is half the travel back; the phone's code puts it 0.17 nearer. Unmeasured.
 - **`:dragging`** isn't raised: only Avalonia's own drag sets it.
 - **The keyboard** is Avalonia's: Enter toggles too. Unmeasured on the phone.
+- **`ClickMode`** does nothing: a tap toggles on its release, as the phone's does.
 - **The text is Selawik**, its baseline 0.025 em above the phone's (ADR 0003).
 - **Owed**: a probe of a tap on the header and the words, and of a drag from on; the device run on the Pixel 8.
 

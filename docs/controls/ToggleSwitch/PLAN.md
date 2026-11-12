@@ -202,10 +202,15 @@ Each has a test in `tests/Cornflower.Tests/Controls/ToggleSwitchTests.cs` that f
     `A_Control_In_The_Content_Takes_Its_Own_Press`; a second finger changes nothing (chosen: WinRT's `Thumb` follows
     one pointer): `A_Second_Finger_Changes_Nothing`; turned off and on again, as a theme swap does, it lets go and
     takes hold: `Turned_Off_It_Lets_Go_And_Turned_On_It_Takes_Hold`.
-20. **A lost capture puts the knob back** (chosen: WinRT's `DragCompleted` with `Canceled`).
-    `A_Lost_Capture_Puts_The_Knob_Back`.
+20. **A press that ends without its release puts the knob back** (chosen: WinRT's `DragCompleted` with `Canceled`): a
+    lost capture, `A_Lost_Capture_Puts_The_Knob_Back`; another mouse button let go, which ends Avalonia's capture,
+    `Another_Button_Let_Go_Decides_No_Drag`; the behaviour turned off, `Turned_Off_During_A_Press_The_Knob_Goes_Back`.
+    The knob rests where `IsChecked` is at the release, which code may change during a press,
+    `A_Change_From_Code_During_A_Press_Is_Where_The_Knob_Rests`; disabled during a press, nothing toggles,
+    `Disabled_During_A_Press_Nothing_Toggles`.
 21. **A drag on the switch never scrolls its page**: `ManipulationMode` None. `A_Drag_On_The_Switch_Never_Scrolls_Its_Page`.
-22. **No pointer-over, pressed or focus look**: the template. `Pointer_Over_Press_And_Focus_Change_No_Pixel`.
+22. **No pointer-over, pressed or focus look**: the template. `Pointer_Over_And_Press_Change_No_Pixel`,
+    `Keyboard_Focus_Changes_No_Pixel` (without the cleared `FocusAdorner`, Simple's dotted one shows).
 23. **The colours follow the variant**. `The_Colours_Follow_A_Change_Of_Variant`.
 
 ## Decided on the user's behalf
@@ -244,6 +249,9 @@ Each has a test in `tests/Cornflower.Tests/Controls/ToggleSwitchTests.cs` that f
 - **No `:dragging`**: Avalonia's own drag sets it, and it never runs (a protected member, which a behaviour can't
   set). The phone's `Dragging` state sets nothing. To reverse: a subclass.
 - **The keyboard is Avalonia's**: Space and Enter toggle (Button's). Unmeasured; WinUI's source toggles on Space only.
+- **`ClickMode` does nothing**: a tap toggles on its release, as the phone's `Tapped` does, whatever `ClickMode` says.
+  Avalonia's Button would click on the press with `ClickMode="Press"`, but no press reaches it. To reverse: toggle in
+  `OnPressed` when `ClickMode` is `Press`, which the phone has no counterpart for.
 
 ## Dependencies and captures
 

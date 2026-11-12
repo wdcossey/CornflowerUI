@@ -116,7 +116,8 @@ internal static class PhoneToggleSwitch
             }
 
             _thumb?.RemoveHandler(InputElement.PointerCaptureLostEvent, OnCaptureLost);
-            _press = null;
+            if (_press is not null)
+                PutBack();
 
             _root = root;
             _thumb = find("SwitchThumb");
@@ -158,7 +159,7 @@ internal static class PhoneToggleSwitch
             // translation at its end, so a press mid-slide takes the knob from there.
             var on = toggle.IsChecked == true;
             var left = _knob!.GetBaseValue(Canvas.LeftProperty).GetValueOrDefault(double.NaN);
-            _press = new Press(e.Pointer, e.GetPosition(toggle), e.GetPosition(top), CornflowerClock.Now, on,
+            _press = new Press(e.Pointer, top, e.GetPosition(toggle), e.GetPosition(top), CornflowerClock.Now, on,
                 double.IsNaN(left) ? RestOf(on) : left);
             // The press holds the pointer on the thumb, as Avalonia captures a press's source, so its moves and release
             // come here wherever the finger goes.
@@ -174,9 +175,13 @@ internal static class PhoneToggleSwitch
             Follow(press, e, CornflowerClock.Now);
         }
 
+        /// <summary>
+        /// The pressing pointer's release, the mouse's left button's only: another button let go ends nothing. The knob
+        /// rests where <c>IsChecked</c> is now, which code may have changed during the press.
+        /// </summary>
         private void OnReleased(object? sender, PointerReleasedEventArgs e)
         {
-            if (_press is not { } press || press.Pointer != e.Pointer)
+            if (_press is not { } press || press.Pointer != e.Pointer || e.InitialPressMouseButton != MouseButton.Left)
                 return;
 
             e.Handled = true;
@@ -187,7 +192,7 @@ internal static class PhoneToggleSwitch
             if (tap)
             {
                 // The phone puts the knob back at once (Dragging to Off or On), then slides it from there as it toggles.
-                Canvas.SetLeft(_knob!, RestOf(press.WasOn));
+                Canvas.SetLeft(_knob!, RestOf(toggle.IsChecked == true));
                 _knob!.Transitions = toggle.KnobTransitions;
                 if (toggle.IsEffectivelyEnabled)
                     (ControlAutomationPeer.CreatePeerForElement(toggle).GetProvider<IToggleProvider>())?.Toggle();
@@ -198,10 +203,9 @@ internal static class PhoneToggleSwitch
             var half = Travel / 2;
             var at = press.StartLeft + press.Moved;           // where the finger has the knob, past the ends too
             var toggled = press.WasOn ? at <= half : at >= half;
-            if (toggled)
+            if (toggled && toggle.IsEffectivelyEnabled)
                 toggle.SetCurrentValue(ToggleButton.IsCheckedProperty, !press.WasOn);
-            else
-                Canvas.SetLeft(_knob!, RestOf(press.WasOn));
+            Canvas.SetLeft(_knob!, RestOf(toggle.IsChecked == true));
         }
 
         /// <summary>The knob under the finger, how far the finger has gone and whether the press is a hold yet.</summary>
@@ -210,11 +214,8 @@ internal static class PhoneToggleSwitch
             if (now - press.Started >= HoldTime)
                 press.Held = true;
 
-            if (TopLevel.GetTopLevel(toggle) is { } top)
-            {
-                var screen = e.GetPosition(top) - press.OnScreen;
-                press.Farthest = Math.Max(press.Farthest, Math.Sqrt(screen.X * screen.X + screen.Y * screen.Y));
-            }
+            var screen = e.GetPosition(press.Top) - press.OnScreen;
+            press.Farthest = Math.Max(press.Farthest, Math.Sqrt(screen.X * screen.X + screen.Y * screen.Y));
 
             var moved = e.GetPosition(toggle).X - press.InSwitch.X;
             if (moved == press.Moved)
@@ -226,23 +227,29 @@ internal static class PhoneToggleSwitch
 
         private void OnCaptureLost(object? sender, PointerCaptureLostEventArgs e)
         {
-            if (_press is not { } press || press.Pointer != e.Pointer)
-                return;
+            if (_press is { } press && press.Pointer == e.Pointer)
+                PutBack();
+        }
 
+        /// <summary>Ends a press that wasn't let go: the knob slides back to where <c>IsChecked</c> rests it.</summary>
+        private void PutBack()
+        {
             _press = null;
             _knob!.Transitions = toggle.KnobTransitions;
-            Canvas.SetLeft(_knob, RestOf(press.WasOn));
+            Canvas.SetLeft(_knob, RestOf(toggle.IsChecked == true));
         }
     }
 
     /// <summary>
-    /// One press on the thumb: its pointer, where it started in the switch and on the screen, when, whether the switch
-    /// was on, where the knob was, how far the finger has moved it, the farthest the finger has gone on the screen, and
-    /// whether it is a hold.
+    /// One press on the thumb: its pointer, the top level, where it started in the switch and on the screen, when,
+    /// whether the switch was on, where the knob was, how far the finger has moved it, the farthest the finger has gone
+    /// on the screen, and whether it is a hold.
     /// </summary>
-    private sealed class Press(IPointer pointer, Point inSwitch, Point onScreen, TimeSpan started, bool wasOn, double startLeft)
+    private sealed class Press(IPointer pointer, TopLevel top, Point inSwitch, Point onScreen, TimeSpan started, bool wasOn, double startLeft)
     {
         public IPointer Pointer { get; } = pointer;
+
+        public TopLevel Top { get; } = top;
 
         public Point InSwitch { get; } = inSwitch;
 

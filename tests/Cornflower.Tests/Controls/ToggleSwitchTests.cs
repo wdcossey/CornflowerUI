@@ -823,6 +823,94 @@ public class ToggleSwitchTests
         Assert.False(t.IsChecked);
     }
 
+    // IsChecked set by code during a press: the release rests the knob where IsChecked now has it, short of half way or
+    // past it, and nothing toggles it back.
+    [AvaloniaFact]
+    public void A_Change_From_Code_During_A_Press_Is_Where_The_Knob_Rests()
+    {
+        using var stage = new Stage();
+        var t = stage.Toggle;
+        var start = stage.Knob();
+
+        stage.Window.MouseDown(start, MouseButton.Left);
+        stage.Window.MouseMove(start + new Point(20, 0));
+        t.IsChecked = true;
+        stage.Window.MouseMove(start + new Point(22, 0));      // not a tap, short of half way
+        stage.Window.MouseUp(start + new Point(22, 0), MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(t.IsChecked);
+        Assert.Equal(KnobOnToOffOffset, RestAt(t), 0.0001);
+
+        Settle();
+        start = stage.Knob();
+        stage.Window.MouseDown(start, MouseButton.Left);
+        stage.Window.MouseMove(start + new Point(-40, 0));
+        t.IsChecked = false;
+        stage.Window.MouseMove(start + new Point(-45, 0));
+        stage.Window.MouseUp(start + new Point(-45, 0), MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+        Assert.False(t.IsChecked);
+        Assert.Equal(0, RestAt(t));
+    }
+
+    // Disabled during a press, the release toggles nothing, and the knob goes back.
+    [AvaloniaFact]
+    public void Disabled_During_A_Press_Nothing_Toggles()
+    {
+        using var stage = new Stage();
+        var t = stage.Toggle;
+        var start = stage.Knob();
+
+        stage.Window.MouseDown(start, MouseButton.Left);
+        stage.Window.MouseMove(start + new Point(40, 0));
+        t.IsEnabled = false;
+        stage.Window.MouseUp(start + new Point(40, 0), MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+        Assert.False(t.IsChecked);
+        Assert.Equal(0, RestAt(t));
+    }
+
+    // Another of the mouse's buttons let go during a left drag decides nothing: Avalonia's mouse lets the capture go at
+    // any button's release, so the drag ends as a lost capture does, the knob back at its rest, and the left button's
+    // own release after it toggles nothing.
+    [AvaloniaFact]
+    public void Another_Button_Let_Go_Decides_No_Drag()
+    {
+        using var stage = new Stage();
+        var t = stage.Toggle;
+        var start = stage.Knob();
+
+        stage.Window.MouseDown(start, MouseButton.Left);
+        stage.Window.MouseMove(start + new Point(40, 0));
+        stage.Window.MouseDown(start + new Point(40, 0), MouseButton.Right);
+        stage.Window.MouseUp(start + new Point(40, 0), MouseButton.Right);
+        Dispatcher.UIThread.RunJobs();
+        Assert.False(t.IsChecked);
+        Assert.Equal(0, RestAt(t));
+        stage.Window.MouseUp(start + new Point(40, 0), MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+        Assert.False(t.IsChecked);
+    }
+
+    // Turned off during a press, the knob goes back to its rest with its slide, and later changes slide too.
+    [AvaloniaFact]
+    public void Turned_Off_During_A_Press_The_Knob_Goes_Back()
+    {
+        using var stage = new Stage();
+        var t = stage.Toggle;
+        var start = stage.Knob();
+
+        stage.Window.MouseDown(start, MouseButton.Left);
+        stage.Window.MouseMove(start + new Point(40, 0));
+        Dispatcher.UIThread.RunJobs();
+        Assert.Null(KnobsOf(t).Transitions);
+        PhoneToggleSwitch.SetIsEnabled(t, false);
+        Assert.Equal(0, RestAt(t));
+        Assert.Same(t.KnobTransitions, KnobsOf(t).Transitions);
+        stage.Window.MouseUp(start + new Point(40, 0), MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+    }
+
     // A lost capture is no release: the knob goes back, and nothing toggles.
     [AvaloniaFact]
     public void A_Lost_Capture_Puts_The_Knob_Back()
@@ -878,10 +966,9 @@ public class ToggleSwitchTests
         Assert.True(scroller.Offset.Y > 0, "a drag on the header didn't scroll the page");
     }
 
-    // Nothing changes under a pointer, a press that doesn't move, or keyboard focus: the phone's PointerOver, Pressed and
-    // focus states set nothing, and the FocusAdorner is cleared.
+    // Nothing changes under a pointer or a press that doesn't move: the phone's PointerOver and Pressed set nothing.
     [AvaloniaFact]
-    public void Pointer_Over_Press_And_Focus_Change_No_Pixel()
+    public void Pointer_Over_And_Press_Change_No_Pixel()
     {
         using var stage = new Stage();
         using var rest = stage.Capture();
@@ -898,11 +985,24 @@ public class ToggleSwitchTests
         Dispatcher.UIThread.RunJobs();
         Settle();
         Assert.False(stage.Toggle.IsChecked);
-
         stage.Window.MouseMove(new Point(1, 1));
+        using (var after = stage.Capture())
+            Assert.True(SameFrame(rest, after), "the press left a pixel changed");
+    }
+
+    // Keyboard focus draws nothing: the phone's template has no focus state, and the theme clears the FocusAdorner,
+    // which would otherwise be Simple's default, a dotted rectangle.
+    [AvaloniaFact]
+    public void Keyboard_Focus_Changes_No_Pixel()
+    {
+        using var stage = new Stage();
+        using var rest = stage.Capture();
+
         stage.Toggle.Focus(NavigationMethod.Tab);
-        using (var focused = stage.Capture())
-            Assert.True(SameFrame(rest, focused), "keyboard focus changed a pixel");
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(stage.Toggle.IsFocused);
+        using var focused = stage.Capture();
+        Assert.True(SameFrame(rest, focused), "keyboard focus changed a pixel");
     }
 
     // The colours follow a change of variant at run time, through the keys.
