@@ -9,10 +9,12 @@ using Avalonia.Styling;
 namespace Cornflower.Themes.Wp81;
 
 /// <summary>
-/// Keeps Wp81's Button out of templates written for the theme under Wp81. Simple's templates for CalendarItem,
-/// CalendarDatePicker, CommandBar, NavigationPage, PipsPager and the managed file dialogs hold plain Buttons with no
-/// theme of their own, so they would take Wp81's, keyed by type: the phone's 109 × 57.5 minimum, its overhang, the
-/// accent and the tilt, in chrome laid out for Simple's. Such a Button takes the Button theme under Wp81 instead.
+/// Keeps Wp81's Button, ToggleButton and RepeatButton out of templates written for the theme under Wp81. Simple's
+/// templates for CalendarItem, CalendarDatePicker, CommandBar, NavigationPage, PipsPager and the managed file dialogs
+/// hold plain Buttons with no theme of their own, ComboBox's and DrawerPage's plain ToggleButtons, and ScrollBar's and
+/// the menu ScrollViewer's plain RepeatButtons, so they would take Wp81's, keyed by type: the phone's 109 × 57.5
+/// minimum, its overhang, the accent and, for a Button, the tilt, in chrome laid out for Simple's. Such a control takes
+/// the theme under Wp81 for its own style key instead: a ToggleButton the ToggleButton theme, not the Button theme.
 /// </summary>
 /// <remarks>
 /// <para><b>Which templates.</b> The templated parent's own template decides: a Button falls back when that template
@@ -27,14 +29,18 @@ namespace Cornflower.Themes.Wp81;
 /// Button in a template Wp81 sets goes no further. The templates each theme (a <see cref="Styles"/> subclass) sets
 /// are read once and kept beside it; a plain group of styles and a host's own resources, which an app can change as
 /// it runs, are read each time.</para>
-/// <para><b>On and off.</b> Only Wp81's Button theme sets <see cref="FallBackProperty"/>: it is internal, with no
-/// accessor. It goes false when that theme leaves the Button, which is what falling back does itself, so false undoes
-/// nothing; the Button keeps the theme it was given. It costs only Buttons, and no global rule
-/// (<c>StyleBudgetTests</c>); a Button with no templated parent returns at once.</para>
+/// <para><b>On and off.</b> Only Wp81's themes set <see cref="FallBackProperty"/> (Button's, ToggleButton's and
+/// RepeatButton's): it is internal, with no accessor. It goes false when that theme leaves the control, which is what
+/// falling back does itself, so false undoes nothing; the control keeps the theme it was given. It costs only the
+/// controls whose theme sets it, and no global rule (<c>StyleBudgetTests</c>); one with no templated parent returns at
+/// once.</para>
 /// </remarks>
 internal static class HoleParts
 {
-    /// <summary>Set by Wp81's Button theme: whether the Button is in a template written for the theme under Wp81.</summary>
+    /// <summary>
+    /// Set by Wp81's themes for a Button and its subclasses: whether the control is in a template written for the
+    /// theme under Wp81.
+    /// </summary>
     public static readonly AttachedProperty<bool> FallBackProperty =
         AvaloniaProperty.RegisterAttached<Button, bool>("FallBack", typeof(HoleParts));
 
@@ -64,19 +70,22 @@ internal static class HoleParts
             if (!TemplatesOf(node).Contains(template))
                 continue;
 
-            if (ButtonTheme(below, variant) is { } fallback)
+            if (ThemeFor(button.StyleKey, below, variant) is { } fallback)
                 button.Theme = fallback;
             return;
         }
     }
 
-    /// <summary>The first <c>ControlTheme</c> for <see cref="Button"/> under Wp81, keyed by it and targeting it.</summary>
-    private static ControlTheme? ButtonTheme(List<object> below, ThemeVariant variant)
+    /// <summary>
+    /// The first <c>ControlTheme</c> under Wp81 keyed by <paramref name="key"/>, the control's style key, and targeting
+    /// it: for a ToggleButton the ToggleButton theme, never the Button theme.
+    /// </summary>
+    private static ControlTheme? ThemeFor(Type key, List<object> below, ThemeVariant variant)
     {
         foreach (var node in below)
         {
-            if (node is IResourceNode resources && resources.TryGetResource(typeof(Button), variant, out var found) &&
-                found is ControlTheme { TargetType: var target } theme && target == typeof(Button))
+            if (node is IResourceNode resources && resources.TryGetResource(key, variant, out var found) &&
+                found is ControlTheme { TargetType: var target } theme && target == key)
                 return theme;
         }
 

@@ -52,7 +52,6 @@ PopupRoot
 ProgressBar
 RefreshContainer
 RefreshVisualizer
-RepeatButton
 ScrollBar
 ScrollViewer
 Separator
@@ -72,7 +71,6 @@ TextBox
 TextSelectionHandle
 TimePicker
 TimePickerPresenter
-ToggleButton
 ToggleSwitch
 ToolTip
 TransitioningContentControl
