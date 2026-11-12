@@ -1,6 +1,6 @@
 # PasswordBox
 
-Status: done · [#37](https://github.com/wdcossey/CornflowerUI/issues/37) · owed: the device run on the Pixel 8, and a capture of a shown password
+Status: done · [#37](https://github.com/wdcossey/CornflowerUI/issues/37) · device run passed 2026-11-12 (Pixel 8, Release, over wireless adb, `run.ps1 -Page passwordbox` on `main` at `3bcf02e`: cold 804 ms, the page opened in 410 ms, the first screen's specimens drawn, typing shows circles and Show Password shows the text) · real-window run passed 2026-11-12 (`tools/real-window/drive.ps1` under `pwsh` 7.7, Debug, on `main` at `3bcf02e`: 71 of 71, the passwordbox page opened in 25 ms with 98 elements) · owed: a capture of a shown password
 
 The Windows Phone 8.1 PasswordBox: Avalonia's `TextBox` with the `ControlTheme` keyed `PasswordBox`, WinRT's name, the
 phone's default style and template, in `src/Cornflower.Themes.Wp81/Controls/PasswordBox.axaml`. Avalonia has no
@@ -70,7 +70,10 @@ None new.
 - **The text's baseline**, and so the circles, 0.95 DIP above the phone's (#36's).
 - **Selawik has no `●`**: the circles come from the platform's fallback font.
 - **A tap on "Show Password" focuses an unfocused box**; the phone's leaves focus where it was.
-- **Unmeasured**: a shown password, the caret, the selection and the keyboard.
+- **The keyboard suggests the password** ([#104](https://github.com/wdcossey/CornflowerUI/issues/104)): on the Pixel 8,
+  Gboard offered words from what was typed with the password masked, and its strip stayed with it shown. Whether the
+  phone's keyboard suggests in a PasswordBox is unmeasured; a keyboard that may learn a password is a bug either way.
+- **Unmeasured on the phone**: a shown password, the caret, the selection and the keyboard.
 
 ## The checklist
 
