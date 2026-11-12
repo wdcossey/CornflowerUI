@@ -1,3 +1,5 @@
+# Windows only: runs on the reference VM, in its Windows PowerShell, not on the machine that drives it.
+# Prints the desktop's resolution and the modes it has, and with -W and -H sets it, through user32.
 param([int]$W = 0, [int]$H = 0)
 Add-Type -TypeDefinition @"
 using System; using System.Runtime.InteropServices; using System.Text;
