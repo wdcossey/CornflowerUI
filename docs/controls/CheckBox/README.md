@@ -1,6 +1,6 @@
 # CheckBox
 
-Status: done · [#31](https://github.com/wdcossey/CornflowerUI/issues/31) · device run passed 2026-11-12 (Pixel 8, Release, over wireless adb, `run.ps1 -Page checkbox` on `main` at `764c435`: cold 786 ms, the page opened in 402 ms, every specimen drawn)
+Status: done · [#31](https://github.com/wdcossey/CornflowerUI/issues/31) · device run passed 2026-11-12 (Pixel 8, Release, over wireless adb, `run.ps1 -Page checkbox` on `main` at `764c435`: cold 786 ms, the page opened in 402 ms, every specimen drawn) · real-window run passed 2026-11-12 (`tools/real-window/drive.ps1` under `pwsh` 7.7, Debug, on `main` at `49e2311`: 56 of 56, the checkbox page opened in 16 ms with 109 elements)
 
 The Windows Phone 8.1 CheckBox: Avalonia's `CheckBox`, themed by `Wp81Theme` with the phone's default style and
 template, in `src/Cornflower.Themes.Wp81/Controls/CheckBox.axaml`. The plan, with every value and its source, is

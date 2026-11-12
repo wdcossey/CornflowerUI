@@ -1,6 +1,6 @@
 # HyperlinkButton
 
-Status: done · [#29](https://github.com/wdcossey/CornflowerUI/issues/29) · device run passed 2026-11-12 (Pixel 8, Release, over wireless adb, `run.ps1 -Page hyperlinkbutton` on `main` at `764c435`: cold 776 ms, the page opened in 372 ms, every specimen drawn) · owed: a probe of the release
+Status: done · [#29](https://github.com/wdcossey/CornflowerUI/issues/29) · device run passed 2026-11-12 (Pixel 8, Release, over wireless adb, `run.ps1 -Page hyperlinkbutton` on `main` at `764c435`: cold 776 ms, the page opened in 372 ms, every specimen drawn) · real-window run passed 2026-11-12 (`tools/real-window/drive.ps1` under `pwsh` 7.7, Debug, on `main` at `49e2311`: 56 of 56, the hyperlinkbutton page opened in 12 ms with 53 elements) · owed: a probe of the release
 
 The Windows Phone 8.1 HyperlinkButton: Avalonia's `HyperlinkButton`, themed by `Wp81Theme` with the phone's default
 style and template, in `src/Cornflower.Themes.Wp81/Controls/HyperlinkButton.axaml`. The plan, with every value and
